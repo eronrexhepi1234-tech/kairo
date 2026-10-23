@@ -2,7 +2,7 @@
 <html lang="en" data-theme="graphite" data-motion="full">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https: wss://generativelanguage.googleapis.com data: blob:; worker-src 'self' blob:; font-src 'self' data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https: wss://generativelanguage.googleapis.com data: blob:; worker-src 'self' blob:; frame-src https://www.youtube-nocookie.com https://www.youtube.com; font-src 'self' data:">
 <title>Kairo</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="styles-extra.css">
@@ -10,6 +10,9 @@
 <link rel="stylesheet" href="styles-v4.css">
 <link rel="stylesheet" href="styles-fx.css">
 <link rel="stylesheet" href="styles-v5.css">
+<link rel="stylesheet" href="styles-v6.css">
+<link rel="stylesheet" href="styles-v7.css">
+<link rel="stylesheet" href="styles-v8.css">
 </head>
 <body>
 
@@ -123,6 +126,7 @@
           <div class="chips">
             <button class="chip" id="chipScreen" aria-pressed="false"><svg><use href="#i-screen"/></svg><span data-i18n="chip.screen"></span></button>
             <button class="chip" id="chipNews" aria-pressed="false"><svg><use href="#i-news"/></svg><span data-i18n="chip.news"></span></button>
+            <button class="chip" id="chipFile" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg><span id="chipFileLabel" data-i18n="chip.file"></span></button>
             <button class="chip" id="chipFolder" aria-pressed="false"><svg><use href="#i-files"/></svg><span id="chipFolderLabel" data-i18n="chip.folder"></span></button>
           </div>
           <div class="composer-actions">
@@ -214,7 +218,7 @@
           <div id="tdFocus" class="focus"></div>
         </div>
 
-        <div class="tcard">
+        <div class="tcard tools-card">
           <div class="tcard-h"><b data-i18n="today.tools"></b></div>
           <button class="tool-row" id="tdClip"><span>📋</span><div><b data-i18n="today.clip"></b><small>Ctrl + Alt + K</small></div></button>
           <button class="tool-row" id="tdTidy"><span>🧹</span><div><b data-i18n="today.tidy"></b><small data-i18n="today.tidySub"></small></div></button>
@@ -226,6 +230,12 @@
           <button class="tool-row" id="tdCards"><span>🗂</span><div><b data-i18n="fc.title"></b><small data-i18n="fc.sub"></small></div></button>
           <button class="tool-row" id="tdClipMode"><span>🎬</span><div><b data-i18n="clip.title"></b><small id="tdClipModeSub" data-i18n="clip.sub"></small></div></button>
           <button class="tool-row" id="tdQuiz"><span>🧠</span><div><b data-i18n="today.quiz"></b><small data-i18n="today.quizSub"></small></div></button>
+          <button class="tool-row" id="tdViz"><span>🎧</span><div><b data-i18n="mv.title"></b><small data-i18n="mv.sub"></small></div></button>
+          <button class="tool-row" id="tdSong"><span>🎶</span><div><b data-i18n="sf.title"></b><small data-i18n="sf.sub"></small></div></button>
+          <button class="tool-row" id="tdRecipe"><span>🍳</span><div><b data-i18n="ck.title"></b><small data-i18n="ck.sub"></small></div></button>
+          <button class="tool-row" id="tdPc"><span>🧮</span><div><b data-i18n="pc2.title"></b><small data-i18n="pc2.sub"></small></div></button>
+          <button class="tool-row" id="tdVoiceFx"><span>🎤</span><div><b data-i18n="vfx.title"></b><small data-i18n="vfx.sub"></small></div></button>
+          <button class="tool-row" id="tdGeo"><span>🗺</span><div><b data-i18n="geo.title"></b><small data-i18n="geo.sub"></small></div></button>
         </div>
       </div>
     </div>
@@ -284,6 +294,9 @@
           <button data-game="cards" data-i18n="fc.tab"></button>
           <button data-game="ttt" data-i18n="games.ttt"></button>
           <button data-game="c4" data-i18n="games.c4"></button>
+          <button data-game="geo">GeoGuessr</button>
+          <button data-game="riddle" data-i18n="rd2.tab"></button>
+          <button data-game="voicefx" data-i18n="vfx.tab"></button>
         </div>
 
         <div id="chessArea">
@@ -412,12 +425,16 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="icons-data.js"></script>
+<script src="icons.js"></script>
 <script src="../../node_modules/globe.gl/dist/globe.gl.min.js"></script>
 <script src="i18n.js"></script>
 <script src="i18n-extra.js"></script>
 <script src="i18n-v3.js"></script>
 <script src="i18n-v4.js"></script>
 <script src="i18n-v5.js"></script>
+<script src="i18n-v6.js"></script>
+<script src="i18n-v7.js"></script>
 <script src="markdown.js"></script>
 <script src="voice.js"></script>
 <script src="orb.js"></script>
@@ -427,6 +444,9 @@
 <script src="earth-layers.js"></script>
 <script src="tour.js"></script>
 <script src="extras2.js"></script>
+<script src="earth2-ui.js"></script>
+<script src="geo.js"></script>
+<script src="fun-ui.js"></script>
 <script src="chess-ui.js"></script>
 <script src="today.js"></script>
 <script src="quiz.js"></script>

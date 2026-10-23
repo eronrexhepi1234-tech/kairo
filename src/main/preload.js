@@ -81,6 +81,24 @@ contextBridge.exposeInMainWorld('kairo', {
   },
   discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
+  orbMode: () => invoke('app:orbMode'),
+  onWinState: fn => on('win:state', fn),
+  fun: {
+    patch: g => invoke('fun:patch', g), playtime: () => invoke('fun:playtime'), pc: () => invoke('fun:pc'), nowPlaying: () => invoke('fun:nowPlaying'),
+    identify: (b64, mime) => invoke('fun:identify', b64, mime), birthdays: () => invoke('fun:birthdays'), bdAdd: b => invoke('fun:bdAdd', b), bdRemove: id => invoke('fun:bdRemove', id),
+    riddle: force => invoke('fun:riddle', force), joke: topic => invoke('fun:joke', topic), recipe: w => invoke('fun:recipe', w), onBirthday: cb => on('bd:soon', cb), saveAudio: (b64, ext) => invoke('fun:saveAudio', b64, ext)
+  },
+  earth2: {
+    country: q => invoke('earth2:country', q), borders: () => invoke('earth2:borders'), webcams: p => invoke('earth2:webcams', p),
+    city: n => invoke('earth2:city', n), iss: (lat, lng) => invoke('earth2:iss', lat, lng)
+  },
+  attachFile: () => invoke('file:attach'), attachPath: p => invoke('file:attachPath', p),
+  pathForFile: f => { try { return require('electron').webUtils.getPathForFile(f); } catch { return null; } },
+  prompt: { open: (target, text) => invoke('prompt:open', target, text) },
+  stage: {
+    show: p => ipcRenderer.send('stage:show', p), idle: () => ipcRenderer.send('stage:idle'),
+    mouse: on => ipcRenderer.send('stage:mouse', on), open: () => ipcRenderer.send('stage:open'), onShow: fn => on('stage:show', fn)
+  },
   reader: { url: u => invoke('reader:url', u), file: () => invoke('reader:file') },
   clips: { source: () => invoke('clips:source'), save: b => invoke('clips:save', b), onSaveRequest: fn => on('clips:save-request', fn) },
   focus: { today: () => invoke('focus:today'), week: () => invoke('focus:week') },

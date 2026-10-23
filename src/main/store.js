@@ -22,13 +22,14 @@ const DEFAULTS = {
   accent: '#ff7a45',
   density: 'comfortable',
   motion: 'full',
-  font: 'system',
+  font: 'modern',
   voice: {
     engine: 'auto', systemVoice: '', openaiVoice: 'coral', geminiVoice: 'Kore', ttsModel: 'gpt-4o-mini-tts', sttModel: 'gpt-4o-mini-transcribe',
     autoSpeak: false, rate: 1, liveModel: 'auto', orbStyle: 'orb', orbPalette: 'accent', handsFree: true, sensitivity: 'medium', role: 'normal'
   },
-  schema: 3,
+  schema: 4,
   miniOrb: true,
+  worldClock: [{ name: 'New York', tz: 'America/New_York', lat: 40.71, lng: -74.01 }, { name: 'Tokio', tz: 'Asia/Tokyo', lat: 35.69, lng: 139.69 }, { name: 'Tirana', tz: 'Europe/Tirane', lat: 41.33, lng: 19.82 }],
   mail: { enabled: false, provider: 'gmail', user: '', host: '', port: 993, notify: true },
   football: { league: 'sui.1', team: null },
   wakeWord: false,
@@ -86,6 +87,8 @@ function load() {
   }
   // v2 -> v3: no background process unless the user turns it on again
   if (raw.keys && (raw.schema || 0) < 3) { raw.schema = 3; raw.autostart = false; raw.closeToTray = false; }
+  // v4: new modern font as default
+  if (raw.keys && (raw.schema || 0) < 4) { raw.schema = 4; if (!raw.font || raw.font === 'system') raw.font = 'modern'; }
   cache = deepMerge(DEFAULTS, raw);
   for (const p of Object.keys(cache.keys)) cache.keys[p] = decryptKey(cache.keys[p]);
   return cache;

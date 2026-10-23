@@ -288,7 +288,7 @@ window.EarthLayers = (function () {
     box.classList.toggle('on', Object.keys(lines).length > 0);
   }
 
-  const API = { rain: [radarOn, radarOff], night: [nightOn, nightOff], flights: [planesOn, planesOff], iss: [issOn, issOff], quakes: [quakesOn, quakesOff] };
+  const API = { clock: [() => WorldClock.layer(true), () => WorldClock.layer(false)], rain: [radarOn, radarOff], night: [nightOn, nightOff], flights: [planesOn, planesOff], iss: [issOn, issOff], quakes: [quakesOn, quakesOff] };
   async function set(name, value = !on[name]) {
     if (!API[name] || !!on[name] === !!value) return;
     on[name] = !!value;
@@ -303,7 +303,7 @@ window.EarthLayers = (function () {
     wrap.dataset.layers = '1';
     // the old "night lights" switch becomes the live day/night line with city lights
     const nl = $('earthNight'); if (nl) nl.closest('label').remove();
-    wrap.insertAdjacentHTML('beforeend', [['night', '🌗'], ['rain', '🌧'], ['flights', '✈'], ['iss', '🛰'], ['quakes', '🌋']]
+    wrap.insertAdjacentHTML('beforeend', [['night', '🌗'], ['rain', '🌧'], ['flights', '✈'], ['iss', '🛰'], ['quakes', '🌋'], ['clock', '🕐']]
       .map(([k, i]) => `<label class="tog"><input type="checkbox" data-layer="${k}"><span>${i} ${t('lay.' + k)}</span></label>`).join(''));
     wrap.querySelectorAll('[data-layer]').forEach(b => b.onchange = () => { Earth.init(); set(b.dataset.layer, b.checked); });
   }

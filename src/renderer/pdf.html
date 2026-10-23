@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file: https:; font-src 'self'">
+<title>PDF</title>
+<style>
+  @font-face { font-family: 'Inter Var'; font-weight: 100 900; src: url(assets/fonts/inter-latin-wght-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+20AC; }
+  @font-face { font-family: 'Inter Var'; font-weight: 100 900; src: url(assets/fonts/inter-latin-ext-wght-normal.woff2) format('woff2'); unicode-range: U+0100-02BA, U+1E00-1E9F; }
+  @font-face { font-family: 'Space Grotesk Var'; font-weight: 300 700; src: url(assets/fonts/space-grotesk-latin-wght-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+  @font-face { font-family: 'Space Grotesk Var'; font-weight: 300 700; src: url(assets/fonts/space-grotesk-latin-ext-wght-normal.woff2) format('woff2'); unicode-range: U+0100-02BA, U+1E00-1E9F; }
+  @font-face { font-family: 'JetBrains Mono Var'; font-weight: 100 800; src: url(assets/fonts/jetbrains-mono-latin-wght-normal.woff2) format('woff2'); }
+  @page { size: A4; margin: 14mm 0 16mm; }
+  @page :first { margin-top: 0; }
+  :root { --accent: #ff7a45; --ink: #1d2230; --muted: #6b7385; --line: #e7e9ef; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 10.5pt/1.62 'Inter Var', 'Segoe UI', sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cover { position: relative; padding: 22mm 18mm 12mm; margin-bottom: 8mm; overflow: hidden;
+    background: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 30%, #fff) 0%, #fff 55%); border-bottom: 1px solid var(--line); }
+  .cover::before { content: ''; position: absolute; right: -30mm; top: -30mm; width: 90mm; height: 90mm; border-radius: 50%;
+    background: conic-gradient(from 200deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #7a5cff), var(--accent)); opacity: .18; filter: blur(2px); }
+  .kicker { font: 600 8pt 'JetBrains Mono Var', Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); }
+  .cover h1 { font: 700 27pt/1.12 'Space Grotesk Var', 'Segoe UI', sans-serif; letter-spacing: -.02em; margin: 3mm 0 3mm; max-width: 150mm; }
+  .cover .meta { color: var(--muted); font-size: 9pt; }
+  .cover .bar { width: 22mm; height: 1.6mm; border-radius: 2mm; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #7a5cff)); margin-top: 6mm; }
+  main { padding: 0 18mm; }
+  h1, h2, h3 { font-family: 'Space Grotesk Var', 'Segoe UI', sans-serif; letter-spacing: -.01em; line-height: 1.25; break-after: avoid; }
+  main h1 { font-size: 18pt; margin: 8mm 0 3mm; }
+  main h2 { font-size: 14pt; margin: 7mm 0 2.5mm; padding-left: 3.2mm; border-left: 1.2mm solid var(--accent); }
+  main h3 { font-size: 11.5pt; margin: 5mm 0 2mm; color: color-mix(in srgb, var(--accent) 70%, var(--ink)); }
+  p { margin: 0 0 3mm; orphans: 3; widows: 3; }
+  ul, ol { margin: 0 0 3.5mm; padding-left: 6mm; }
+  li { margin: .8mm 0; } li::marker { color: var(--accent); font-weight: 700; }
+  strong { font-weight: 650; }
+  a { color: color-mix(in srgb, var(--accent) 80%, #000); text-decoration: none; }
+  blockquote { margin: 4mm 0; padding: 3.5mm 4.5mm; border-radius: 3mm; background: color-mix(in srgb, var(--accent) 9%, #fff); border-left: 1.2mm solid var(--accent); break-inside: avoid; }
+  code { font: 9pt 'JetBrains Mono Var', Consolas, monospace; background: #f3f4f7; padding: .3mm 1.2mm; border-radius: 1mm; }
+  pre { background: #161a23; color: #e9edf5; padding: 4mm; border-radius: 3mm; overflow: hidden; break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 4mm 0; font-size: 9.5pt; break-inside: avoid; border: 1px solid var(--line); border-radius: 2.5mm; overflow: hidden; }
+  th { text-align: left; background: color-mix(in srgb, var(--accent) 14%, #fff); font-weight: 650; }
+  th, td { padding: 2.2mm 3mm; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; } tbody tr:nth-child(even) td { background: #fafbfc; }
+  hr { border: 0; height: 1px; background: var(--line); margin: 6mm 0; }
+  .end { margin: 10mm 18mm 0; padding-top: 3mm; border-top: 1px solid var(--line); color: var(--muted); font-size: 8pt; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="cover"><div class="kicker" id="kicker">Kairo · Dokument</div><h1 id="title"></h1><div class="meta" id="meta"></div><div class="bar"></div></div>
+<main id="doc"></main>
+<div class="end"><span>Erstellt mit Kairo</span><span id="date2"></span></div>
+<script src="markdown.js"></script>
+<script src="pdf.js"></script>
+</body>
+</html>

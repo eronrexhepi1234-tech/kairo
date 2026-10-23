@@ -98,7 +98,7 @@ window.SettingsUI = (function () {
           <div class="swatches">${ACCENTS.map(a => `<button class="swatch ${a === S.accent ? 'active' : ''}" data-accent="${a}" style="background:${a};color:${a}"></button>`).join('')}
           <input type="color" id="sAccent" value="${S.accent}"></div></div>
         <div class="set-row"><label>${t('set.font')}</label>
-          <div class="seg" id="sFont">${[['system', 'Segoe'], ['serif', 'Serif headings'], ['mono', 'Mono']].map(([v, l]) => `<button data-v="${v}" class="${S.font === v ? 'active' : ''}">${l}</button>`).join('')}</div></div>
+          <div class="seg" id="sFont">${[['modern', 'Modern'], ['system', 'Segoe'], ['serif', 'Serif'], ['mono', 'Mono']].map(([v, l]) => `<button data-v="${v}" class="${S.font === v ? 'active' : ''}">${l}</button>`).join('')}</div></div>
         <div class="set-row"><label>${t('set.motion')}</label>
           <div class="seg" id="sMotion">${['off', 'subtle', 'full'].map(v => `<button data-v="${v}" class="${S.motion === v ? 'active' : ''}">${t('set.motion.' + v)}</button>`).join('')}</div></div>
         <div class="set-row"><label>${t('set.bg')}</label>

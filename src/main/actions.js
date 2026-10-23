@@ -139,4 +139,4 @@ function openApp(name) {
 function reveal(file) { shell.showItemInFolder(file); }
 function openFile(file) { return shell.openPath(file); }
 
-module.exports = { createFile, openUrl, openApp, reveal, openFile, outputDir, makeDocx };
+module.exports = { createFile, openUrl, openApp, reveal, openFile, outputDir, makeDocx, uniquePath, safeName };

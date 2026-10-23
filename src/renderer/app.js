@@ -75,7 +75,8 @@ function go(view) {
     $('viewName').textContent = t('nav.' + view);
     if (view === 'earth') Earth.init();
     if (view === 'settings') SettingsUI.render();
-    if (view === 'today') window.Extras2?.renderToday();
+    if (view === 'today') { window.Extras2?.renderToday(); window.Fun?.init(); }
+    if (view === 'games') window.Fun?.init();
     if (view === 'phone') loadMac();
     if (view === 'today') { Today.refresh(); Life.refreshToday(); }
     if (view === 'school') Life.renderSchool();
@@ -146,9 +147,10 @@ const FILE_RX = /\[\[file:\s*([^\]\n]+)\]\]\n?([\s\S]*?)(?:\[\[\/file\]\]|$)/g;
 const OPEN_RX = /\[\[open:\s*([^\]]+?)\s*\]\]/g;
 const APP_RX = /\[\[app:\s*([^\]]+)\]\]/g;
 
+const PROMPT_RX = /\[\[prompt:\s*([^\]\n]*)\]\]\n?([\s\S]*?)(?:\[\[\/prompt\]\]|$)/g;
 function parseReply(text) {
-  const files = [];
-  let shown = (text || '').replace(FILE_RX, (_, name, content) => {
+  const files = [], prompts = [];
+  let shown = (text || '').replace(PROMPT_RX, (_, target, body) => { prompts.push({ target: target.trim() || 'ChatGPT', text: body.replace(/\n$/, '') }); return `\n\n%%PROMPT${prompts.length - 1}%%\n\n`; }).replace(FILE_RX, (_, name, content) => {
     files.push({ name: name.trim(), content: content.replace(/\n$/, '') });
     return `\n\n%%FILE${files.length - 1}%%\n\n`;
   });
@@ -172,9 +174,14 @@ function parseReply(text) {
   const money = split(/\[\[money:\s*([^\]]+)\]\]/gi).map(([amount, note]) => ({ amount: parseFloat(String(amount).replace(',', '.')) || 0, note: note || '' })).filter(m => m.amount);
   const diary = split(/\[\[diary:\s*([^\]]+)\]\]/gi).map(([mood, text]) => text ? { mood, text } : { mood: '🙂', text: mood });
   const routines = grab(/\[\[routine:\s*([^\]]+)\]\]/gi);
+  const recipes = grab(/\[\[recipe:\s*([^\]]+)\]\]/gi), patches = grab(/\[\[patch:\s*([^\]]+)\]\]/gi), vfx = grab(/\[\[voicefx:\s*([^\]]+)\]\]/gi);
+  const bdays = split(/\[\[birthday:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
+  const flags = { viz: /\[\[visualizer\]\]/i.test(shown), song: /\[\[song\]\]/i.test(shown), pc: /\[\[pccheck\]\]/i.test(shown), geo: /\[\[geoguessr\]\]/i.test(shown), riddle: /\[\[riddle\]\]/i.test(shown) };
+  shown = shown.replace(/\[\[(visualizer|song|pccheck|geoguessr|riddle)\]\]/gi, '');
+  const countries = grab(/\[\[country:\s*([^\]]+)\]\]/gi), cams = grab(/\[\[webcam:\s*([^\]]+)\]\]/gi);
   const layers = grab(/\[\[layer:\s*([^\]]+)\]\]/gi), tours = grab(/\[\[tour:\s*([^\]]+)\]\]/gi), roles = grab(/\[\[voice:\s*([^\]]+)\]\]/gi);
   const countdowns = split(/\[\[countdown:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
-  shown = shown.replace(/\[\[(image|pptx|homework|exam|money|diary|routine|layer|tour|voice|countdown):[^\]]*\]\]/gi, '');
+  shown = shown.replace(/\[\[(image|pptx|homework|exam|money|diary|routine|layer|tour|voice|countdown|country|webcam|recipe|patch|voicefx|birthday):[^\]]*\]\]/gi, '');
   const tidy = /\[\[tidy\]\]/i.test(shown), briefing = /\[\[briefing\]\]/i.test(shown);
   const cards = grab(/\[\[cards:\s*([^\]]+)\]\]/gi)[0] || null;
   const translate = grab(/\[\[translate:\s*([^\]]+)\]\]/gi).map(s => s.split('|').map(x => x.trim()))[0] || null;
@@ -183,8 +190,30 @@ function parseReply(text) {
   const quiz = grab(/\[\[quiz:\s*([^\]]+)\]\]/gi)[0] || null;
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
-  return { shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns };
+  const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
+  shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
+  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags };
 }
+
+// prompt for another AI: card with copy + open buttons
+function promptCard(p, streaming) {
+  if (!p) return '';
+  const id = 'pc' + Math.random().toString(36).slice(2, 8);
+  const targets = ['ChatGPT', 'Claude', 'Gemini', 'Perplexity'];
+  return `<div class="prompt-card ${streaming ? 'writing' : ''}" id="${id}" data-text="${escAttr(p.text)}">
+    <div class="pc-head"><span class="pc-badge">${ic('wand-sparkles')}</span><div><small>${t('pr.for')}</small><b>${escAttr(p.target)}</b></div>
+      <span class="pc-len">${p.text.length.toLocaleString()} ${t('file.chars')}</span></div>
+    <pre class="pc-text">${escAttr(p.text)}</pre>
+    ${streaming ? '' : `<div class="pc-actions"><button class="btn" data-pc="copy">${ic('copy')} ${t('pr.copy')}</button>${targets.map(x => `<button class="btn ${p.target.toLowerCase().includes(x.toLowerCase()) ? 'primary' : ''}" data-pc="open" data-target="${x}">${ic('arrow-up-right')} ${x}</button>`).join('')}</div>`}
+  </div>`;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-pc]');
+  if (!b) return;
+  const card = b.closest('.prompt-card'), text = card.dataset.text;
+  if (b.dataset.pc === 'copy') { await navigator.clipboard.writeText(text); b.classList.add('done'); window.toast(t('pr.copied')); setTimeout(() => b.classList.remove('done'), 1500); }
+  if (b.dataset.pc === 'open') { const r = await window.kairo.prompt.open(b.dataset.target, text); if (r.ok) window.toast(r.prefilled ? `${r.target} ↗` : `${r.target} ↗ · ${t('pr.pasted')}`); }
+});
 
 const EXT_LABEL = n => (n.match(/\.([a-z0-9]+)$/i) || [, 'TXT'])[1].toUpperCase().slice(0, 4);
 function fileCard(f, res, streaming) {
@@ -206,6 +235,7 @@ async function runActions(m) {
     m.fileResults.push(r.ok ? { path: r.path } : { error: r.error.message });
   }
   m.done = [];
+  if (p.sendPrompt && p.prompts[0]) { const r = await window.kairo.prompt.open(p.prompts[0].target, p.prompts[0].text); if (r.ok) m.done.push('↗ ' + r.target + (r.prefilled ? '' : ' · ' + t('pr.pasted'))); }
   for (const u of p.opens) { const r = await window.kairo.action({ type: 'open', url: u.replace(/ /g, '%20') }); if (r.ok) m.done.push('🌐 ' + r.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60)); }
   for (const a of p.apps) { const r = await window.kairo.action({ type: 'app', name: a }); m.done.push((r.ok ? '▶ ' : '✕ ') + a); }
   if (p.chess) { m.done.push('♟ ' + t('games.chess')); setTimeout(() => { go('games'); Games.showGame('chess'); }, 600); }
@@ -223,6 +253,17 @@ async function runActions(m) {
   for (const x of p.money) { await L.add('money', x); m.done.push(`💰 ${x.amount > 0 ? '+' : ''}${x.amount.toFixed(2)} ${x.note}`); }
   for (const d of p.diary) { await L.add('diary', { date: new Date().toLocaleDateString('sv'), mood: d.mood, text: d.text }); m.done.push('📔 ' + d.mood); }
   if (p.money.length || p.diary.length) { Life.renderMoney(); Life.renderDiary(); }
+  if (p.recipes[0]) { m.done.push('🍳 ' + p.recipes[0]); setTimeout(() => Cook.open(p.recipes[0]), 300); }
+  if (p.patches[0]) { m.done.push('📜 ' + p.patches[0]); setTimeout(() => { go('games'); GamesExtra.mount(); GamesExtra.patch(p.patches[0]); }, 300); }
+  if (p.vfx[0]) { VoiceFX.set(p.vfx[0].toLowerCase()); setTimeout(() => { go('games'); Games.showGame('voicefx'); }, 300); m.done.push('🎤 ' + p.vfx[0]); }
+  for (const b of p.bdays) { const r = await window.kairo.fun.bdAdd(b); m.done.push(r.ok ? '🎂 ' + b.name : '✕ ' + r.error.message); }
+  if (p.flags.viz) { m.done.push('🎧'); setTimeout(() => MusicViz.open(), 300); }
+  if (p.flags.song) { m.done.push('🎶'); setTimeout(() => SongFinder.open(), 300); }
+  if (p.flags.pc) { m.done.push('🧮'); setTimeout(() => PcCheck.open(), 300); }
+  if (p.flags.geo) { m.done.push('🗺 GeoGuessr'); setTimeout(() => { go('games'); Geo.start(); }, 300); }
+  if (p.flags.riddle) { m.done.push('🧩'); setTimeout(() => { go('games'); Games.showGame('riddle'); }, 300); }
+  if (p.countries[0]) { m.done.push('🌍 ' + p.countries[0]); setTimeout(() => Country.show(p.countries[0]), 300); }
+  if (p.cams[0]) { m.done.push('📷 ' + p.cams[0]); setTimeout(() => Webcam.open(p.cams[0]), 300); }
   for (const l of p.layers) { const k = l.toLowerCase(); go('earth'); Earth.init(); EarthLayers.set(k, true); m.done.push('🌍 ' + (t('lay.' + k) || k)); }
   if (p.tours[0]) { m.done.push('🎬 ' + p.tours[0]); setTimeout(() => Tour.start(p.tours[0]), 400); }
   for (const r of p.roles) { await Extras2.setRole(r.toLowerCase(), S); m.done.push('🎭 ' + r); }
@@ -254,9 +295,10 @@ $('messages').addEventListener('click', e => {
 });
 
 function fillAI(el, m, streaming) {
-  const { shown, files, places } = parseReply(m.text);
+  const { shown, files, places, prompts } = parseReply(m.text);
   let html = renderMarkdown(shown) + (streaming ? '<span class="caret"></span>' : '');
   html = html.replace(/(?:<p>)?%%FILE(\d+)%%(?:<\/p>)?/g, (_, i) => fileCard(files[i], m.fileResults?.[i], streaming && !m.fileResults));
+  html = html.replace(/(?:<p>)?%%PROMPT(\d+)%%(?:<\/p>)?/g, (_, i) => promptCard(prompts[i], streaming));
   el.innerHTML = html;
   // generated pictures and presentations
   for (const im of m.imageResults || []) {
@@ -380,8 +422,10 @@ async function send(text, opts = {}) {
     attachScreen: opts.attachScreen ?? attach.screen,
     attachNews: opts.attachNews ?? attach.news,
     newsQuery: opts.newsQuery || '',
-    folderContext: attach.folderCtx
+    folderContext: attach.folderCtx,
+    fileContext: attach.file || null
   };
+  if (attach.file) { attach.file = null; setChip('chipFile', false); $('chipFileLabel').textContent = t('chip.file'); }
   // one-shot chips reset after sending
   setChip('chipScreen', attach.screen = false);
   setChip('chipNews', attach.news = false);
@@ -449,6 +493,32 @@ document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => send(t(b
 function setChip(id, on) { $(id).setAttribute('aria-pressed', String(!!on)); }
 $('chipScreen').onclick = () => setChip('chipScreen', attach.screen = !attach.screen);
 $('chipNews').onclick = () => setChip('chipNews', attach.news = !attach.news);
+async function attachFile(r) {
+  if (!r.ok) return window.toast('✕ ' + r.error.message);
+  if (!r.file) return;
+  attach.file = r.file;
+  setChip('chipFile', true);
+  $('chipFileLabel').textContent = r.file.name.length > 22 ? r.file.name.slice(0, 20) + '…' : r.file.name;
+  window.toast((r.file.kind === 'pdf' ? `PDF · ${r.file.pages} ${t('pr.pages')}` : r.file.name) + ' ✓');
+  $('input').focus();
+}
+$('chipFile').onclick = async () => {
+  if (attach.file) { attach.file = null; setChip('chipFile', false); $('chipFileLabel').textContent = t('chip.file'); return; }
+  attachFile(await window.kairo.attachFile());
+};
+// drag a PDF / picture / document onto the chat
+document.addEventListener('dragover', e => { if (e.dataTransfer?.types?.includes('Files')) { e.preventDefault(); document.body.classList.add('drop-on'); } });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drop-on'); });
+document.addEventListener('drop', async e => {
+  document.body.classList.remove('drop-on');
+  const f = e.dataTransfer?.files?.[0];
+  if (!f) return;
+  e.preventDefault();
+  const p = window.kairo.pathForFile(f);
+  if (!p) return;
+  go('chat');
+  attachFile(await window.kairo.attachPath(p));
+});
 $('chipFolder').onclick = async () => {
   if (attach.folder) { attach.folder = attach.folderCtx = null; setChip('chipFolder', false); $('chipFolderLabel').textContent = t('chip.folder'); return; }
   const p = await window.kairo.folder.pick();
@@ -649,7 +719,8 @@ window.App = {
     saveHistory();
     renderAll();
   },
-  askInChat(text, opts) { go('chat'); setTimeout(() => send(text, opts), 100); }
+  askInChat(text, opts) { go('chat'); setTimeout(() => send(text, opts), 100); },
+  async attachPath(p) { go('chat'); await attachFile(await window.kairo.attachPath(p)); }
 };
 window.kairo.onFocusInput(() => { go('chat'); $('input').focus(); });
 
@@ -676,7 +747,7 @@ window.kairo.onFocusInput(() => { go('chat'); $('input').focus(); });
       if (await window.kairo.briefing.due()) { go('today'); Today.briefing(true); }
     }
   }, 3500);
-  setInterval(async () => { if (!document.hidden && (await window.kairo.briefing.due())) { go('today'); Today.briefing(true); } }, 15 * 60000);
+  setInterval(async () => { if (!document.hidden && !window.__away && (await window.kairo.briefing.due())) { go('today'); Today.briefing(true); } }, 15 * 60000);
   renderVoicePickers();
   $('micBtn').title = t('chat.voice') + ' (Ctrl+Shift+K)';
   loadHistory();

@@ -216,6 +216,8 @@ window.Games = (function () {
     $('miniTabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.game === g));
     for (const [id, key] of [['chessArea', 'chess'], ['analysisArea', 'analysis'], ['lichessArea', 'lichess'], ['quizArea', 'quiz'], ['cardsArea', 'cards']]) $(id).hidden = g !== key;
     $('miniArea').hidden = !['ttt', 'c4'].includes(g);
+    window.Fun?.showTab(g);
+    if (g === 'geo') { Geo.start(); setTimeout(() => showGame('chess'), 50); return; }
     if (g === 'chess') ChessUI.init();
     else if (g === 'lichess') ChessExtra.renderLichess();
     else if (g === 'quiz') Quiz.init();

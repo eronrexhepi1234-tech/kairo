@@ -90,6 +90,8 @@ window.Extras2 = (function () {
       <div class="tcard" id="tcMail"><div class="tcard-h"><b>✉ ${t('mail.inbox')}</b><span class="muted small" id="tcMailCount"></span><button class="icon-btn" id="tcMailRefresh" title="↻">↻</button></div><div id="tcMailBody"></div></div>
       <div class="tcard" id="tcCount"><div class="tcard-h"><b>⏳ ${t('cd.title')}</b></div><div id="tcCountBody"></div>
         <form class="cd-add" id="cdAdd"><input class="field" id="cdName" placeholder="${t('cd.name')}"><input class="field" type="date" id="cdDate"><button class="btn">+</button></form></div>
+      <div class="tcard" id="tcClock"><div class="tcard-h"><b>🕐 ${t('wc.title')}</b></div><div id="tcClockBody"></div></div>
+      <div class="tcard" id="tcSky"><div class="tcard-h"><b>🌌 ${t('sky.title')}</b></div><div id="tcSkyBody"></div></div>
       <div class="tcard" id="tcHist"><div class="tcard-h"><b>📜 ${t('hist.title')}</b><button class="icon-btn" id="tcHistNext" title="↻">↻</button></div><div id="tcHistBody"></div></div>`);
     $('tcMailRefresh').onclick = () => renderMail(true);
     $('cdAdd').onsubmit = async e => {
@@ -164,6 +166,8 @@ window.Extras2 = (function () {
     const r = await window.kairo.extras2.countdowns.list();
     renderCountdowns(r.ok ? r.list : []);
     renderHistory();
+    WorldClock.render($('tcClockBody'));
+    if (!$('tcSkyBody').dataset.done) { $('tcSkyBody').dataset.done = 1; Sky.render($('tcSkyBody')); }
   }
 
   // new mail while the app is open -> toast with a small slide-in card

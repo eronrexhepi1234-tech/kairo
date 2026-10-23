@@ -58,10 +58,15 @@ window.Earth = (function () {
     $('earthSearch').onsubmit = async e => {
       e.preventDefault();
       const q = $('earthQuery').value.trim();
-      if (q) flyToName(q, 'city');
+      if (!q) return;
+      // a country? then show its profile, otherwise fly to the place
+      const c = await window.kairo.earth2.country(q);
+      if (c.ok && c.country.name.toLowerCase().startsWith(q.toLowerCase().slice(0, 4))) Country.show(q); else flyToName(q, 'city');
     };
     window.EarthLayers?.init();
     $('epWhat').onclick = whatHappened;
+    $('view-earth').querySelector('.ep-actions').insertAdjacentHTML('beforeend', `<button class="btn" id="epCam">${ic('cctv')} ${t('cam.live')}</button>`);
+    $('epCam').onclick = () => current && Webcam.open(current.name);
     $('epAsk').onclick = () => {
       if (!current) return;
       window.App.askInChat(`${t('earth.what')} — ${current.name}${current.country && current.country !== current.name ? ', ' + current.country : ''}`, { attachNews: true, newsQuery: current.name });

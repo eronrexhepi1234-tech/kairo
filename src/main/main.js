@@ -49,7 +49,8 @@ function createWindow() {
     titleBarStyle: 'hidden',
     titleBarOverlay: { ...(s.theme === 'custom' && s.customTheme ? { color: s.customTheme.bg, symbolColor: s.customTheme.text } : (THEME_BARS[s.theme] || THEME_BARS.graphite)), height: 40 },
     show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: false }
+    // keep the mic / voice running smoothly while only the mini orb is visible
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: false, backgroundThrottling: false }
   });
   win.setContentProtection(!!s.hideFromCapture);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -95,6 +96,40 @@ function showMini() {
 }
 function hideMini() { if (mini && !mini.isDestroyed()) mini.hide(); }
 ipcMain.on('mini:level', (_e, m) => { if (mini && !mini.isDestroyed() && mini.isVisible()) mini.webContents.send('mini:update', m); });
+
+// Stage: a transparent, click-through layer over the desktop. While only the mini orb is visible,
+// answers (weather, pictures, info cards, captions) fly out of the orb as animated cards and fold back after ~13 s.
+let stage = null, stageReady = null;
+function ensureStage() {
+  if (stage && !stage.isDestroyed()) return stageReady;
+  const d = screen.getPrimaryDisplay().workArea;
+  stage = new BrowserWindow({
+    x: d.x, y: d.y, width: d.width, height: d.height, frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true,
+    resizable: false, focusable: false, show: false, hasShadow: false, fullscreenable: false,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: false, backgroundThrottling: false }
+  });
+  stage.setAlwaysOnTop(true, 'screen-saver');
+  stage.setIgnoreMouseEvents(true, { forward: true });
+  stage.setContentProtection(!!store.get().hideFromCapture);
+  stage.loadFile(path.join(__dirname, '..', 'renderer', 'stage.html'));
+  stageReady = new Promise(r => stage.webContents.once('did-finish-load', r));
+  stage.on('closed', () => { stage = null; });
+  return stageReady;
+}
+const orbMode = () => !!(mini && !mini.isDestroyed() && mini.isVisible() && win && (!win.isVisible() || win.isMinimized()));
+ipcMain.handle('app:orbMode', () => orbMode());
+ipcMain.on('stage:show', async (_e, payload) => {
+  await ensureStage();
+  if (!stage) return;
+  const d = screen.getPrimaryDisplay().workArea;
+  const b = mini && !mini.isDestroyed() && mini.isVisible() ? mini.getBounds() : { x: d.x + d.width - 140, y: d.y + d.height - 150, width: 110, height: 110 };
+  stage.webContents.send('stage:show', { ...payload, orb: { x: b.x - d.x + b.width / 2, y: b.y - d.y + b.height / 2 } });
+  if (!stage.isVisible()) stage.showInactive();
+  mini?.moveTop?.();
+});
+ipcMain.on('stage:idle', () => { if (stage && !stage.isDestroyed()) stage.hide(); });
+ipcMain.on('stage:mouse', (_e, on) => { if (stage && !stage.isDestroyed()) stage.setIgnoreMouseEvents(!on, { forward: true }); });
+ipcMain.on('stage:open', () => { if (stage && !stage.isDestroyed()) stage.hide(); if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
 
 function registerHotkey() {
   globalShortcut.unregisterAll();
@@ -350,8 +385,9 @@ ipcMain.handle('chess:state', chessCall(() => chessGame.state()));
 ipcMain.handle('chess:describe', () => chessGame.describe());
 
 // Actions the assistant asks for: create a file, open a website, open an app.
-ipcMain.handle('action:run', (_e, a) => {
+ipcMain.handle('action:run', async (_e, a) => {
   try {
+    if (a.type === 'file' && /\.pdf$/i.test(a.name || '')) return { ok: true, path: await require('./pdf').makePdf(actions.uniquePath(actions.outputDir(), actions.safeName(a.name)), a.content, { accent: store.get().accent }) };
     if (a.type === 'file') return { ok: true, path: actions.createFile(a.name, a.content) };
     if (a.type === 'open') return { ok: true, url: actions.openUrl(a.url) };
     if (a.type === 'app') return { ok: true, app: actions.openApp(a.name) };
@@ -391,15 +427,24 @@ if (gotLock) app.whenReady().then(() => {
     setImmediate(() => app.quit());
   });
   syncTray();
-  win.on('minimize', showMini);
-  win.on('hide', showMini);
-  win.on('restore', hideMini);
-  win.on('show', hideMini);
-  win.on('focus', hideMini);
+  // tell the app when it is minimized (and whether the mini orb is on screen)
+  const winState = () => setTimeout(() => { if (win && !win.isDestroyed()) win.webContents.send('win:state', { away: !win.isVisible() || win.isMinimized(), orb: !!store.get().miniOrb }); }, 50);
+  win.on('minimize', () => { showMini(); winState(); });
+  win.on('hide', () => { showMini(); winState(); });
+  win.on('restore', () => { hideMini(); winState(); });
+  win.on('show', () => { hideMini(); winState(); });
+  win.on('focus', () => { hideMini(); winState(); });
   if (!process.env.KAIRO_SHOTS) system.applyAutostart(store);
   if (!process.env.KAIRO_SHOTS) system.watchForChanges(() => [win, overlay]);
   require('./features').register({ getWin: () => win, store, errInfo, tray: trayCtl });
+  // YouTube embeds (live webcams) refuse to play without a web referrer; give them one
+  require('electron').session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube-nocookie.com/*', 'https://www.youtube.com/embed/*'] }, (d, cb) => {
+    d.requestHeaders.Referer = 'https://kairo.local/'; cb({ requestHeaders: d.requestHeaders });
+  });
   optional('./earthdata', { register: () => {} }).register();
+  optional('./pdf', { register: () => {} }).register({ getWin: () => win });
+  optional('./earth2', { register: () => {} }).register({ store });
+  optional('./fun', { register: () => {} }).register({ getWin: () => win, store });
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start
@@ -414,9 +459,11 @@ if (gotLock) app.whenReady().then(() => {
       // optional test steps: KAIRO_SHOT_STEPS=[{"js":"...","wait":3000,"name":"x"}]
       if (process.env.KAIRO_SHOT_STEPS) {
         for (const st of JSON.parse(process.env.KAIRO_SHOT_STEPS)) {
+          if (st.minimize) win.minimize();
           if (st.js) await win.webContents.executeJavaScript(st.js).catch(e => console.log('step error', e.message));
           await wait(st.wait || 1000);
           if (st.name) fs.writeFileSync(path.join(dir, st.name + '.png'), (await win.webContents.capturePage()).toPNG());
+          if (st.stage && stage && !stage.isDestroyed()) fs.writeFileSync(path.join(dir, st.stage + '.png'), (await stage.webContents.capturePage()).toPNG());
         }
         return app.quit();
       }

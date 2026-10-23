@@ -1,0 +1,56 @@
+/* desktop stage (transparent, over everything) */
+html, body.stage { background: transparent !important; margin: 0; height: 100%; overflow: hidden; }
+body.stage { font: 14px/1.5 var(--font-ui); color: #eef2f8; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.st-card { position: fixed; width: 440px; border-radius: 22px; overflow: hidden; pointer-events: auto;
+  background: rgba(16, 19, 27, .84); backdrop-filter: blur(22px) saturate(1.4); border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 30px 70px -24px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.25), 0 0 28px -14px color-mix(in srgb, var(--accent) 60%, transparent);
+  clip-path: circle(0 at var(--hx, 50%) var(--hy, 50%)); transform: scale(.7); filter: blur(10px); opacity: 0; }
+.st-card.in { clip-path: circle(150% at var(--hx, 50%) var(--hy, 50%)); transform: none; filter: none; opacity: 1;
+  transition: clip-path .75s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.34,1.4,.64,1), filter .5s, opacity .25s; }
+.st-card.out { transform-origin: var(--ox) var(--oy); transform: scale(.05); opacity: 0; filter: blur(8px);
+  transition: transform .55s cubic-bezier(.55,0,.8,.2), opacity .5s .1s, filter .4s; clip-path: circle(150% at 50% 50%); }
+.st-card.st-weather { width: 520px; background: transparent; border: 0; }
+.st-card.st-weather .wfx { border-radius: 22px; }
+.st-card.st-image { width: 420px; }
+
+.st-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.08); z-index: 5; }
+.st-bar i { display: block; height: 100%; width: 100%; transform-origin: left; background: linear-gradient(90deg, var(--accent), #ffd27a); animation: stBar linear forwards; }
+.st-card.hold .st-bar i { animation-play-state: paused; }
+@keyframes stBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+.st-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 6; opacity: 0; transform: translateY(-4px); transition: .25s; }
+.st-card:hover .st-tools { opacity: 1; transform: none; }
+.st-tools button { width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; display: grid; place-items: center; }
+.st-tools button:hover { background: var(--accent); }
+
+/* info card */
+.st-info { padding: 18px 20px 20px; }
+.st-head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.st-ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: #fff; flex: none;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #6a5cff)); box-shadow: 0 10px 24px -8px var(--accent);
+  animation: stPop .7s .25s cubic-bezier(.34,1.56,.64,1) backwards; }
+.st-ico .ic { width: 22px; height: 22px; }
+.st-head small { color: #9aa6ba; font: 600 11px var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+.st-head h3 { margin: 2px 0 0; font: 600 21px/1.2 var(--font-display); letter-spacing: -.01em; }
+.st-big { font: 600 44px/1.1 var(--font-display); letter-spacing: -.02em; margin: 6px 0 8px; background: linear-gradient(90deg, #fff, color-mix(in srgb, var(--accent) 60%, #fff)); -webkit-background-clip: text; color: transparent; animation: stUp .6s .3s backwards; }
+.st-info ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.st-info li { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.05); font-size: 13.5px; animation: stUp .5s calc(.35s + var(--i) * .08s) cubic-bezier(.16,1,.3,1) backwards; }
+@keyframes stUp { from { opacity: 0; transform: translateY(10px); filter: blur(3px); } }
+@keyframes stPop { from { transform: scale(0) rotate(-30deg); } }
+
+/* picture card */
+.st-img { position: relative; aspect-ratio: 1; overflow: hidden; }
+.st-img img { width: 100%; height: 100%; object-fit: cover; display: block; animation: stReveal 1.2s cubic-bezier(.16,1,.3,1) backwards; }
+.st-shine { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%); transform: translateX(-100%); animation: stShine 1.4s .6s ease forwards; }
+.st-img-cap { padding: 10px 14px 14px; color: #c9d2e0; font-size: 13px; }
+@keyframes stReveal { from { transform: scale(1.25); filter: blur(18px) saturate(2); } }
+@keyframes stShine { to { transform: translateX(100%); } }
+
+/* caption bubble next to the orb */
+.st-caption { position: fixed; max-width: 380px; padding: 11px 16px; border-radius: 18px 18px 6px 18px; pointer-events: none;
+  background: rgba(16,19,27,.85); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.12); color: #eef2f8; font-size: 14px; line-height: 1.45;
+  box-shadow: 0 20px 50px -15px rgba(0,0,0,.7); opacity: 0; transform: translateX(14px) scale(.96); transition: .4s cubic-bezier(.16,1,.3,1); }
+.st-caption.on { opacity: 1; transform: none; }
+.st-caption.user { background: color-mix(in srgb, var(--accent) 30%, rgba(16,19,27,.9)); }
