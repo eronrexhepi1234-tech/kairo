@@ -97,24 +97,11 @@ function register({ getWin, store, errInfo }) {
   }));
 
 
-  // smart home
-  const home = require('./smarthome');
-  ipcMain.handle('home:list', () => home.list());
-  ipcMain.handle('home:discover', wrap(async () => ({ found: await home.discover() })));
-  ipcMain.handle('home:pairHue', wrap(ip => home.pairHue(ip)));
-  ipcMain.handle('home:add', wrap(d => ({ device: home.addDevice(d) })));
-  ipcMain.handle('home:demo', wrap(() => ({ device: home.addDemo() })));
-  ipcMain.handle('home:lifx', wrap(t => home.connectLifx(t)));
-  ipcMain.handle('home:ha', wrap((u, t) => home.connectHomeAssistant(u, t)));
-  ipcMain.handle('home:update', (_e, id, p) => home.update(id, p));
-  ipcMain.handle('home:remove', (_e, id) => home.remove(id));
-  ipcMain.handle('home:control', wrap(async (target, cmd) => {
-    const r = await home.control(target, cmd);
-    send('home:changed', r.devices);
-    return r;
-  }));
 
   require('./media').register({ ipcMain, wrap, getWin });
+  require('./create').register({ ipcMain, wrap, store });
+  require('./life').register({ ipcMain, wrap, store, send });
+  try { require('./discord').register({ ipcMain, wrap, store, send }); } catch (e) { console.error('[kairo] discord unavailable', e.message); }
   try { require('./focus').register({ ipcMain, wrap, store }); } catch (e) { console.error('[kairo] focus stats unavailable', e.message); }
 
   ipcMain.handle('win:show', () => { const w = getWin(); if (w) { w.show(); w.focus(); } });

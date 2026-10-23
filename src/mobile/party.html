@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#111214">
+<title>Kairo Quiz-Party</title>
+<style>
+  :root { --bg: #111214; --bg2: #1c1d21; --text: #f2f2f2; --muted: #8b8c92; --accent: #ff7a45; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; font-weight: 700; }
+  header small { color: var(--muted); font-weight: 400; }
+  .screen { flex: 1; display: none; flex-direction: column; justify-content: center; gap: 14px; text-align: center; }
+  .screen.on { display: flex; }
+  h1 { margin: 0; font-size: 30px; } h2 { margin: 0; font-size: 22px; }
+  input { width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #2c2d32; background: var(--bg2); color: var(--text); font: inherit; font-size: 20px; text-align: center; outline: 0; }
+  input:focus { border-color: var(--accent); }
+  .btn { padding: 16px; border: 0; border-radius: 14px; background: var(--accent); color: #1a0f0a; font: inherit; font-weight: 800; font-size: 18px; }
+  .answers { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 0 20px; }
+  .ans { border: 0; border-radius: 22px; font-size: 44px; color: #fff; font-weight: 800; box-shadow: 0 6px 0 rgba(0,0,0,.25); transition: transform .1s; }
+  .ans:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+  .a0 { background: #e5484d; } .a1 { background: #3b82f6; } .a2 { background: #eab308; } .a3 { background: #22c55e; }
+  .ans.dim { opacity: .25; } .ans.mine { outline: 5px solid #fff; }
+  .big { font-size: 64px; animation: pop .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+  .muted { color: var(--muted); }
+  .timer { height: 6px; background: var(--bg2); border-radius: 6px; overflow: hidden; } .timer i { display: block; height: 100%; background: var(--accent); transition: width .5s linear; }
+  .err { color: #ff8a80; }
+</style>
+</head>
+<body>
+<header><span>🎉 Kairo Quiz-Party</span><small id="me"></small></header>
+
+<div class="screen on" id="sJoin">
+  <h1>Mitspielen</h1>
+  <input id="code" inputmode="numeric" placeholder="Party-Code" maxlength="4">
+  <input id="name" placeholder="Dein Name" maxlength="16">
+  <button class="btn" id="join">Los geht's</button>
+  <p class="err" id="err"></p>
+</div>
+<div class="screen" id="sLobby"><div class="big">⏳</div><h2>Du bist dabei!</h2><p class="muted">Schau auf den grossen Bildschirm – gleich geht's los.</p></div>
+<div class="screen" id="sQuestion" style="justify-content:flex-start">
+  <p class="muted" id="qNum"></p>
+  <div class="timer"><i id="bar"></i></div>
+  <p class="muted">Frage steht auf dem PC – tipp deine Antwort:</p>
+  <div class="answers" id="answers"></div>
+</div>
+<div class="screen" id="sWait"><div class="big">📨</div><h2>Antwort gesendet</h2><p class="muted">Warte auf die anderen…</p></div>
+<div class="screen" id="sReveal"><div class="big" id="rIcon"></div><h2 id="rText"></h2><p class="muted" id="rScore"></p></div>
+<div class="screen" id="sEnd"><div class="big" id="eIcon">🏆</div><h1 id="eRank"></h1><p class="muted" id="eScore"></p></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const qs = new URLSearchParams(location.search);
+  $('code').value = qs.get('code') || '';
+  let pid = sessionStorage.getItem('party.pid'), code = sessionStorage.getItem('party.code');
+  if (code && code !== $('code').value && $('code').value) { pid = null; }
+  const show = id => document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  const post = (a, body) => fetch('/party/' + a, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+
+  $('join').onclick = async () => {
+    const c = $('code').value.trim(), n = $('name').value.trim();
+    if (!c || !n) { $('err').textContent = 'Code und Name eingeben'; return; }
+    const r = await post('join', { code: c, name: n });
+    if (r.error) { $('err').textContent = r.error; return; }
+    pid = r.pid; code = c;
+    sessionStorage.setItem('party.pid', pid); sessionStorage.setItem('party.code', code);
+    loop();
+  };
+
+  let lastKey = '';
+  async function tick() {
+    let s;
+    try { s = await (await fetch(`/party/state?code=${code}&pid=${pid}`)).json(); } catch { return; }
+    if (s.error) { sessionStorage.clear(); pid = null; show('sJoin'); $('err').textContent = s.error; return 'stop'; }
+    $('me').textContent = `${s.you.name} · ${s.you.score} P`;
+    const key = s.phase + s.index + s.answered;
+    if (s.phase === 'question') {
+      const left = Math.max(0, s.endsAt - s.now);
+      $('bar').style.width = (left / 20000 * 100) + '%';
+    }
+    if (key === lastKey) return;
+    lastKey = key;
+    if (s.phase === 'lobby') show('sLobby');
+    if (s.phase === 'question' && !s.answered) {
+      $('qNum').textContent = `Frage ${s.index + 1} von ${s.total}`;
+      $('answers').innerHTML = Array.from({ length: s.options }, (_, i) => `<button class="ans a${i}" data-i="${i}">${'ABCD'[i]}</button>`).join('');
+      document.querySelectorAll('.ans').forEach(b => b.onclick = async () => { navigator.vibrate?.(25); await post('answer', { code, pid, choice: +b.dataset.i }); });
+      show('sQuestion');
+    }
+    if (s.phase === 'question' && s.answered) show('sWait');
+    if (s.phase === 'reveal') {
+      const right = s.myChoice === s.correct;
+      $('rIcon').textContent = s.myChoice == null ? '⏱' : right ? '✅' : '❌';
+      $('rText').textContent = s.myChoice == null ? 'Zu langsam!' : right ? `Richtig! +${s.you.last}` : `Leider falsch – richtig war ${'ABCD'[s.correct]}`;
+      $('rScore').textContent = `Platz ${s.you.rank} von ${s.you.of} · ${s.you.score} Punkte`;
+      if (right) navigator.vibrate?.([30, 40, 30]);
+      show('sReveal');
+    }
+    if (s.phase === 'end') {
+      $('eIcon').textContent = ['🥇', '🥈', '🥉'][s.you.rank - 1] || '🎯';
+      $('eRank').textContent = `Platz ${s.you.rank}`;
+      $('eScore').textContent = `${s.you.score} Punkte – danke fürs Mitspielen!`;
+      show('sEnd'); return 'stop';
+    }
+  }
+  async function loop() { while (pid) { if (await tick() === 'stop') break; await new Promise(r => setTimeout(r, 700)); } }
+  if (pid && code) loop();
+</script>
+</body>
+</html>

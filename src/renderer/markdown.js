@@ -48,3 +48,12 @@
 
   window.renderMarkdown = render;
 })();
+
+// Reads JSON from an AI answer and repairs small mistakes (code fences, trailing commas, curly quotes).
+window.parseJsonLoose = function (text) {
+  let s = String(text || '').replace(/```(?:json)?/gi, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a >= 0 && b > a) s = s.slice(a, b + 1);
+  try { return JSON.parse(s); } catch {}
+  return JSON.parse(s.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"').replace(/\n/g, ' '));
+};

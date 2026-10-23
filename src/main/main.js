@@ -44,10 +44,10 @@ function createWindow() {
   const s = store.get();
   win = new BrowserWindow({
     width: 1280, height: 820, minWidth: 900, minHeight: 600,
-    backgroundColor: THEME_BARS[s.theme]?.color || '#141517',
+    backgroundColor: s.theme === 'custom' && s.customTheme ? s.customTheme.bg : (THEME_BARS[s.theme]?.color || '#141517'),
     icon: path.join(__dirname, '..', 'renderer', 'assets', 'icon.png'),
     titleBarStyle: 'hidden',
-    titleBarOverlay: { ...(THEME_BARS[s.theme] || THEME_BARS.graphite), height: 40 },
+    titleBarOverlay: { ...(s.theme === 'custom' && s.customTheme ? { color: s.customTheme.bg, symbolColor: s.customTheme.text } : (THEME_BARS[s.theme] || THEME_BARS.graphite)), height: 40 },
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: false }
   });
@@ -128,9 +128,10 @@ ipcMain.handle('settings:set', (_e, patch) => {
     else if (v === null) patch.keys[k] = '';
   }
   const s = store.update(patch);
-  if (patch.theme && win) {
-    try { win.setTitleBarOverlay({ ...(THEME_BARS[s.theme] || THEME_BARS.graphite), height: 40 }); } catch {}
-    win.setBackgroundColor(THEME_BARS[s.theme]?.color || '#141517');
+  if ((patch.theme || patch.customTheme) && win) {
+    const bar = s.theme === 'custom' && s.customTheme ? { color: s.customTheme.bg, symbolColor: s.customTheme.text } : (THEME_BARS[s.theme] || THEME_BARS.graphite);
+    try { win.setTitleBarOverlay({ ...bar, height: 40 }); } catch {}
+    win.setBackgroundColor(bar.color);
   }
   if ('hideFromCapture' in patch && win) win.setContentProtection(!!s.hideFromCapture);
   if ('autostart' in patch) system.applyAutostart(store);
@@ -161,11 +162,14 @@ ipcMain.handle('chat:send', async (e, id, req) => {
 ipcMain.handle('chat:stop', (_e, id) => { running.get(id)?.abort(); });
 
 // one-shot completion (used by Earth "what happened here" and the fair AI picker)
-ipcMain.handle('ai:complete', async (_e, { text, extraSystem, images }) => {
+ipcMain.handle('ai:complete', async (_e, { text, extraSystem, images, webSearch, json, plain }) => {
   try {
     const { buildSystemPrompt } = require('./persona');
     const s = store.get();
-    const out = await providers.complete(s, { system: buildSystemPrompt(s, extraSystem), messages: [{ role: 'user', text, images }] });
+    // plain: a short system prompt without app actions (for small info boxes)
+    const system = plain ? `You are a precise assistant. Today is ${new Date().toDateString()}. Answer in ${s.language === 'de' ? 'German' : 'the user\'s language'}. Never output [[...]] tags.\n${extraSystem || ''}` : buildSystemPrompt(s, extraSystem);
+    let out = await providers.complete(s, { system, messages: [{ role: 'user', text, images }], webSearch: !!webSearch, json: !!json });
+    if (plain) out = out.replace(/\[\[[^\]]*\]\]/g, '').trim();
     return { ok: true, text: out };
   } catch (e) { return { ok: false, error: errInfo(e) }; }
 });
@@ -203,6 +207,8 @@ ipcMain.handle('voice:speak', async (_e, text) => {
     return { ok: true, ...r };
   } catch (e) { return { ok: false, error: errInfo(e) }; }
 });
+
+ipcMain.handle('voice:wake', async (_e, wav) => { try { return await providers.wakeCheck(store.get(), wav, store.get().name || 'Kairo'); } catch { return false; } });
 
 // Live voice mode (Gemini Live, speech to speech). The renderer opens the websocket itself.
 let liveCache = null;
@@ -254,28 +260,79 @@ ipcMain.handle('overlay:toggle', (_e, on) => {
   return on;
 });
 
-ipcMain.handle('remote:start', async () => {
+// raw 16-bit PCM -> WAV (for voice replies on the phone)
+function pcmToWav(b64, rate = 24000) {
+  const pcm = Buffer.from(b64, 'base64'), h = Buffer.alloc(44);
+  h.write('RIFF', 0); h.writeUInt32LE(36 + pcm.length, 4); h.write('WAVE', 8); h.write('fmt ', 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+  h.writeUInt32LE(rate, 24); h.writeUInt32LE(rate * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write('data', 36); h.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([h, pcm]).toString('base64');
+}
+
+// asks the Kairo window to do something and waits for the answer
+function askRenderer(channel, ...args) {
+  return new Promise(resolve => {
+    const id = Math.random().toString(36).slice(2);
+    ipcMain.once('renderer:reply:' + id, (_e, v) => resolve(v));
+    win?.webContents.send(channel, id, ...args);
+    setTimeout(() => resolve(null), 15000);
+  });
+}
+
+let remoteInfo = null;
+async function startRemote() {
   const s = store.get();
   const token = s.remote.token || remote.newToken();
   store.update({ remote: { enabled: true, token } });
+  remoteInfo = await remote.start({ port: s.remote.port, token }, {
+    notify: ev => win?.webContents.send('remote:event', ev),
+    screenshot: () => tools.captureScreen(1280),
+    pc: action => require('./pc').run(action, 3),
+    chat: async (text, withScreen) => {
+      const r = await agent.run(store.get(), { history: remoteHistory, text, attachScreen: withScreen }, () => {});
+      remoteHistory.push({ role: 'user', text }, { role: 'assistant', text: r.text });
+      while (remoteHistory.length > 20) remoteHistory.shift();
+      win?.webContents.send('remote:event', { type: 'remote-reply', text: r.text }); // the PC runs actions like "open YouTube"
+      return r.text.replace(/\[\[\/?[a-z]+[^\]]*\]\]/gi, '').trim();
+    },
+    tts: async text => {
+      const st = store.get();
+      const r = st.keys.openai && st.voice.engine === 'openai' ? await providers.speak(st, text) : await providers.geminiSpeak(st, text);
+      return /L16|pcm/i.test(r.mime) ? { audio: pcmToWav(r.audio, +(r.mime.match(/rate=(\d+)/) || [])[1] || 24000), mime: 'audio/wav' } : r;
+    },
+    today: async () => (await askRenderer('remote:today')) || {},
+    routine: name => askRenderer('remote:routine', name),
+    music: mood => askRenderer('remote:music', mood),
+    party: (action, params, body) => require('./party').handle(action, params, body)
+  });
+  return remoteInfo;
+}
+
+ipcMain.handle('remote:start', async () => {
+  try { return { ok: true, ...(await startRemote()) }; } catch (e) { return { ok: false, error: errInfo(e) }; }
+});
+
+// quiz party
+ipcMain.handle('party:create', async (_e, questions) => {
   try {
-    return { ok: true, ...(await remote.start({ port: s.remote.port, token }, {
-      notify: ev => win?.webContents.send('remote:event', ev),
-      screenshot: () => tools.captureScreen(1280),
-      pc: action => require('./pc').run(action, 3),
-      chat: async (text, withScreen) => {
-        const r = await agent.run(store.get(), { history: remoteHistory, text, attachScreen: withScreen }, () => {});
-        remoteHistory.push({ role: 'user', text }, { role: 'assistant', text: r.text });
-        while (remoteHistory.length > 20) remoteHistory.shift();
-        win?.webContents.send('remote:event', { type: 'remote-reply', text: r.text });
-        return r.text;
-      }
-    })) };
+    const info = remoteInfo || await startRemote();
+    const st = require('./party').create(questions);
+    const link = `http://${info.ip}:${info.port}/party?code=${st.code}`;
+    const qr = await require('qrcode').toDataURL(link, { margin: 1, width: 300, color: { dark: '#111214', light: '#ffffff' } });
+    return { ok: true, ...st, link, qr };
   } catch (e) { return { ok: false, error: errInfo(e) }; }
 });
-ipcMain.handle('remote:stop', async () => { await remote.stop(); store.update({ remote: { enabled: false } }); return true; });
-ipcMain.handle('remote:reset', async () => { await remote.stop(); store.update({ remote: { token: remote.newToken(), enabled: false } }); return true; });
+ipcMain.handle('party:next', () => require('./party').next());
+ipcMain.handle('party:state', () => require('./party').hostState());
+ipcMain.handle('party:end', () => require('./party').end());
+ipcMain.handle('remote:stop', async () => { remoteInfo = null; await remote.stop(); store.update({ remote: { enabled: false } }); return true; });
+ipcMain.handle('remote:reset', async () => { remoteInfo = null; await remote.stop(); store.update({ remote: { token: remote.newToken(), enabled: false } }); return true; });
 ipcMain.handle('remote:info', () => remote.lanAddress());
+ipcMain.handle('remote:firewall', async () => {
+  try { return { ok: true, ...(await require('./firewall').check(store.get().remote.port)) }; } catch (e) { return { ok: false, error: errInfo(e) }; }
+});
+ipcMain.handle('remote:firewall-allow', async () => {
+  try { return { ok: true, ...(await require('./firewall').allow(store.get().remote.port)) }; } catch (e) { return { ok: false, error: errInfo(e) }; }
+});
 
 // Chess vs Stockfish
 const chessGame = require('./chess');

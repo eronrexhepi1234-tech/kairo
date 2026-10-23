@@ -52,8 +52,18 @@ Keys are encrypted with Windows DPAPI in `%APPDATA%\Kairo\settings.json` and onl
 ### Does things
 | | |
 |---|---|
-| **Smart Home** | Philips Hue, WiZ, Govee, Yeelight, LIFX and Home Assistant (covers Tuya / Smart Life / IKEA). Finds lamps in your Wi-Fi, scenes (Gaming, Study, Movie, Party, …), "make the light purple". Demo lamp to try it without hardware. |
 | **Today page** | Clock, weather, daily briefing (read aloud every morning), reminders & alarms, memory, music DJ, PC controls. |
+| **Hey Kairo** | Optional wake word: Kairo only reacts to its name (a 2-second clip is checked by Gemini, nothing else is sent). |
+| **School** | Homework planner (scan a photo of the homework sheet), exam countdown with AI study plans, reminders the day before. |
+| **Presentations** | "Make a presentation about Switzerland" → finished PowerPoint with speaker notes. |
+| **Pictures** | "Draw a dragon in space" — Gemini or the free Pollinations service. |
+| **YouTube** | Paste a link: Kairo watches the video and summarizes it with timestamps, or answers questions about it. |
+| **Routines** | "Good night", "Gaming mode", "Study mode" … several actions with one sentence. |
+| **Football** | Your team's results, next match and live goal alerts (Bundesliga, Premier League, LaLiga, Serie A, …). |
+| **Wallet & diary** | Pocket money tracker and a daily diary with moods. |
+| **Quiz party** | Kairo hosts a quiz on the PC, friends answer on their phones (QR code, same Wi-Fi). |
+| **Discord bot** | Kairo in your Discord server: questions, quiz for everyone, pictures — without any of your private data. |
+| **Custom theme** | Pick background, panel and text colour, or roll a random theme. |
 | **Reminders & alarms** | "Remind me in 20 minutes about the pizza", "Wake me up at 7" — with sound, snooze and Windows notifications. |
 | **Open things** | Websites, YouTube searches, apps (Spotify, Discord, Steam, …), WhatsApp messages (you press send), Steam install dialogs (you confirm), Spotify searches. |
 | **Files** | Writes Word (.docx), text, Markdown, HTML, CSV or code files into `Documents\Kairo`. |
@@ -66,7 +76,7 @@ Keys are encrypted with Windows DPAPI in `%APPDATA%\Kairo\settings.json` and onl
 | **Clipboard helper** | Copy any text, press `Ctrl+Alt+K`: translate, shorten, make friendlier, fix spelling, explain, write a reply. |
 | **Sees your screen** | "What's on my screen?", "Where is this?" (finds the place, researches clues, shows it on the Earth), homework help step by step. |
 | **Earth** | 3D globe with real satellite imagery; click a place → "What happened here?" |
-| **Phone remote** | Scan a QR code (same Wi-Fi): chat, see your screen, lock/sleep, media and volume keys. |
+| **Phone remote** | Scan a QR code (same Wi-Fi): chat with an orb and spoken answers, today's reminders and homework, routines, music, PC controls, your screen. Add it to the home screen like an app. A built-in button fixes the Windows Firewall for it. |
 
 ### Games
 | | |

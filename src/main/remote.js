@@ -59,7 +59,18 @@ async function start({ port, token }, hooks) {
 
     if (url.pathname === '/' || url.pathname === '/index.html') return reply(200, page, 'text/html; charset=utf-8');
     if (url.pathname === '/manifest.json') {
-      return reply(200, { name: 'Kairo Remote', short_name: 'Kairo', display: 'standalone', background_color: '#111214', theme_color: '#111214', start_url: '/' + url.search });
+      return reply(200, { name: 'Kairo', short_name: 'Kairo', display: 'standalone', background_color: '#111214', theme_color: '#111214', start_url: '/' + url.search,
+        icons: [{ src: '/icon.png', sizes: '256x256', type: 'image/png' }] });
+    }
+    // public files: app icon, the orb animation, and the quiz-party page for friends
+    const PUBLIC = { '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'] };
+    if (PUBLIC[url.pathname]) return reply(200, fs.readFileSync(path.join(__dirname, '..', PUBLIC[url.pathname][0])), PUBLIC[url.pathname][1]);
+    // quiz party: friends only need the party code, nothing else of Kairo is reachable with it
+    if (url.pathname.startsWith('/party/') && hooks.party) {
+      try {
+        const body = req.method === 'POST' ? await readJson(req) : {};
+        return reply(200, hooks.party(url.pathname.slice(7), url.searchParams, body));
+      } catch (e) { return reply(400, { error: e.message }); }
     }
 
     const code = req.headers['x-kairo-token'] || url.searchParams.get('t') || '';
@@ -77,6 +88,23 @@ async function start({ port, token }, hooks) {
       if (url.pathname === '/api/screen') {
         const shot = await hooks.screenshot();
         return reply(200, Buffer.from(shot.data, 'base64'), shot.mime);
+      }
+      if (url.pathname === '/api/tts' && req.method === 'POST') {
+        const { text } = await readJson(req);
+        const a = await hooks.tts(String(text || '').slice(0, 1500));
+        return reply(200, Buffer.from(a.audio, 'base64'), a.mime.includes('L16') || a.mime.includes('pcm') ? 'audio/wav' : a.mime);
+      }
+      if (url.pathname === '/api/today') return reply(200, await hooks.today());
+      if (url.pathname === '/api/routine' && req.method === 'POST') {
+        const { name } = await readJson(req);
+        hooks.notify({ type: 'remote-action', action: '⚡ ' + name });
+        await hooks.routine(String(name || ''));
+        return reply(200, { ok: true });
+      }
+      if (url.pathname === '/api/music' && req.method === 'POST') {
+        const { mood } = await readJson(req);
+        await hooks.music(String(mood || 'chill'));
+        return reply(200, { ok: true });
       }
       if (url.pathname === '/api/action' && req.method === 'POST') {
         const { action } = await readJson(req);

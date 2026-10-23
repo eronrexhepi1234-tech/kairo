@@ -1,138 +1,213 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111214">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="icon" href="/icon.png">
 <link rel="manifest" id="mf">
-<title>Kairo Remote</title>
+<title>Kairo</title>
 <style>
   :root { --bg: #111214; --bg2: #1a1b1e; --bg3: #232428; --line: #2c2d32; --text: #ececec; --muted: #8b8c92; --accent: #ff7a45; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
   body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
-  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .02em; }
+  .brand img { width: 26px; height: 26px; border-radius: 7px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
   .dot.on { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.15); }
-  .host { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
-  .tabs { display: flex; gap: 4px; padding: 10px 16px 0; }
-  .tabs button { flex: 1; border: 0; background: var(--bg2); color: var(--muted); padding: 9px; border-radius: 10px; font: inherit; font-size: 14px; }
-  .tabs button.on { background: var(--bg3); color: var(--text); }
+  .host { font: 11px ui-monospace, Menlo, monospace; color: var(--muted); display: flex; align-items: center; gap: 8px; }
   main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-  .pane { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+  .pane { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: none; }
   .pane.on { display: block; }
-  .msg { margin: 0 0 14px; animation: in .35s cubic-bezier(.2,.8,.2,1); white-space: pre-wrap; }
-  .msg.me { margin-left: 18%; background: var(--bg3); padding: 9px 13px; border-radius: 14px 14px 4px 14px; }
+  nav { display: flex; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); background: var(--bg); }
+  nav button { flex: 1; border: 0; background: none; color: var(--muted); padding: 9px 0 8px; font: inherit; font-size: 11px; display: grid; justify-items: center; gap: 2px; }
+  nav button span { font-size: 20px; } nav button.on { color: var(--accent); }
+  /* chat */
+  .orb-wrap { display: grid; justify-items: center; margin: 0 0 6px; }
+  #orb { width: 150px; height: 150px; }
+  .orb-hint { font-size: 12px; color: var(--muted); margin-top: -8px; }
+  .msg { margin: 0 0 12px; animation: in .35s cubic-bezier(.2,.8,.2,1); white-space: pre-wrap; }
+  .msg.me { margin-left: 18%; background: var(--bg3); padding: 9px 13px; border-radius: 16px 16px 4px 16px; }
   .msg.ai { border-left: 2px solid var(--accent); padding-left: 12px; }
+  .msg.ai.typing::after { content: "…"; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
   @keyframes in { from { opacity: 0; transform: translateY(8px); } }
-  form { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
-  form input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 22px; padding: 11px 16px; font: inherit; outline: 0; }
-  form button { border: 0; background: var(--accent); color: #1a0f0a; border-radius: 22px; padding: 0 18px; font-weight: 700; font: inherit; }
-  .opt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .act { border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 16px; padding: 20px 12px; font: inherit; display: grid; gap: 6px; justify-items: center; }
-  .act span { font-size: 26px; }
-  .act:active { transform: scale(.97); background: var(--bg3); }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: none; }
+  .chips button { flex: none; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 99px; padding: 7px 12px; font: inherit; font-size: 13px; }
+  form { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+  form input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 22px; padding: 11px 16px; font: inherit; font-size: 16px; outline: 0; }
+  .round { width: 42px; height: 42px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--bg2); color: var(--text); font-size: 18px; }
+  .round.on { background: var(--accent); border-color: var(--accent); color: #1a0f0a; }
+  .send { border: 0; background: var(--accent); color: #1a0f0a; }
+  /* cards */
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
+  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px; animation: in .35s cubic-bezier(.2,.8,.2,1) backwards; }
+  .weather { display: flex; align-items: center; gap: 12px; } .weather .ic { font-size: 38px; } .weather b { font-size: 28px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 4px 0; } .row small { color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .act { border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 16px; padding: 14px 6px; font: inherit; font-size: 12px; display: grid; gap: 4px; justify-items: center; }
+  .act span { font-size: 24px; } .act:active { transform: scale(.96); background: var(--bg3); }
+  .wide { grid-column: span 3; }
   .shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); margin-top: 12px; background: #000; min-height: 120px; }
   .btn { width: 100%; border: 0; background: var(--accent); color: #1a0f0a; font: inherit; font-weight: 600; padding: 12px; border-radius: 12px; }
-  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
-  .typing { color: var(--muted); font-size: 13px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 99px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><span class="dot" id="dot"></span>Kairo</div>
-  <span class="host" id="host">…</span>
+  <div class="brand"><img src="/icon.png" alt="">Kairo</div>
+  <span class="host"><span class="dot" id="dot"></span><span id="host">…</span></span>
 </header>
-<div class="tabs">
-  <button class="on" data-t="chat">Chat</button>
-  <button data-t="screen">Screen</button>
-  <button data-t="control">Control</button>
-</div>
 <main>
-  <div class="pane on" id="p-chat"><div id="log"></div></div>
-  <div class="pane" id="p-screen">
-    <button class="btn" id="refresh">Refresh screenshot</button>
-    <img class="shot" id="shot" alt="">
-  </div>
-  <div class="pane" id="p-control">
-    <div class="grid">
-      <button class="act" data-a="lock"><span>🔒</span>Lock PC</button>
-      <button class="act" data-a="sleep"><span>🌙</span>Sleep</button>
-      <button class="act" data-a="playpause"><span>⏯</span>Play / Pause</button>
-      <button class="act" data-a="mute"><span>🔇</span>Mute</button>
-      <button class="act" data-a="voldown"><span>🔉</span>Volume −</button>
-      <button class="act" data-a="volup"><span>🔊</span>Volume +</button>
+  <div class="pane on" id="p-chat">
+    <div class="orb-wrap"><canvas id="orb"></canvas><div class="orb-hint" id="orbHint">Tipp unten auf 🎤 deiner Tastatur zum Diktieren</div></div>
+    <div class="chips">
+      <button data-q="Was ist heute so passiert?">📰 News</button>
+      <button data-q="Wie wird das Wetter?">🌤 Wetter</button>
+      <button data-q="Was habe ich für Hausaufgaben?">📚 Hausaufgaben</button>
+      <button data-q="Was ist gerade auf meinem PC-Bildschirm?" data-screen="1">🖥 Mein Bildschirm</button>
+      <button data-q="Erzähl mir einen Witz">😄 Witz</button>
     </div>
-    <p class="note">To turn the PC on while it's off, use a Wake-on-LAN app with the MAC address shown in Kairo → Phone.</p>
+    <div id="log"></div>
+  </div>
+  <div class="pane" id="p-today"><div id="today"></div></div>
+  <div class="pane" id="p-control">
+    <h3>PC</h3>
+    <div class="grid">
+      <button class="act" data-a="voldown"><span>🔉</span>Leiser</button>
+      <button class="act" data-a="mute"><span>🔇</span>Stumm</button>
+      <button class="act" data-a="volup"><span>🔊</span>Lauter</button>
+      <button class="act" data-a="playpause"><span>⏯</span>Play/Pause</button>
+      <button class="act" data-a="lock"><span>🔒</span>Sperren</button>
+      <button class="act" data-a="sleep"><span>🌙</span>Schlafen</button>
+    </div>
+    <h3>Musik auf dem PC</h3>
+    <div class="grid">
+      <button class="act" data-m="gaming"><span>🎮</span>Gaming</button>
+      <button class="act" data-m="study"><span>📚</span>Lernen</button>
+      <button class="act" data-m="chill"><span>🌊</span>Chillen</button>
+      <button class="act" data-m="party"><span>🎉</span>Party</button>
+      <button class="act" data-m="rap"><span>🎤</span>Deutschrap</button>
+      <button class="act" data-m="sleep"><span>🌙</span>Einschlafen</button>
+    </div>
+    <h3>Routinen</h3>
+    <div class="grid" id="routines"></div>
+    <p class="note">PC einschalten, wenn er aus ist: Wake-on-LAN-App mit der MAC-Adresse aus Kairo → Handy.</p>
+  </div>
+  <div class="pane" id="p-screen">
+    <button class="btn" id="refresh">Bildschirm neu laden</button>
+    <img class="shot" id="shot" alt="">
   </div>
 </main>
 <form id="f">
-  <input type="text" id="q" placeholder="Message Kairo…" autocomplete="off">
-  <label class="opt"><input type="checkbox" id="ws">👁</label>
-  <button>Send</button>
+  <button type="button" class="round" id="speak" title="Kairo spricht">🔊</button>
+  <input type="text" id="q" placeholder="Frag Kairo…" autocomplete="off">
+  <button class="round send">➤</button>
 </form>
+<nav>
+  <button class="on" data-t="chat"><span>💬</span>Chat</button>
+  <button data-t="today"><span>☀️</span>Heute</button>
+  <button data-t="control"><span>🎛</span>Steuern</button>
+  <button data-t="screen"><span>🖥</span>Bildschirm</button>
+</nav>
+<div class="toast" id="toast"></div>
+<script src="/orb.js"></script>
 <script>
   const token = new URLSearchParams(location.search).get('t') || localStorage.getItem('kairo.t') || '';
   if (token) localStorage.setItem('kairo.t', token);
   document.getElementById('mf').href = '/manifest.json?t=' + encodeURIComponent(token);
-  const api = (path, body) => fetch(path, {
-    method: body ? 'POST' : 'GET',
-    headers: { 'x-kairo-token': token, 'content-type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined
-  });
   const $ = id => document.getElementById(id);
+  const api = (path, body) => fetch(path, { method: body ? 'POST' : 'GET', headers: { 'x-kairo-token': token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const toast = m => { $('toast').textContent = m; $('toast').classList.add('show'); setTimeout(() => $('toast').classList.remove('show'), 1800); };
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // orb: idle, thinking, speaking (follows the voice)
+  let orbState = 'idle', analyser = null, actx = null;
+  const buf = new Uint8Array(128);
+  const orb = Orb.create();
+  Orb.configure('orb', 'accent');
+  orb.start($('orb'), () => {
+    let level = 0.05 + 0.03 * Math.sin(performance.now() / 600);
+    if (orbState === 'speaking' && analyser) { analyser.getByteTimeDomainData(buf); let s = 0; for (const v of buf) { const x = (v - 128) / 128; s += x * x; } level = Math.min(1, Math.sqrt(s / buf.length) * 3); }
+    return { level, state: orbState };
+  });
+
+  let voiceOn = localStorage.getItem('kairo.voice') === '1';
+  $('speak').classList.toggle('on', voiceOn);
+  $('speak').onclick = () => { voiceOn = !voiceOn; localStorage.setItem('kairo.voice', voiceOn ? '1' : '0'); $('speak').classList.toggle('on', voiceOn); toast(voiceOn ? 'Kairo spricht jetzt' : 'Kairo schreibt nur'); };
+
+  async function say(text) {
+    const r = await api('/api/tts', { text });
+    if (!r.ok) return;
+    const audio = new Audio(URL.createObjectURL(await r.blob()));
+    try {
+      actx ||= new (window.AudioContext || window.webkitAudioContext)();
+      const src = actx.createMediaElementSource(audio); analyser = actx.createAnalyser(); analyser.fftSize = 256;
+      src.connect(analyser); analyser.connect(actx.destination);
+    } catch {}
+    orbState = 'speaking';
+    audio.onended = () => { orbState = 'idle'; };
+    audio.play().catch(() => { orbState = 'idle'; });
+  }
 
   async function status() {
-    try {
-      const r = await api('/api/status');
-      if (!r.ok) throw 0;
-      const s = await r.json();
-      $('dot').classList.add('on');
-      $('host').textContent = s.host + ' · RAM ' + Math.round(s.mem * 100) + '%';
-    } catch { $('dot').classList.remove('on'); $('host').textContent = 'offline'; }
+    try { const r = await api('/api/status'); if (!r.ok) throw 0; const s = await r.json(); $('dot').classList.add('on'); $('host').textContent = s.host; }
+    catch { $('dot').classList.remove('on'); $('host').textContent = 'offline'; }
   }
-  status(); setInterval(status, 10000);
+  status(); setInterval(status, 15000);
 
-  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
     document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));
     $('f').style.display = b.dataset.t === 'chat' ? '' : 'none';
     if (b.dataset.t === 'screen') loadShot();
+    if (b.dataset.t === 'today' || b.dataset.t === 'control') loadToday();
   });
 
-  function add(cls, text) {
-    const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text;
-    $('log').appendChild(d); $('p-chat').scrollTop = 1e9; return d;
-  }
-  $('f').onsubmit = async e => {
-    e.preventDefault();
-    const text = $('q').value.trim(); if (!text) return;
-    $('q').value = '';
+  function add(cls, text) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; $('log').appendChild(d); $('p-chat').scrollTop = 1e9; return d; }
+  async function ask(text, withScreen) {
     add('me', text);
-    const wait = add('ai typing', '…');
+    const wait = add('ai typing', '');
+    orbState = 'thinking';
     try {
-      const r = await api('/api/chat', { text, withScreen: $('ws').checked });
+      const r = await api('/api/chat', { text, withScreen });
       const j = await r.json();
       wait.className = 'msg ai';
-      wait.textContent = (j.reply || j.error || '?').replace(/\[\[fly:[^\]]*\]\]/g, '').trim();
-    } catch (err) { wait.textContent = 'Error: ' + err.message; }
-  };
-
-  async function loadShot() {
-    const r = await api('/api/screen');
-    if (!r.ok) return;
-    $('shot').src = URL.createObjectURL(await r.blob());
+      wait.textContent = (j.reply || j.error || '?');
+      orbState = 'idle';
+      if (voiceOn && j.reply) say(j.reply.replace(/[#*_`>|]/g, ''));
+    } catch (err) { wait.className = 'msg ai'; wait.textContent = 'Fehler: ' + err.message; orbState = 'idle'; }
   }
+  $('f').onsubmit = e => { e.preventDefault(); const t = $('q').value.trim(); if (!t) return; $('q').value = ''; ask(t, /bildschirm|screen/i.test(t)); };
+  document.querySelectorAll('.chips button').forEach(b => b.onclick = () => ask(b.dataset.q, !!b.dataset.screen));
+
+  async function loadToday() {
+    let d = {};
+    try { d = await (await api('/api/today')).json(); } catch {}
+    const fmt = at => new Date(at).toLocaleString('de-CH', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    $('today').innerHTML =
+      (d.weather ? `<div class="card weather"><span class="ic">${d.weather.icon}</span><div><b>${d.weather.temp}°</b><div class="note" style="margin:0">${esc(d.weather.place)} · ${d.weather.min}–${d.weather.max}°</div></div></div>` : '') +
+      `<h3>Erinnerungen</h3>` + ((d.reminders || []).map(r => `<div class="card row"><span>${r.kind === 'alarm' ? '⏰' : '🔔'} ${esc(r.text)}</span><small>${fmt(r.at)}</small></div>`).join('') || '<p class="note">Keine Erinnerungen.</p>') +
+      `<h3>Hausaufgaben</h3>` + ((d.homework || []).map(h => `<div class="card row"><span>${h.subject ? '<b>' + esc(h.subject) + '</b> ' : ''}${esc(h.task)}</span><small>${esc(h.due || '')}</small></div>`).join('') || '<p class="note">Keine offenen Hausaufgaben 🎉</p>');
+    $('routines').innerHTML = (d.routines || []).map(n => `<button class="act" data-r="${esc(n)}"><span>⚡</span>${esc(n)}</button>`).join('') || '<p class="note wide">Routinen erstellst du am PC unter Heute → Routinen.</p>';
+    document.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { await api('/api/routine', { name: b.dataset.r }); toast('⚡ ' + b.dataset.r); if (navigator.vibrate) navigator.vibrate(20); });
+  }
+
+  async function loadShot() { const r = await api('/api/screen'); if (r.ok) $('shot').src = URL.createObjectURL(await r.blob()); }
   $('refresh').onclick = loadShot;
 
-  document.querySelectorAll('.act').forEach(b => b.onclick = async () => {
-    if (b.dataset.a === 'sleep' && !confirm('Put the PC to sleep?')) return;
-    await api('/api/action', { action: b.dataset.a });
-    if (navigator.vibrate) navigator.vibrate(20);
+  document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
+    if (b.dataset.a === 'sleep' && !confirm('PC in den Ruhezustand versetzen?')) return;
+    await api('/api/action', { action: b.dataset.a }); toast('✓'); if (navigator.vibrate) navigator.vibrate(20);
   });
+  document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => { await api('/api/music', { mood: b.dataset.m }); toast('🎵 ' + b.textContent.trim()); });
 </script>
 </body>
 </html>

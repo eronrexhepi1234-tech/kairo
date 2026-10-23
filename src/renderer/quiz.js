@@ -17,11 +17,79 @@ window.Quiz = (function () {
           <button class="btn primary">${t('quiz.start')}</button>
         </form>
         <label class="tog"><input type="checkbox" id="quizRead" ${readAloud ? 'checked' : ''}><span>${t('quiz.read')}</span></label>
+        <div class="party-cta"><div><b>🎉 ${t('pt.title')}</b><small>${t('pt.sub')}</small></div><button class="btn primary" id="quizParty">${t('pt.start')}</button></div>
       </div>`;
+    $('quizParty').onclick = () => party($('quizTopic').value.trim() || 'Allgemeinwissen', $('quizLevel').value);
     area.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => { $('quizTopic').value = b.dataset.tp; });
     $('quizRead').onchange = e => { readAloud = e.target.checked; };
     $('quizForm').onsubmit = e => { e.preventDefault(); start($('quizTopic').value.trim() || 'Allgemeinwissen', $('quizLevel').value); };
   }
+
+  async function makeQuestions(tp, level) {
+    const r = await window.kairo.complete({
+      text: `Create 10 ${level} multiple-choice quiz questions about "${tp}" in the user's language. Mix easy facts and surprising ones; every fact must be correct and not time-sensitive. Keep options short (max 5 words).
+Reply with ONLY JSON, no code fence: {"questions":[{"q":"question","options":["A","B","C","D"],"answer":0,"fact":"one short sentence why"}]}`,
+      extraSystem: 'You are a quiz master. Output strictly valid JSON.', json: true
+    });
+    if (!r.ok) throw new Error(r.error.code === 'NO_KEY' ? t('err.nokey') : r.error.message);
+    const j = parseJsonLoose(r.text);
+    const list = j.questions.filter(q => q.q && q.options?.length >= 2 && q.answer >= 0 && q.answer < q.options.length).slice(0, 10);
+    if (!list.length) throw new Error(t('quiz.fail'));
+    return list;
+  }
+
+  // ---------- party: friends answer on their phones ----------
+  let partyTimer = null;
+  async function party(tp, level = 'medium') {
+    clearInterval(partyTimer);
+    $('quizArea').innerHTML = `<div class="quiz-loading"><div class="msg-status">${t('quiz.making', { topic: escAttr(tp) })}</div></div>`;
+    let list;
+    try { list = await makeQuestions(tp, level); } catch (e) { $('quizArea').innerHTML = `<p class="msg error">${escAttr(e.message)}</p>`; setTimeout(setup, 2500); return; }
+    const p = await window.kairo.remote.party.create(list);
+    if (!p.ok) { $('quizArea').innerHTML = `<p class="msg error">${escAttr(p.error.message)}</p>`; return; }
+    let shownKey = '';
+    const draw = s => {
+      if (!s) return;
+      const key = s.phase + s.index + s.players.length + s.answered + s.players.map(x => x.score).join();
+      if (key === shownKey && s.phase !== 'question') return;
+      shownKey = key;
+      const board = s.players.slice(0, 8).map((pl, i) => `<li style="animation-delay:${i * 50}ms"><b>${['🥇', '🥈', '🥉'][i] || i + 1 + '.'}</b><span>${escAttr(pl.name)}</span><em>${pl.score}</em>${pl.last ? `<small>+${pl.last}</small>` : ''}</li>`).join('');
+      if (s.phase === 'lobby') {
+        $('quizArea').innerHTML = `<div class="party-lobby"><img src="${p.qr}" alt="QR"><div><h3>${t('pt.join')}</h3><div class="party-code">${s.code}</div>
+          <p class="muted small">${escAttr(p.link)}</p><ul class="party-players">${s.players.map(pl => `<li>${escAttr(pl.name)}</li>`).join('') || `<li class="muted">${t('pt.waiting')}</li>`}</ul>
+          <div class="row"><button class="btn primary" id="ptGo" ${s.players.length ? '' : 'disabled'}>▶ ${t('pt.go')}</button><button class="btn" id="ptEnd">${t('today.cancel')}</button></div></div></div>`;
+        $('ptGo').onclick = async () => draw(await window.kairo.remote.party.next());
+        $('ptEnd').onclick = endParty;
+        return;
+      }
+      if (s.phase === 'question' || s.phase === 'reveal') {
+        const q = s.question, left = Math.max(0, s.endsAt - Date.now());
+        if (s.phase === 'question' && $('ptBar') && $('ptQ')?.dataset.i === String(s.index)) { $('ptBar').style.width = (left / 200) + '%'; $('ptCount').textContent = `${s.answered}/${s.players.length}`; return; }
+        $('quizArea').innerHTML = `<div class="party-q">
+          <div class="quiz-top"><span>${t('pt.q')} ${s.index + 1}/${s.total} · ${t('pt.code')} ${s.code}</span><span id="ptCount">${s.answered}/${s.players.length} ✋</span></div>
+          ${s.phase === 'question' ? `<div class="quiz-bar"><i id="ptBar" style="width:${left / 200}%"></i></div>` : ''}
+          <h2 id="ptQ" data-i="${s.index}">${escAttr(q.text)}</h2>
+          <div class="party-opts">${q.options.map((o, i) => `<div class="popt a${i} ${s.phase === 'reveal' ? (i === q.answer ? 'right' : 'dim') : ''}"><b>${'ABCD'[i]}</b>${escAttr(o)}</div>`).join('')}</div>
+          ${s.phase === 'reveal' ? `<p class="muted">${escAttr(q.fact || '')}</p><ol class="party-board">${board}</ol>` : ''}
+          <div class="row"><button class="btn primary" id="ptNext">${s.phase === 'question' ? t('pt.reveal') : s.index + 1 >= s.total ? t('pt.finish') : t('pt.next')}</button><button class="btn" id="ptEnd">${t('pt.stop')}</button></div></div>`;
+        $('ptNext').onclick = async () => draw(await window.kairo.remote.party.next());
+        $('ptEnd').onclick = endParty;
+        if (s.phase === 'question' && readAloud) Voice.speak(q.text + ' ' + q.options.map((o, i) => 'ABCD'[i] + ': ' + o).join('. '), window.App.settings());
+        return;
+      }
+      if (s.phase === 'end') {
+        clearInterval(partyTimer);
+        const top = s.players.slice(0, 3);
+        $('quizArea').innerHTML = `<div class="quiz-end"><div class="podium">${[1, 0, 2].map(i => top[i] ? `<div class="pod p${i}"><b>${escAttr(top[i].name)}</b><span>${top[i].score}</span><i>${['🥇', '🥈', '🥉'][i]}</i></div>` : '').join('')}</div>
+          <ol class="party-board">${board}</ol><div class="row" style="justify-content:center"><button class="btn primary" id="ptAgain">${t('quiz.again')}</button><button class="btn" id="ptEnd">${t('fc.back')}</button></div></div>`;
+        $('ptAgain').onclick = () => party(tp, level);
+        $('ptEnd').onclick = endParty;
+      }
+    };
+    draw(p);
+    partyTimer = setInterval(async () => draw(await window.kairo.remote.party.state()), 500);
+  }
+  async function endParty() { clearInterval(partyTimer); await window.kairo.remote.party.end(); setup(); }
 
   async function start(tp, level = 'medium') {
     topic = tp;
@@ -29,11 +97,11 @@ window.Quiz = (function () {
     const r = await window.kairo.complete({
       text: `Create 10 ${level} multiple-choice quiz questions about "${tp}" in the user's language. Mix easy facts and surprising ones; every fact must be correct and not time-sensitive.
 Reply with ONLY JSON, no code fence: {"questions":[{"q":"question","options":["A","B","C","D"],"answer":0,"fact":"one short sentence why"}]}`,
-      extraSystem: 'You are a quiz master. Output strictly valid JSON.'
+      extraSystem: 'You are a quiz master. Output strictly valid JSON.', json: true
     });
     if (!r.ok) { $('quizArea').innerHTML = `<p class="msg error">${r.error.code === 'NO_KEY' ? t('err.nokey') : escAttr(r.error.message)}</p>`; return; }
     try {
-      const j = JSON.parse(r.text.slice(r.text.indexOf('{'), r.text.lastIndexOf('}') + 1));
+      const j = parseJsonLoose(r.text);
       qs = j.questions.filter(q => q.q && q.options?.length >= 2 && q.answer >= 0 && q.answer < q.options.length).slice(0, 10);
       if (!qs.length) throw 0;
     } catch { $('quizArea').innerHTML = `<p class="msg error">${t('quiz.fail')}</p>`; setTimeout(setup, 2500); return; }
@@ -104,5 +172,5 @@ Reply with ONLY JSON, no code fence: {"questions":[{"q":"question","options":["A
     if (readAloud) Voice.speak(`${score} ${t('quiz.points')}! ${correct} / ${qs.length}`, window.App.settings());
   }
 
-  return { init: () => { if (!$('quizArea').children.length) setup(); }, start, setup };
+  return { init: () => { if (!$('quizArea').children.length) setup(); }, start, setup, party };
 })();

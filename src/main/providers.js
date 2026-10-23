@@ -91,7 +91,7 @@ async function* openaiCompatible({ key, model, system, messages, signal, baseUrl
 }
 
 // ---------- Google Gemini ----------
-async function* gemini({ key, model, system, messages, signal, webSearch, onSource }) {
+async function* gemini({ key, model, system, messages, signal, webSearch, onSource, json }) {
   const body = {
     systemInstruction: { parts: [{ text: system }] },
     contents: messages.map(m => ({
@@ -105,6 +105,7 @@ async function* gemini({ key, model, system, messages, signal, webSearch, onSour
   // Gemini 3 models think a lot by default; "low" makes the first word arrive much sooner.
   if (/^gemini-3/.test(model)) body.generationConfig = { thinkingConfig: { thinkingLevel: 'low' } };
   if (webSearch) body.tools = [{ google_search: {} }];
+  // note: Gemini's JSON mode cut long answers short in tests, so JSON is asked for in the prompt instead
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
   const res = await fetch(url, {
     method: 'POST', signal,
@@ -140,7 +141,7 @@ function rawStream(provider, args, settings) {
 
 const retryable = e => e.code === 'SLOW' || [429, 500, 502, 503, 504].includes(e.status);
 
-async function* stream(settings, { system, messages, signal, providerOverride, maxTokens, webSearch, onSource, onRetry }) {
+async function* stream(settings, { system, messages, signal, providerOverride, maxTokens, webSearch, onSource, onRetry, json }) {
   const provider = providerOverride || settings.provider;
   const key = settings.keys[provider];
   if (provider !== 'custom' && !key) throw Object.assign(new Error('NO_KEY'), { code: 'NO_KEY' });
@@ -160,7 +161,7 @@ async function* stream(settings, { system, messages, signal, providerOverride, m
     const timer = setTimeout(() => { slow = true; ctrl.abort(); }, FIRST_BYTE_MS);
     let started = false;
     try {
-      const it = rawStream(provider, { key, model, system, messages, signal: ctrl.signal, maxTokens, webSearch, onSource }, settings);
+      const it = rawStream(provider, { key, model, system, messages, signal: ctrl.signal, maxTokens, webSearch, onSource, json }, settings);
       for await (const t of it) {
         if (!started) { started = true; clearTimeout(timer); }
         yield t;
@@ -284,6 +285,22 @@ async function transcribe(settings, audioBase64, mime) {
   return (await res.json()).text;
 }
 
+// Wake word: did someone say "Kairo" in this short clip? (2 s of 16 kHz WAV)
+async function wakeCheck(settings, wavB64, name = 'Kairo') {
+  const key = settings.keys.gemini;
+  if (!key) return false;
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', {
+    method: 'POST', signal: AbortSignal.timeout(6000), headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify({ contents: [{ parts: [
+      { inline_data: { mime_type: 'audio/wav', data: wavB64 } },
+      { text: `Does a person in this short audio clip say the name "${name}" (it may sound like Kairo, Cairo, Kyro, Kairos, Hey Kairo, Hallo Kairo)? Answer only YES or NO.` }
+    ] }], generationConfig: { maxOutputTokens: 5, temperature: 0 } })
+  });
+  if (!res.ok) return false;
+  const txt = ((await res.json()).candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  return /yes|ja/i.test(txt);
+}
+
 // Picks the best Gemini Live (speech-to-speech) model this key can use.
 async function liveModels(settings) {
   const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=300', { headers: { 'x-goog-api-key': settings.keys.gemini } });
@@ -297,4 +314,14 @@ async function liveModels(settings) {
   return ids.sort((a, b) => rank(b) - rank(a));
 }
 
-module.exports = { stream, complete, listModels, speak, geminiSpeak, transcribe, liveModels };
+// Reads JSON from an AI answer and repairs the usual small mistakes (code fences, trailing commas).
+function parseJson(text) {
+  let s = String(text || '').replace(/```(?:json)?/gi, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a >= 0 && b > a) s = s.slice(a, b + 1);
+  try { return JSON.parse(s); } catch {}
+  const fixed = s.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"').replace(/\n/g, ' ');
+  return JSON.parse(fixed);
+}
+
+module.exports = { parseJson, stream, complete, listModels, speak, geminiSpeak, transcribe, liveModels, wakeCheck };

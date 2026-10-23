@@ -26,12 +26,14 @@ contextBridge.exposeInMainWorld('kairo', {
   voice: {
     speak: t => invoke('voice:speak', t), engine: () => invoke('voice:engine'),
     transcribe: (d, m) => invoke('voice:transcribe', d, m),
-    liveConfig: tr => invoke('live:config', tr), onToggle: fn => on('voice:toggle', fn)
+    liveConfig: tr => invoke('live:config', tr), wakeCheck: wav => invoke('voice:wake', wav), onToggle: fn => on('voice:toggle', fn)
   },
   coach: { analyze: o => invoke('coach:analyze', o), overlay: on_ => invoke('overlay:toggle', on_) },
   remote: {
     start: () => invoke('remote:start'), stop: () => invoke('remote:stop'), reset: () => invoke('remote:reset'),
-    info: () => invoke('remote:info'), onEvent: fn => on('remote:event', fn), onAutostart: fn => on('remote:autostart', fn)
+    info: () => invoke('remote:info'),
+    onRequest: (ch, fn) => on(ch, async (id, ...a) => ipcRenderer.send('renderer:reply:' + id, await fn(...a))),
+    party: { create: q => invoke('party:create', q), next: () => invoke('party:next'), state: () => invoke('party:state'), end: () => invoke('party:end') }, firewall: () => invoke('remote:firewall'), allowFirewall: () => invoke('remote:firewall-allow'), onEvent: fn => on('remote:event', fn), onAutostart: fn => on('remote:autostart', fn)
   },
   openExternal: url => invoke('app:open-external', url),
   action: a => invoke('action:run', a),
@@ -54,12 +56,19 @@ contextBridge.exposeInMainWorld('kairo', {
     onEvent: fn => on('lichess:event', fn)
   },
   analysis: { games: (site, user) => invoke('analysis:games', site, user), run: g => invoke('analysis:run', g), cancel: () => invoke('analysis:cancel'), onProgress: fn => on('analysis:progress', fn) },
-  home: {
-    list: () => invoke('home:list'), discover: () => invoke('home:discover'), pairHue: ip => invoke('home:pairHue', ip),
-    add: d => invoke('home:add', d), demo: () => invoke('home:demo'), lifx: t => invoke('home:lifx', t), ha: (u, t) => invoke('home:ha', u, t),
-    update: (id, p) => invoke('home:update', id, p), remove: id => invoke('home:remove', id), control: (t, c) => invoke('home:control', t, c),
-    onChange: fn => on('home:changed', fn)
+  create: {
+    image: p => invoke('create:image', p), youtube: (u, q) => invoke('create:youtube', u, q),
+    pptx: (topic, o) => invoke('create:pptx', topic, o), show: p => invoke('create:show', p)
   },
+  life: {
+    list: n => invoke('life:list', n), add: (n, it) => invoke('life:add', n, it), addMany: (n, its) => invoke('life:addMany', n, its),
+    update: (n, id, p) => invoke('life:update', n, id, p), remove: (n, id) => invoke('life:remove', n, id)
+  },
+  football: {
+    leagues: () => invoke('foot:leagues'), teams: l => invoke('foot:teams', l), matches: (l, t) => invoke('foot:matches', l, t),
+    onGoal: fn => on('football:goal', fn)
+  },
+  discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
   reader: { url: u => invoke('reader:url', u), file: () => invoke('reader:file') },
   clips: { source: () => invoke('clips:source'), save: b => invoke('clips:save', b), onSaveRequest: fn => on('clips:save-request', fn) },

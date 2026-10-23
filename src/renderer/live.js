@@ -9,7 +9,7 @@ window.LiveVoice = (function () {
   let outCtx = null, outGain = null, outAnalyser = null, nextTime = 0, playing = [];
   let screenTimer = null, sharing = false;
   let userText = '', aiText = '', state = 'idle', gotAudio = false;
-  let pendingAudio = [], turnAudio = [], lastActivity = Date.now(), translating = false;
+  let pendingAudio = [], turnAudio = [], lastActivity = Date.now(), translating = false, kickoff = null;
 
   const TOOLS = [
     { googleSearch: {} },
@@ -31,12 +31,20 @@ window.LiveVoice = (function () {
       { name: 'tidy_downloads', description: 'Show a preview for tidying up the Downloads folder; the user confirms on screen.' },
       { name: 'morning_briefing', description: 'Show and read the briefing: weather, top news and today\'s reminders.' },
       { name: 'start_quiz', description: 'Start the quiz game in the app about a topic.', parameters: { type: 'OBJECT', properties: { topic: { type: 'STRING' } }, required: ['topic'] } },
-      { name: 'light_control', description: 'Control smart lights. target: "all", a lamp name or a room. scene: gaming, lernen, film, chill, party, schlafen, morgen, aus. color: a colour name (rot, blau, lila, warmweiss...) or #hex.', parameters: { type: 'OBJECT', properties: { target: { type: 'STRING' }, on: { type: 'BOOLEAN' }, brightness: { type: 'NUMBER' }, color: { type: 'STRING' }, scene: { type: 'STRING' } } } },
       { name: 'use_camera', description: 'Turn the webcam on (or off) so you can see the user or something they hold up, e.g. "look at me", "what am I holding", "check my homework on paper".', parameters: { type: 'OBJECT', properties: { on: { type: 'BOOLEAN' } } } },
       { name: 'start_translator', description: 'Switch into live interpreter mode between two languages (e.g. German and Albanian) so two people can talk.', parameters: { type: 'OBJECT', properties: { language_a: { type: 'STRING' }, language_b: { type: 'STRING' } }, required: ['language_a', 'language_b'] } },
       { name: 'save_clip', description: 'Save the last ~30 seconds of the screen as a video clip ("clip that"). Only works when clip mode is on.' },
       { name: 'make_flashcards', description: 'Create a flashcard deck about a topic and open it for studying.', parameters: { type: 'OBJECT', properties: { topic: { type: 'STRING' } }, required: ['topic'] } },
       { name: 'read_aloud', description: 'Open the read-aloud tool with the text the user copied (clipboard) and start reading it with a natural voice.' },
+      { name: 'create_image', description: 'Generate a picture and show it. prompt: a detailed English image prompt.', parameters: { type: 'OBJECT', properties: { prompt: { type: 'STRING' } }, required: ['prompt'] } },
+      { name: 'make_presentation', description: 'Create a PowerPoint presentation for school about a topic and save it.', parameters: { type: 'OBJECT', properties: { topic: { type: 'STRING' }, slides: { type: 'NUMBER' } }, required: ['topic'] } },
+      { name: 'summarize_youtube', description: 'Summarize the YouTube video whose link the user copied (clipboard), or a given link.', parameters: { type: 'OBJECT', properties: { url: { type: 'STRING' } } } },
+      { name: 'add_homework', description: 'Add homework to the school list. due as YYYY-MM-DD.', parameters: { type: 'OBJECT', properties: { subject: { type: 'STRING' }, task: { type: 'STRING' }, due: { type: 'STRING' } }, required: ['task'] } },
+      { name: 'add_exam', description: 'Add an exam/test. date as YYYY-MM-DD.', parameters: { type: 'OBJECT', properties: { subject: { type: 'STRING' }, date: { type: 'STRING' }, topic: { type: 'STRING' } }, required: ['subject'] } },
+      { name: 'money_entry', description: 'Log pocket money: negative amount = spent, positive = received (CHF).', parameters: { type: 'OBJECT', properties: { amount: { type: 'NUMBER' }, note: { type: 'STRING' } }, required: ['amount'] } },
+      { name: 'diary_entry', description: 'Save a diary entry for today with a mood emoji.', parameters: { type: 'OBJECT', properties: { mood: { type: 'STRING' }, text: { type: 'STRING' } }, required: ['text'] } },
+      { name: 'run_routine', description: 'Run one of the user\'s routines by name (e.g. Gute Nacht, Gaming-Modus, Lernmodus).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' } }, required: ['name'] } },
+      { name: 'quiz_flashcards', description: 'Quiz the user out loud with their flashcards: returns the next cards (question + answer). Ask the question, wait for the answer, say if it was right.', parameters: { type: 'OBJECT', properties: { deck: { type: 'STRING' } } } },
       { name: 'stop_conversation', description: 'End the voice conversation when the user says goodbye or asks you to stop listening.' }
     ] }
   ];
@@ -168,12 +176,6 @@ window.LiveVoice = (function () {
         result = l.length ? l.map(r => `${r.kind} at ${new Date(r.at).toString()}: ${r.text}`).join('\n') : 'No reminders.';
       }
       if (c.name === 'pc_control') { const r = await window.kairo.pc(a.action, a.value); addCaption('system', '💻 ' + (r.ok ? r.result : r.error.message)); result = r.ok ? r.result : 'Failed: ' + r.error.message; }
-      if (c.name === 'light_control') {
-        const cmd = {}; for (const k of ['on', 'brightness', 'color', 'scene']) if (a[k] != null && a[k] !== '') cmd[k] = a[k];
-        const r = await window.kairo.home.control(a.target || 'all', cmd);
-        addCaption('system', r.ok ? '💡 ' + r.results.filter(x => x.ok).map(x => x.name).join(', ') : '✕ ' + r.error.message);
-        result = r.ok ? 'Done: ' + JSON.stringify(r.results) : 'Failed: ' + r.error.message;
-      }
       if (c.name === 'use_camera') { await toggleCam(a.on !== false); await new Promise(r => setTimeout(r, 900)); if (a.on !== false) await sendCam(); result = a.on !== false ? 'Camera is on; the latest image was just sent.' : 'Camera off.'; }
       if (c.name === 'start_translator') {
         result = 'Switching to interpreter mode now.';
@@ -182,6 +184,29 @@ window.LiveVoice = (function () {
       if (c.name === 'save_clip') { const r = await Extras.saveClip(); result = r.ok ? 'Clip saved to Videos/Kairo Clips.' : 'Clip mode is off. Tell the user to switch it on under Today → Tools → Clip mode.'; }
       if (c.name === 'make_flashcards') { $('voiceMode').classList.add('with-earth'); window.App.go('games'); Games.showGame('cards'); Extras.makeDeck({ text: a.topic }); result = 'Flashcards are being created on screen.'; }
       if (c.name === 'read_aloud') { const txt = await window.kairo.clip.read(); if (txt) { setTimeout(() => { stop(); Extras.readText(txt); }, 2500); result = 'I will stop talking and read the copied text aloud now.'; } else result = 'The clipboard is empty; ask the user to copy the text first.'; }
+      if (c.name === 'create_image') {
+        addCaption('system', '🎨 …');
+        const r = await window.kairo.create.image(a.prompt || 'a beautiful picture');
+        if (r.ok) { window.App.addVoiceImage(a.prompt, r); addCaption('system', '🎨 ' + t('im.done')); }
+        result = r.ok ? 'The picture is shown in the chat and saved to Pictures/Kairo.' : 'Failed: ' + r.error.message;
+      }
+      if (c.name === 'make_presentation') {
+        addCaption('system', '📊 …');
+        const r = await window.kairo.create.pptx(a.topic, { slides: a.slides || 8 });
+        if (r.ok) { window.App.addVoiceFile(r.title + '.pptx', '', r.path); window.kairo.action({ type: 'openfile', path: r.path }); }
+        result = r.ok ? `Saved "${r.title}" with ${r.slides} slides in Documents/Kairo and opened it. Speaker notes are under each slide.` : 'Failed: ' + r.error.message;
+      }
+      if (c.name === 'summarize_youtube') {
+        const url = a.url || (await window.kairo.clip.read()).trim();
+        if (!/youtu/.test(url)) result = 'No YouTube link found. Ask the user to copy the link first.';
+        else { addCaption('system', '▶️ …'); const r = await window.kairo.create.youtube(url); result = r.ok ? 'Video summary (tell it to the user briefly):\n' + r.text : 'Failed: ' + r.error.message; }
+      }
+      if (c.name === 'add_homework') { await Life.addHomework({ subject: a.subject || '', task: a.task, due: a.due || '' }); addCaption('system', '📚 ' + a.task); result = 'Added.'; }
+      if (c.name === 'add_exam') { await Life.addExam({ subject: a.subject, date: a.date || '', topic: a.topic || '' }); addCaption('system', '📝 ' + a.subject); result = 'Added; a reminder is set 2 days before.'; }
+      if (c.name === 'money_entry') { await window.kairo.life.add('money', { amount: +a.amount, note: a.note || '' }); Life.renderMoney(); addCaption('system', `💰 ${a.amount}`); const l = await window.kairo.life.list('money'); result = 'Saved. Balance now ' + l.reduce((s, m) => s + (+m.amount || 0), 0).toFixed(2) + ' CHF.'; }
+      if (c.name === 'diary_entry') { await window.kairo.life.add('diary', { date: new Date().toLocaleDateString('sv'), mood: a.mood || '🙂', text: a.text }); Life.renderDiary(); addCaption('system', '📔 ' + (a.mood || '🙂')); result = 'Saved.'; }
+      if (c.name === 'run_routine') { const r = await Life.runRoutine(a.name); result = r.ok ? 'Routine ' + r.name + ' is running.' : r.error; }
+      if (c.name === 'quiz_flashcards') result = Extras.cardsForVoice(a.deck);
       if (c.name === 'tidy_downloads') { Today.tidy(); result = 'The preview is on screen; the user confirms it.'; }
       if (c.name === 'morning_briefing') {
         const r = await window.kairo.briefing.make();
@@ -261,6 +286,8 @@ window.LiveVoice = (function () {
         // what was said while connecting (and the hands-free pre-roll) goes out now
         const queued = pendingAudio; pendingAudio = [];
         queued.forEach(sendAudio);
+        // start with a request instead of waiting for the user (e.g. flashcard quiz)
+        if (kickoff) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text: kickoff }] }], turnComplete: true } }); kickoff = null; }
         if (sharing) toggleScreen(true);
         return;
       }
@@ -353,20 +380,51 @@ window.LiveVoice = (function () {
       sb = { stream, ctx, node, ring: [], floor: 0.01, hot: 0, level: 0, started: Date.now() };
       node.port.onmessage = e => {
         if (!sb) return;
-        const v = rms(e.data);
+        const v = rms(e.data), chunk = f32ToB64(e.data);
         sb.level = v;
-        sb.ring.push(f32ToB64(e.data)); if (sb.ring.length > 15) sb.ring.shift();
+        sb.ring.push(chunk); if (sb.ring.length > 15) sb.ring.shift();
+        // wake word: we are recording the rest of the phrase
+        if (sb.capture) {
+          sb.capture.push(chunk);
+          if (--sb.need <= 0) checkWake();
+          return;
+        }
         const busy = document.getElementById('presence').classList.contains('speaking'); // Kairo reading aloud
         const thr = Math.max(MIN_LEVEL[sensitivity], sb.floor * SENS[sensitivity]);
         // the noise floor follows the room slowly, so steady noise (fans, music) stops counting
         sb.floor = sb.floor * 0.985 + Math.min(v, thr) * 0.015;
         if (v < thr) { sb.hot = Math.max(0, sb.hot - 2); return; }
-        if (busy || Date.now() - sb.started < 2500) return; // let the noise floor settle first
+        if (busy || sb.checking || Date.now() - sb.started < 2500 || Date.now() < (sb.cooldown || 0)) return;
         // speech = loud for ~0.6 s within a short window; clicks and bangs don't last that long
-        if (++sb.hot >= 6) { const pre = sb.ring.slice(); stopStandby(); start({ preroll: pre }); }
+        if (++sb.hot >= 6) {
+          if (!wakeWord) { const pre = sb.ring.slice(); stopStandby(); start({ preroll: pre }); return; }
+          // record ~1.2 s more, then ask Gemini whether "Kairo" was said (only this short clip is sent)
+          sb.capture = sb.ring.slice(); sb.need = 12;
+        }
       };
       document.body.classList.add('handsfree-on');
     } catch (e) { handsFree = false; document.body.classList.remove('handsfree-on'); }
+  }
+
+  async function checkWake() {
+    const clip = sb.capture; sb.capture = null; sb.hot = 0; sb.checking = true;
+    const yes = await window.kairo.voice.wakeCheck(chunksToWav(clip));
+    if (!sb) return;
+    sb.checking = false; sb.cooldown = Date.now() + 1200;
+    if (yes) { stopStandby(); start({ preroll: clip }); }
+  }
+
+  // base64 16 kHz PCM chunks -> one WAV file (base64)
+  function chunksToWav(chunks) {
+    const parts = chunks.map(c => Uint8Array.from(atob(c), x => x.charCodeAt(0)));
+    const len = parts.reduce((s, p) => s + p.length, 0);
+    const buf = new Uint8Array(44 + len), v = new DataView(buf.buffer);
+    const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); v.setUint32(4, 36 + len, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len, true);
+    let o = 44; for (const p of parts) { buf.set(p, o); o += p.length; }
+    let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    return btoa(bin);
   }
 
   function stopStandby() {
@@ -376,9 +434,11 @@ window.LiveVoice = (function () {
     sb = null;
   }
 
-  function setHandsFree(on, sens) {
+  let wakeWord = false;
+  function setHandsFree(on, sens, wake) {
     handsFree = !!on;
     if (sens) sensitivity = sens;
+    if (wake != null) wakeWord = !!wake;
     document.body.classList.toggle('handsfree-on', handsFree);
     if (handsFree) startStandby(); else stopStandby();
   }
@@ -397,6 +457,7 @@ window.LiveVoice = (function () {
     Voice.stop();
     const r = await window.kairo.voice.liveConfig(opts.translate || null);
     translating = !!opts.translate;
+    kickoff = opts.kickoff || null;
     if (!r.ok) {
       window.toast(r.error.code === 'NO_GEMINI' ? t('voice.needGemini') : r.error.message);
       if (r.error.code === 'NO_GEMINI') window.App.go('settings');

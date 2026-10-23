@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="styles-extra.css">
 <link rel="stylesheet" href="styles-v3.css">
+<link rel="stylesheet" href="styles-v4.css">
 </head>
 <body>
 
@@ -32,6 +33,7 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3.5"/><path d="M10.5 9.5v5l4.2-2.5z"/></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15h6M9 18h4"/></symbol>
+    <symbol id="i-school" viewBox="0 0 24 24"><path d="M2.5 9 12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v4.5c0 1.4 2.5 3 5.5 3s5.5-1.6 5.5-3V11M21.5 9v5"/></symbol>
     <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="6.5" width="13" height="11" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/></symbol>
     <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
@@ -74,7 +76,7 @@
 <nav class="rail">
   <button class="rail-btn active" data-view="chat"><svg><use href="#i-chat"/></svg><span data-i18n="nav.chat"></span></button>
   <button class="rail-btn" data-view="today"><svg><use href="#i-sun"/></svg><span data-i18n="nav.today"></span></button>
-  <button class="rail-btn" data-view="home"><svg><use href="#i-bulb"/></svg><span data-i18n="nav.home"></span></button>
+  <button class="rail-btn" data-view="school"><svg><use href="#i-school"/></svg><span data-i18n="nav.school"></span></button>
   <button class="rail-btn" data-view="earth"><svg><use href="#i-earth"/></svg><span data-i18n="nav.earth"></span></button>
   <button class="rail-btn" data-view="games"><svg><use href="#i-games"/></svg><span data-i18n="nav.games"></span></button>
   <button class="rail-btn" data-view="files"><svg><use href="#i-files"/></svg><span data-i18n="nav.files"></span></button>
@@ -191,6 +193,21 @@
         </div>
 
         <div class="tcard">
+          <div class="tcard-h"><b>⚽ <span data-i18n="ft.title"></span></b></div>
+          <div id="tdFoot" class="foot"></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><b>💰 <span data-i18n="mn.title"></span></b></div>
+          <div id="tdMoney"></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><b>📔 <span data-i18n="dy.title"></span></b></div>
+          <div id="tdDiary"></div>
+        </div>
+
+        <div class="tcard">
           <div class="tcard-h"><b data-i18n="focus.title"></b><small class="muted" data-i18n="focus.note"></small></div>
           <div id="tdFocus" class="focus"></div>
         </div>
@@ -199,6 +216,9 @@
           <div class="tcard-h"><b data-i18n="today.tools"></b></div>
           <button class="tool-row" id="tdClip"><span>📋</span><div><b data-i18n="today.clip"></b><small>Ctrl + Alt + K</small></div></button>
           <button class="tool-row" id="tdTidy"><span>🧹</span><div><b data-i18n="today.tidy"></b><small data-i18n="today.tidySub"></small></div></button>
+          <button class="tool-row" id="tdRoutines"><span>⚡</span><div><b data-i18n="rt.title"></b><small data-i18n="rt.sub"></small></div></button>
+          <button class="tool-row" id="tdImage"><span>🎨</span><div><b data-i18n="im.title"></b><small data-i18n="im.sub"></small></div></button>
+          <button class="tool-row" id="tdYoutube"><span>▶️</span><div><b data-i18n="yt.title"></b><small data-i18n="yt.sub"></small></div></button>
           <button class="tool-row" id="tdTranslate"><span>🌍</span><div><b data-i18n="tr.title"></b><small data-i18n="tr.sub"></small></div></button>
           <button class="tool-row" id="tdRead"><span>📖</span><div><b data-i18n="rd.title"></b><small data-i18n="rd.sub"></small></div></button>
           <button class="tool-row" id="tdCards"><span>🗂</span><div><b data-i18n="fc.title"></b><small data-i18n="fc.sub"></small></div></button>
@@ -209,8 +229,8 @@
     </div>
   </section>
 
-  <!-- SMART HOME -->
-  <section class="view" id="view-home"><div class="home" id="homeRoot"></div></section>
+  <!-- SCHOOL -->
+  <section class="view" id="view-school"><div class="home" id="schoolRoot"></div></section>
 
   <section class="view" id="view-earth">
     <div id="globe"></div>
@@ -343,7 +363,7 @@
           <img id="qrImg" alt="QR">
           <code id="qrLink"></code>
         </div>
-        <p class="note" data-i18n="phone.firewall"></p>
+        <div class="fw-card" id="fwCard"></div>
         <h3 data-i18n="phone.wol"></h3>
         <p class="muted"><span data-i18n="phone.wolText"></span> <code id="macAddr">…</code></p>
       </div>
@@ -394,6 +414,7 @@
 <script src="i18n.js"></script>
 <script src="i18n-extra.js"></script>
 <script src="i18n-v3.js"></script>
+<script src="i18n-v4.js"></script>
 <script src="markdown.js"></script>
 <script src="voice.js"></script>
 <script src="orb.js"></script>
@@ -401,9 +422,9 @@
 <script src="earth.js"></script>
 <script src="chess-ui.js"></script>
 <script src="today.js"></script>
-<script src="home.js"></script>
 <script src="quiz.js"></script>
 <script src="extras.js"></script>
+<script src="life-ui.js"></script>
 <script src="chess-extra.js"></script>
 <script src="games.js"></script>
 <script src="settings.js"></script>

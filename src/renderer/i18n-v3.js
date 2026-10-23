@@ -1,34 +1,4 @@
 // Translations for Smart Home, faces, webcam, translator, mini orb, clips, flashcards, read-aloud, focus stats.
-Object.assign(I18N.en, {
-  'nav.home': 'Home', 'home.sub': 'Your smart lights — tap, slide, or just say "make the light purple".', 'home.add': 'Add lamp', 'home.demo': 'Demo lamp', 'home.demoAdded': 'Demo lamp added — try "make the light purple"',
-  'home.emptyH': 'No lamps yet', 'home.empty': 'Add your lamps (Hue, WiZ, Govee, Yeelight, LIFX, Home Assistant) or try a demo lamp first.',
-  'home.rename': 'Rename', 'home.room': 'Room (optional)', 'home.remove': 'Remove', 'home.which': 'Which lamps do you have?', 'home.scanAll': 'Search my Wi-Fi',
-  'home.hintHue': 'Kairo finds the Hue bridge. Then press the round button on top of the bridge and click "Pair".',
-  'home.hintWiz': 'Lamp set up in the WiZ app and in the same Wi-Fi as this PC — that\'s all.',
-  'home.hintGovee': 'In the Govee Home app: open the lamp → settings → switch on "LAN Control".',
-  'home.hintYee': 'In the Yeelight / Mi Home app: open the lamp → settings → switch on "LAN Control".',
-  'home.hintHa': 'Home Assistant connects almost every brand. In Home Assistant: your profile → Security → "Long-lived access tokens" → create.',
-  'home.hintTuya': 'Tuya / Smart Life / IKEA lamps only work through their cloud. The easiest way: install Home Assistant, add the Tuya or IKEA integration there, then connect Home Assistant here.',
-  'home.lifxHow': 'Create a personal token at', 'home.connect': 'Connect', 'home.haToken': 'The token stays on this PC, encrypted.', 'home.scanning': 'Searching your Wi-Fi for lamps…',
-  'home.firewall': 'If Windows asks about the firewall: allow for private networks only.', 'home.pair': 'Pair', 'home.addOne': 'Add', 'home.nothing': 'No lamps found. Are they on and in the same Wi-Fi? Or add one by IP address.',
-  'home.manual': 'Add by IP address', 'home.again': 'Search again', 'home.close': 'Done', 'home.lampsAdded': 'lamps added',
-  'scene.gaming': 'Gaming', 'scene.lernen': 'Study', 'scene.film': 'Movie', 'scene.chill': 'Chill', 'scene.party': 'Party', 'scene.schlafen': 'Sleep', 'scene.morgen': 'Morning', 'scene.aus': 'All off'
-});
-Object.assign(I18N.de, {
-  'nav.home': 'Zuhause', 'home.sub': 'Deine smarten Lampen – antippen, schieben oder einfach sagen „Mach das Licht lila".', 'home.add': 'Lampe hinzufügen', 'home.demo': 'Demo-Lampe', 'home.demoAdded': 'Demo-Lampe da – probier „Mach das Licht lila"',
-  'home.emptyH': 'Noch keine Lampen', 'home.empty': 'Füg deine Lampen hinzu (Hue, WiZ, Govee, Yeelight, LIFX, Home Assistant) oder probier zuerst eine Demo-Lampe aus.',
-  'home.rename': 'Umbenennen', 'home.room': 'Raum (optional)', 'home.remove': 'Entfernen', 'home.which': 'Welche Lampen hast du?', 'home.scanAll': 'Mein WLAN durchsuchen',
-  'home.hintHue': 'Kairo findet die Hue Bridge. Dann den runden Knopf oben auf der Bridge drücken und „Koppeln" klicken.',
-  'home.hintWiz': 'Lampe in der WiZ-App einrichten und im gleichen WLAN wie dieser PC – mehr braucht es nicht.',
-  'home.hintGovee': 'In der Govee-Home-App: Lampe öffnen → Einstellungen → „LAN-Steuerung" einschalten.',
-  'home.hintYee': 'In der Yeelight- bzw. Mi-Home-App: Lampe öffnen → Einstellungen → „LAN-Steuerung" einschalten.',
-  'home.hintHa': 'Home Assistant verbindet fast jede Marke. In Home Assistant: dein Profil → Sicherheit → „Langlebige Zugriffstokens" → erstellen.',
-  'home.hintTuya': 'Tuya-, Smart-Life- und IKEA-Lampen gehen nur über deren Cloud. Am einfachsten: Home Assistant installieren, dort die Tuya- oder IKEA-Integration hinzufügen und dann Home Assistant hier verbinden.',
-  'home.lifxHow': 'Erstelle einen persönlichen Token unter', 'home.connect': 'Verbinden', 'home.haToken': 'Der Token bleibt verschlüsselt auf diesem PC.', 'home.scanning': 'Suche Lampen in deinem WLAN…',
-  'home.firewall': 'Falls Windows nach der Firewall fragt: nur für private Netzwerke erlauben.', 'home.pair': 'Koppeln', 'home.addOne': 'Hinzufügen', 'home.nothing': 'Keine Lampen gefunden. Sind sie an und im gleichen WLAN? Oder füg eine per IP-Adresse hinzu.',
-  'home.manual': 'Per IP-Adresse hinzufügen', 'home.again': 'Nochmal suchen', 'home.close': 'Fertig', 'home.lampsAdded': 'Lampen hinzugefügt',
-  'scene.gaming': 'Gaming', 'scene.lernen': 'Lernen', 'scene.film': 'Film', 'scene.chill': 'Chillen', 'scene.party': 'Party', 'scene.schlafen': 'Schlafen', 'scene.morgen': 'Morgen', 'scene.aus': 'Alles aus'
-});
 for (const [lang, names] of Object.entries({
   en: ['Orb', 'Particles', 'Rings', 'Wave', '😊 Face', '🤖 Robot', '🐱 Cat', '◡ Minimal'],
   de: ['Orb', 'Partikel', 'Ringe', 'Welle', '😊 Gesicht', '🤖 Roboter', '🐱 Katze', '◡ Minimal'],
@@ -66,4 +36,18 @@ Object.assign(I18N.de, {
   'set.mini': 'Mini-Orb', 'set.miniHint': 'Schwebender Orb, wenn Kairo minimiert ist'
 });
 
-Object.assign(I18N.sq, { 'nav.home': 'Shtëpia', 'home.add': 'Shto llambë', 'home.demo': 'Llambë demo', 'scene.aus': 'Fik të gjitha' });
+Object.assign(I18N.en, {
+  'fw.checking': 'Checking Windows Firewall…', 'fw.ok': 'Phone access allowed', 'fw.okSub': 'Only on your private home network, only the phone port.',
+  'fw.blocked': 'Windows Firewall is blocking Kairo — your phone can\'t connect', 'fw.none': 'Phone access not allowed yet',
+  'fw.what': 'Click the button and say "Yes" in the Windows prompt. Only the phone port is opened, only on private networks.',
+  'fw.allow': 'Allow access', 'fw.waiting': 'Waiting for Windows…', 'fw.notChanged': 'Nothing changed (the Windows prompt was cancelled?)',
+  'fw.public': 'Your Wi-Fi is set to "Public"', 'fw.publicSub': 'On public networks the phone can\'t connect. If this is your home Wi-Fi, set it to "Private" in Windows settings.', 'fw.openSettings': 'Open settings'
+});
+Object.assign(I18N.de, {
+  'fw.checking': 'Prüfe Windows-Firewall…', 'fw.ok': 'Handy-Zugriff erlaubt', 'fw.okSub': 'Nur in deinem privaten Heimnetz, nur der Handy-Port.',
+  'fw.blocked': 'Die Windows-Firewall blockiert Kairo – dein Handy kann sich nicht verbinden', 'fw.none': 'Handy-Zugriff noch nicht erlaubt',
+  'fw.what': 'Klick auf den Knopf und sag in der Windows-Abfrage „Ja". Geöffnet wird nur der Handy-Port, nur in privaten Netzwerken.',
+  'fw.allow': 'Zugriff erlauben', 'fw.waiting': 'Warte auf Windows…', 'fw.notChanged': 'Nichts geändert (Windows-Abfrage abgebrochen?)',
+  'fw.public': 'Dein WLAN ist auf „Öffentlich" gestellt', 'fw.publicSub': 'In öffentlichen Netzwerken kann sich das Handy nicht verbinden. Wenn das dein WLAN zu Hause ist, stell es in den Windows-Einstellungen auf „Privat".', 'fw.openSettings': 'Einstellungen öffnen'
+});
+

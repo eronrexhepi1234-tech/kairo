@@ -107,13 +107,14 @@ window.Extras = (function () {
       <div class="row"><button class="btn sm" id="fcClip">📋 ${t('fc.fromClip')}</button><button class="btn sm" id="fcScreen">🖥 ${t('fc.fromScreen')}</button></div>
       <div class="decks">${decks.map((d, i) => { const due = d.cards.filter(c => (c.due || 0) <= now).length; return `<div class="deck" data-i="${i}">
         <div><b>${escAttr(d.title)}</b><small>${d.cards.length} ${t('fc.cards')} · ${due} ${t('fc.due')}</small></div>
-        <button class="btn sm primary" data-act="learn">${t('fc.learn')}</button><button class="btn sm" data-act="del">✕</button></div>`; }).join('') || `<p class="muted small">${t('fc.none')}</p>`}</div>`;
+        <button class="btn sm primary" data-act="learn">${t('fc.learn')}</button><button class="btn sm" data-act="voice" title="${t('fc.voice')}">🎤</button><button class="btn sm" data-act="del">✕</button></div>`; }).join('') || `<p class="muted small">${t('fc.none')}</p>`}</div>`;
     $('fcForm').onsubmit = e => { e.preventDefault(); const v = $('fcTopic').value.trim(); if (v) makeDeck({ text: v }); };
     $('fcClip').onclick = async () => { const c = await window.kairo.clip.read(); if (c) makeDeck({ text: c, fromMaterial: true }); else toast(t('fc.clipEmpty')); };
     $('fcScreen').onclick = async () => { const shot = await window.kairo.screen(); makeDeck({ image: shot }); };
     document.querySelectorAll('.deck').forEach(el => {
       const i = +el.dataset.i;
       el.querySelector('[data-act=learn]').onclick = () => learn(i);
+      el.querySelector('[data-act=voice]').onclick = () => voiceQuiz(loadDecks()[i].title);
       el.querySelector('[data-act=del]').onclick = () => { const d = loadDecks(); d.splice(i, 1); saveDecks(d); cardsHome(); };
     });
   }
@@ -124,11 +125,11 @@ window.Extras = (function () {
       : fromMaterial ? `Make 12 flashcards from this study material:\n"""\n${text.slice(0, 8000)}\n"""` : `Make 12 flashcards to learn: ${text}`;
     const r = await window.kairo.complete({
       text: ask + '\nQuestions short, answers short (max 2 sentences), in the user\'s language. Reply ONLY JSON: {"title":"short deck title","cards":[{"q":"...","a":"..."}]}',
-      extraSystem: 'You create great study flashcards. Output strictly valid JSON.', images: image ? [image] : undefined
+      extraSystem: 'You create great study flashcards. Output strictly valid JSON.', json: true, images: image ? [image] : undefined
     });
     try {
       if (!r.ok) throw new Error(r.error.code === 'NO_KEY' ? t('err.nokey') : r.error.message);
-      const j = JSON.parse(r.text.slice(r.text.indexOf('{'), r.text.lastIndexOf('}') + 1));
+      const j = parseJsonLoose(r.text);
       const deck = { title: j.title || text?.slice(0, 40) || 'Deck', cards: j.cards.filter(c => c.q && c.a).map(c => ({ q: c.q, a: c.a, box: 0, due: 0 })) };
       const d = loadDecks(); d.unshift(deck); saveDecks(d);
       learn(0);
@@ -171,6 +172,18 @@ window.Extras = (function () {
     $('fcAgain').onclick = () => rate(false);
     $('fcGood').onclick = () => rate(true);
   }
+
+  // cards for the voice quiz: due cards first
+  function cardsForVoice(name) {
+    const decks = loadDecks();
+    if (!decks.length) return 'The user has no flashcard decks yet. Offer to make some (make_flashcards).';
+    const deck = (name && decks.find(d => d.title.toLowerCase().includes(String(name).toLowerCase()))) || decks[0];
+    const now = Date.now();
+    const cards = [...deck.cards.filter(c => (c.due || 0) <= now), ...deck.cards.filter(c => (c.due || 0) > now)].slice(0, 10);
+    return `Deck "${deck.title}". Ask these one by one, wait for the answer, say if it is right (be generous with wording), give the right answer if wrong, keep score:\n` +
+      cards.map((c, i) => `${i + 1}. Q: ${c.q} | A: ${c.a}`).join('\n');
+  }
+  function voiceQuiz(deckTitle) { LiveVoice.start({ kickoff: `Frag mich jetzt mit meinen Lernkarten ab${deckTitle ? ': ' + deckTitle : ''}. Hol dir die Karten mit quiz_flashcards.` }); }
 
   // ================= Clip mode (last ~30 s of the screen) =================
   let clip = null; // { stream, recs: [{rec, chunks, start}], timer }
@@ -300,5 +313,5 @@ window.Extras = (function () {
     setBackground(S().background || 'none');
   }
 
-  return { init, translator, readText, readerDialog, cardsHome, makeDeck, saveClip, toggleClipMode, setBackground, isClipping: () => !!clip };
+  return { init, cardsForVoice, voiceQuiz, translator, readText, readerDialog, cardsHome, makeDeck, saveClip, toggleClipMode, setBackground, isClipping: () => !!clip };
 })();

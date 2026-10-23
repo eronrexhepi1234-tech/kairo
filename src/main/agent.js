@@ -18,6 +18,7 @@ const WHERE_PROMPT = `The user wants to know WHERE the place on their screen is 
 const FRESH_RX = /(wann kommt|wann erscheint|release|erscheint|ist .{1,30} down|server.{0,10}(down|status)|morgen|aktuell|neueste|latest|newest|preis|price|kostet|score|ergebnis|resultat|spielstand|tabelle|transfer|update|patch|season|saison|turnier|tournament|this week|diese woche|gestern|yesterday|2026|2027)/i;
 const FREE_GAMES_RX = /((gratis|kostenlos|free|umsonst).{0,25}(spiel|game)|(spiel|game).{0,30}(gratis|kostenlos|free|umsonst)|\bepic\b)/i;
 const WEATHER_RX = /(wetter|weather|regnet|regen|schnee|temperatur|grad draussen|moti|kohë|météo|tiempo|meteo|hava durumu)/i;
+const FOOTBALL_RX = /(fussball|fußball|football|soccer|match|spielt|gespielt|gewonnen|verloren|unentschieden|tor(e)?\b|ergebnis|resultat|tabelle|super league|bundesliga|champions league|futboll|ndeshj)/i;
 const CLIP_RX = /(zwischenablage|clipboard|was ich kopiert|den kopierten|kopierte text|copied)/i;
 
 async function epicFreeGames() {
@@ -90,6 +91,21 @@ async function run(settings, req, onEvent, signal) {
   if (want.clip) {
     const t = require('electron').clipboard.readText();
     if (t) context.push('Text the user copied to the clipboard:\n"""\n' + t.slice(0, 6000) + '\n"""');
+  }
+  // YouTube link in the message: Gemini watches the video first
+  const yt = (req.text || '').match(require('./create').YT_RX);
+  if (yt) {
+    onEvent('status', 'youtube');
+    try { const r = await require('./create').youtube(settings, yt[1], 'Describe and summarize this video in detail (topic, key points with timestamps, conclusion), so another assistant can answer questions about it.'); context.push('The video at ' + yt[1] + ' (you have watched it):\n' + r.text); }
+    catch (e) { context.push('Could not open the YouTube video: ' + e.message); }
+  }
+  // favourite football team
+  const fav = settings.football?.team;
+  if (fav && (FOOTBALL_RX.test(req.text || '') || (req.text || '').toLowerCase().includes(fav.name.toLowerCase().replace(/^fc /, '')))) {
+    try {
+      const m = await require('./life').matches(settings.football.league, fav.id);
+      context.push(`Live football data for ${fav.name} (${m.league}):\n` + m.events.map(e => `${e.date.slice(0, 16).replace('T', ' ')} ${e.home.name} ${e.state === 'pre' ? 'vs' : e.home.score + ':' + e.away.score} ${e.away.name} (${e.detail})`).join('\n'));
+    } catch {}
   }
   if (req.folderContext) context.push('The user shared this folder from their PC:\n' + req.folderContext);
 

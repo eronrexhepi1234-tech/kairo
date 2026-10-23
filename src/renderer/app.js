@@ -23,9 +23,26 @@ function applyAccent(hex) {
   document.documentElement.style.setProperty('--accent', hex);
   document.documentElement.style.setProperty('--accent-ink', inkFor(hex));
 }
+// own theme: background, panel and text colour; the other tokens are mixed from them
+const THEME_VARS = ['--bg', '--bg2', '--bg3', '--line', '--text', '--muted', '--shadow'];
+function previewTheme(c) {
+  const st = document.documentElement.style;
+  if (!c) { THEME_VARS.forEach(v => st.removeProperty(v)); return; }
+  const mix = (a, b, p) => `color-mix(in srgb, ${a} ${100 - p}%, ${b})`;
+  st.setProperty('--bg', c.bg);
+  st.setProperty('--bg2', mix(c.bg, c.panel, 60));
+  st.setProperty('--bg3', c.panel);
+  st.setProperty('--line', mix(c.panel, c.text, 14));
+  st.setProperty('--text', c.text);
+  st.setProperty('--muted', mix(c.text, c.bg, 45));
+  st.setProperty('--shadow', 'rgba(0,0,0,.45)');
+  document.body.style.background = c.bg;
+}
 function applyLook() {
   const d = document.documentElement;
   d.dataset.theme = S.theme; d.dataset.motion = S.motion; d.dataset.font = S.font; d.dataset.density = S.density;
+  previewTheme(S.theme === 'custom' && S.customTheme ? S.customTheme : null);
+  if (S.theme !== 'custom') document.body.style.background = '';
   d.lang = S.language;
   applyAccent(S.accent);
   window.APP_LANG = S.language;
@@ -44,7 +61,7 @@ function applyI18n() {
   $('helloLine').innerHTML = hello;
   if (attach.folder) $('chipFolderLabel').textContent = attach.folder.split(/[\\/]/).pop();
   $('viewName').textContent = t('nav.' + currentView);
-  $('homeOrbText').textContent = t(S.voice.handsFree && S.keys.gemini ? 'hf.sayHello' : 'home.tap');
+  $('homeOrbText').textContent = t(S.voice.handsFree && S.keys.gemini ? (S.wakeWord ? 'ww.say' : 'hf.sayHello') : 'home.tap');
 }
 
 // ---------- Navigation ----------
@@ -59,8 +76,8 @@ function go(view) {
     if (view === 'earth') Earth.init();
     if (view === 'settings') SettingsUI.render();
     if (view === 'phone') loadMac();
-    if (view === 'today') Today.refresh();
-    if (view === 'home') Home.refresh();
+    if (view === 'today') { Today.refresh(); Life.refreshToday(); }
+    if (view === 'school') Life.renderSchool();
     if (view === 'chat') $('input').focus();
     syncHomeOrb();
   };
@@ -146,18 +163,15 @@ function parseReply(text) {
     return { kind: x[1].toLowerCase() === 'alarm' ? 'alarm' : 'reminder', at: when, text: text || '', repeat: /daily|täglich/i.test(rep || '') ? 'daily' : null };
   });
   const pcs = grab(/\[\[pc:\s*([^\]]+)\]\]/gi).map(s => { const [a, v] = s.split(/\s+/); return { action: a, value: v }; });
-  const lights = grab(/\[\[light:\s*([^\]]+)\]\]/gi).map(s => {
-    const [target, rest = ''] = s.split('|').map(x => x.trim());
-    const cmd = {};
-    for (const kv of rest.split(/[;,]/)) {
-      const [k, v] = kv.split('=').map(x => (x || '').trim());
-      if (!k || v === '') continue;
-      if (k === 'on') cmd.on = v === 'toggle' ? 'toggle' : v === 'true' || v === 'an' || v === 'on';
-      else if (k === 'brightness') cmd.brightness = +v;
-      else if (k === 'color' || k === 'scene') cmd[k] = v;
-    }
-    return { target: target || 'all', cmd };
-  });
+  const images = grab(/\[\[image:\s*([^\]]+)\]\]/gi);
+  const pptx = grab(/\[\[pptx:\s*([^\]]+)\]\]/gi).map(s => { const [topic, n] = s.split('|').map(x => x.trim()); return { topic, slides: +n || 8 }; });
+  const split = rx => grab(rx).map(s => s.split('|').map(x => x.trim()));
+  const homework = split(/\[\[homework:\s*([^\]]+)\]\]/gi).map(([subject, task, due]) => ({ subject, task: task || subject, due: /^\d{4}-\d\d-\d\d$/.test(due || '') ? due : '' }));
+  const exams = split(/\[\[exam:\s*([^\]]+)\]\]/gi).map(([subject, date, topic]) => ({ subject, date: /^\d{4}-\d\d-\d\d$/.test(date || '') ? date : '', topic: topic || '' }));
+  const money = split(/\[\[money:\s*([^\]]+)\]\]/gi).map(([amount, note]) => ({ amount: parseFloat(String(amount).replace(',', '.')) || 0, note: note || '' })).filter(m => m.amount);
+  const diary = split(/\[\[diary:\s*([^\]]+)\]\]/gi).map(([mood, text]) => text ? { mood, text } : { mood: '🙂', text: mood });
+  const routines = grab(/\[\[routine:\s*([^\]]+)\]\]/gi);
+  shown = shown.replace(/\[\[(image|pptx|homework|exam|money|diary|routine):[^\]]*\]\]/gi, '');
   const tidy = /\[\[tidy\]\]/i.test(shown), briefing = /\[\[briefing\]\]/i.test(shown);
   const cards = grab(/\[\[cards:\s*([^\]]+)\]\]/gi)[0] || null;
   const translate = grab(/\[\[translate:\s*([^\]]+)\]\]/gi).map(s => s.split('|').map(x => x.trim()))[0] || null;
@@ -165,8 +179,8 @@ function parseReply(text) {
   shown = shown.replace(/\[\[(read|clip)\]\]/gi, '').replace(/\[\[(cards|translate):[^\]]*\]\]/gi, '');
   const quiz = grab(/\[\[quiz:\s*([^\]]+)\]\]/gi)[0] || null;
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
-    .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz|light):[^\]]*\]\]/gi, '').trim();
-  return { shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, lights, tidy, briefing, quiz, cards, translate, readAloud, saveClip };
+    .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
+  return { shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines };
 }
 
 const EXT_LABEL = n => (n.match(/\.([a-z0-9]+)$/i) || [, 'TXT'])[1].toUpperCase().slice(0, 4);
@@ -200,9 +214,22 @@ async function runActions(m) {
   }
   if (p.reminds.length || p.remember.length || p.forget.length) { Today.loadReminders(); Today.loadMemory(); }
   for (const c of p.pcs) { const r = await window.kairo.pc(c.action, c.value); m.done.push((r.ok ? '💻 ' + r.result : '✕ ' + r.error.message).slice(0, 70)); }
-  for (const l of p.lights) {
-    const r = await window.kairo.home.control(l.target, l.cmd);
-    m.done.push(r.ok ? '💡 ' + r.results.filter(x => x.ok).map(x => x.name).join(', ') : '✕ ' + r.error.message);
+  const L = window.kairo.life;
+  for (const h of p.homework) { await Life.addHomework(h); m.done.push('📚 ' + (h.subject ? h.subject + ': ' : '') + h.task.slice(0, 40)); }
+  for (const e of p.exams) { await Life.addExam(e); m.done.push('📝 ' + e.subject + (e.date ? ' · ' + e.date : '')); }
+  for (const x of p.money) { await L.add('money', x); m.done.push(`💰 ${x.amount > 0 ? '+' : ''}${x.amount.toFixed(2)} ${x.note}`); }
+  for (const d of p.diary) { await L.add('diary', { date: new Date().toLocaleDateString('sv'), mood: d.mood, text: d.text }); m.done.push('📔 ' + d.mood); }
+  if (p.money.length || p.diary.length) { Life.renderMoney(); Life.renderDiary(); }
+  for (const r of p.routines) { const res = await Life.runRoutine(r); m.done.push(res.ok ? '⚡ ' + res.name : '✕ ' + res.error); }
+  m.imageResults = [];
+  for (const prompt of p.images) {
+    const r = await window.kairo.create.image(prompt);
+    m.imageResults.push(r.ok ? { path: r.path, source: r.source } : { error: r.error.message });
+  }
+  for (const x of p.pptx) {
+    const r = await window.kairo.create.pptx(x.topic, { slides: x.slides });
+    m.fileResults.push(r.ok ? { path: r.path } : { error: r.error.message });
+    m.pptxNames = (m.pptxNames || []).concat(r.ok ? r.title + '.pptx' : x.topic);
   }
   if (p.tidy) setTimeout(() => Today.tidy(), 500);
   if (p.cards) { m.done.push('🗂 ' + p.cards); setTimeout(() => { go('games'); Games.showGame('cards'); Extras.makeDeck({ text: p.cards }); }, 500); }
@@ -215,6 +242,7 @@ async function runActions(m) {
 
 $('messages').addEventListener('click', e => {
   const b = e.target.closest('[data-fa]'); if (!b) return;
+  e.preventDefault();
   window.kairo.action({ type: b.dataset.fa, path: b.dataset.path });
 });
 
@@ -223,6 +251,15 @@ function fillAI(el, m, streaming) {
   let html = renderMarkdown(shown) + (streaming ? '<span class="caret"></span>' : '');
   html = html.replace(/(?:<p>)?%%FILE(\d+)%%(?:<\/p>)?/g, (_, i) => fileCard(files[i], m.fileResults?.[i], streaming && !m.fileResults));
   el.innerHTML = html;
+  // generated pictures and presentations
+  for (const im of m.imageResults || []) {
+    el.insertAdjacentHTML('beforeend', im.path
+      ? `<figure class="gen-img"><img src="file:///${escAttr(im.path.replace(/\\/g, '/'))}" alt=""><figcaption>${escAttr(im.source || '')} · <a href="#" data-fa="openfile" data-path="${escAttr(im.path)}">${t('files.open')}</a> · <a href="#" data-fa="reveal" data-path="${escAttr(im.path)}">${t('file.folder')}</a></figcaption></figure>`
+      : `<p class="msg error">🎨 ${escAttr(im.error)}</p>`);
+  }
+  if (streaming && /\[\[(image|pptx):/i.test(m.text || '')) el.insertAdjacentHTML('beforeend', `<div class="msg-status">${t('im.making')}</div>`);
+  const pptxStart = files.length;
+  (m.pptxNames || []).forEach((name, i) => el.insertAdjacentHTML('beforeend', fileCard({ name, content: '' }, m.fileResults?.[pptxStart + i], false)));
   if (m.done?.length) el.insertAdjacentHTML('beforeend', `<div class="sources">${m.done.map(d => `<span class="source done">${escAttr(d)}</span>`).join('')}</div>`);
   if (streaming) return;
   if (m.sources?.length) {
@@ -295,6 +332,18 @@ async function send(text, opts = {}) {
   if (!text || currentReq) return;
   $('input').value = ''; autosize();
   Voice.stop();
+
+  // handled locally: a routine's trigger phrase ("Gute Nacht")
+  const routine = await Life.matchPhrase(text);
+  if (routine) {
+    addMsg({ role: 'user', text });
+    const am = { role: 'assistant', text: '⚡ **' + routine.name + '**', actionsDone: true, done: [] };
+    const el = addMsg(am);
+    const r = await Life.runRoutine(routine.name);
+    am.done.push(r.ok ? '✓ ' + (routine.steps || []).length + ' ' + t('rt.steps') : '✕');
+    fillAI(el, am); saveHistory();
+    return;
+  }
 
   // handled locally: "show me the Earth"
   if (SHOW_EARTH_RX.test(text) && text.length < 60) {
@@ -439,7 +488,31 @@ $('askFolder').onclick = async () => {
 };
 
 // ---------- Phone ----------
-async function loadMac() { const i = await window.kairo.remote.info(); $('macAddr').textContent = i.mac || '—'; }
+async function loadMac() { const i = await window.kairo.remote.info(); $('macAddr').textContent = i.mac || '—'; checkFirewall(); }
+
+// Firewall status for the phone remote, with a button that asks Windows for permission.
+async function checkFirewall(result) {
+  const el = $('fwCard');
+  if (!result) el.innerHTML = `<div class="msg-status">${t('fw.checking')}</div>`;
+  const r = result || await window.kairo.remote.firewall();
+  if (!r.ok) { el.innerHTML = ''; return; }
+  const pub = /public/i.test(r.network);
+  let html;
+  if (r.allowed && !pub) html = `<div class="fw ok">✅ <div><b>${t('fw.ok')}</b><small>${t('fw.okSub')}</small></div></div>`;
+  else {
+    html = `<div class="fw ${r.blocked ? 'bad' : 'warn'}">${r.blocked ? '⛔' : '⚠️'} <div><b>${t(r.blocked ? 'fw.blocked' : 'fw.none')}</b><small>${t('fw.what')}</small></div>
+      <button class="btn primary" id="fwAllow">🛡 ${t('fw.allow')}</button></div>`;
+  }
+  if (pub) html += `<div class="fw warn">⚠️ <div><b>${t('fw.public')}</b><small>${t('fw.publicSub')}</small></div><button class="btn" id="fwNet">${t('fw.openSettings')}</button></div>`;
+  el.innerHTML = html;
+  if ($('fwAllow')) $('fwAllow').onclick = async () => {
+    $('fwAllow').disabled = true; $('fwAllow').textContent = t('fw.waiting');
+    const res = await window.kairo.remote.allowFirewall();
+    checkFirewall(res);
+    toast(res.ok && res.allowed ? '✅ ' + t('fw.ok') : t('fw.notChanged'));
+  };
+  if ($('fwNet')) $('fwNet').onclick = () => window.kairo.action({ type: 'open', url: 'ms-settings:network-status' });
+}
 function showRemote(r) {
   if (!r.ok) return toast(r.error.message);
   $('qrCard').hidden = false;
@@ -449,11 +522,28 @@ function showRemote(r) {
   $('remoteStop').hidden = false;
   if (r.mac) $('macAddr').textContent = r.mac;
 }
-$('remoteStart').onclick = async () => showRemote(await window.kairo.remote.start());
+$('remoteStart').onclick = async () => { showRemote(await window.kairo.remote.start()); checkFirewall(); };
 $('remoteStop').onclick = async () => { await window.kairo.remote.stop(); $('qrCard').hidden = true; $('remoteStart').hidden = false; $('remoteStop').hidden = true; };
 $('remoteReset').onclick = async () => { await window.kairo.remote.reset(); $('qrCard').hidden = true; $('remoteStart').hidden = false; $('remoteStop').hidden = true; toast('✓'); };
 window.kairo.remote.onAutostart(async () => showRemote(await window.kairo.remote.start()));
+// requests from the phone
+window.kairo.remote.onRequest('remote:today', async () => {
+  const [rem, hw] = await Promise.all([window.kairo.reminders.list(), window.kairo.life.list('homework')]);
+  const w = S.city ? await window.kairo.weather() : null;
+  const routines = await window.kairo.life.list('routines');
+  return {
+    weather: w?.ok ? { place: w.place, temp: w.now.temp, icon: w.now.icon, text: w.now.text, max: w.days[0].max, min: w.days[0].min } : null,
+    reminders: rem.slice(0, 6).map(r => ({ at: r.at, text: r.text, kind: r.kind })),
+    homework: hw.filter(h => !h.done).slice(0, 8).map(h => ({ subject: h.subject, task: h.task, due: h.due })),
+    routines: routines.map(r => r.name)
+  };
+});
+window.kairo.remote.onRequest('remote:routine', name => Life.runRoutine(name));
+window.kairo.remote.onRequest('remote:music', mood => { Today.playMood(mood); return true; });
+
 window.kairo.remote.onEvent(ev => {
+  // a chat from the phone can open things on the PC ("open YouTube")
+  if (ev.type === 'remote-reply' && ev.text) runActions({ role: 'assistant', text: ev.text }).catch(() => {});
   const li = document.createElement('li');
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const label = ev.type === 'remote-chat' ? '📱 ' + ev.text : ev.type === 'remote-reply' ? '↳ ' + ev.text.slice(0, 160) : '⚡ ' + ev.action;
@@ -465,10 +555,10 @@ window.kairo.remote.onEvent(ev => {
 // ---------- Hands-free ----------
 function applyHandsFree() {
   const on = !!(S.voice.handsFree && S.keys.gemini);
-  LiveVoice.setHandsFree(on, S.voice.sensitivity);
+  LiveVoice.setHandsFree(on, S.voice.sensitivity, S.wakeWord);
   $('hfPill').hidden = !S.keys.gemini;
   $('hfPill').classList.toggle('on', on);
-  $('homeOrbText').textContent = t(on ? 'hf.sayHello' : 'home.tap');
+  $('homeOrbText').textContent = t(on ? (S.wakeWord ? 'ww.say' : 'hf.sayHello') : 'home.tap');
 }
 $('hfPill').onclick = async () => {
   S = await window.kairo.settings.set({ voice: { handsFree: !S.voice.handsFree } });
@@ -497,8 +587,13 @@ async function saveOrb(patch) {
 
 window.App = {
   settings: () => S,
+  previewTheme,
   async saveSettings(patch) { S = await window.kairo.settings.set(patch); SettingsUI.set(S); applyLook(); applyHandsFree(); return S; },
   go, applyAccent, renderVoicePickers, syncHomeOrb,
+  addVoiceImage(prompt, r) {
+    chatLog.push({ role: 'assistant', text: '🎨 ' + prompt, actionsDone: true, imageResults: [{ path: r.path, source: r.source }] });
+    saveHistory(); renderAll();
+  },
   addVoiceFile(name, content, path) {
     chatLog.push({ role: 'assistant', text: `[[file: ${name}]]\n${content}\n[[/file]]`, actionsDone: true, fileResults: [{ path }] });
     saveHistory(); renderAll();
@@ -526,8 +621,8 @@ window.kairo.onFocusInput(() => { go('chat'); $('input').focus(); });
   Games.init();
   LiveVoice.init();
   Today.init(() => S);
-  Home.init();
   Extras.init();
+  Life.init();
   ChessExtra.init();
   window.kairo.onSettingsChanged(async () => { S = await window.kairo.settings.get(); SettingsUI.set(S); applyLook(); applyHandsFree(); });
   // morning briefing: once a day, the first time Kairo is opened in the morning

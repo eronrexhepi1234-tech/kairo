@@ -83,7 +83,17 @@ window.SettingsUI = (function () {
           <div class="theme-cards">${THEMES.map(th => `
             <button class="theme-card ${S.theme === th.id ? 'active' : ''}" data-theme="${th.id}">
               <div class="tc-prev" style="background:${th.c[0]}"><i style="background:${th.c[1]}"></i><div><b style="background:${th.c[2]};width:70%"></b><b style="background:${S.accent};width:40%"></b><b style="background:${th.c[1]};width:85%"></b></div></div>
-              <span>${th.name}</span></button>`).join('')}</div></div>
+              <span>${th.name}</span></button>`).join('')}
+            <button class="theme-card ${S.theme === 'custom' ? 'active' : ''}" id="sCustomTheme">
+              <div class="tc-prev" style="background:${S.customTheme?.bg || '#2a2340'}"><i style="background:${S.customTheme?.panel || '#3b3157'}"></i><div><b style="background:${S.customTheme?.text || '#fff'};width:70%"></b><b style="background:${S.accent};width:40%"></b></div></div>
+              <span>✏ ${t('tb.own')}</span></button></div></div>
+        <div class="set-row ${S.theme === 'custom' ? '' : 'hidden-row'}" id="sTbRow"><label>${t('tb.colors')}</label>
+          <div class="tb-pick">
+            <label>${t('tb.bg')}<input type="color" id="tbBg" value="${S.customTheme?.bg || '#1b1726'}"></label>
+            <label>${t('tb.panel')}<input type="color" id="tbPanel" value="${S.customTheme?.panel || '#262036'}"></label>
+            <label>${t('tb.text')}<input type="color" id="tbText" value="${S.customTheme?.text || '#f2eefc'}"></label>
+            <button class="btn sm" id="tbRandom">🎲 ${t('tb.random')}</button>
+          </div></div>
         <div class="set-row"><label>${t('set.accent')}</label>
           <div class="swatches">${ACCENTS.map(a => `<button class="swatch ${a === S.accent ? 'active' : ''}" data-accent="${a}" style="background:${a};color:${a}"></button>`).join('')}
           <input type="color" id="sAccent" value="${S.accent}"></div></div>
@@ -103,6 +113,7 @@ window.SettingsUI = (function () {
           <div class="key-row"><select class="field" id="sGVoice">${GEMINI_VOICES.map(([v, d]) => opt(v, `${v} — ${d}`, S.voice.geminiVoice)).join('')}</select>
           <button class="btn primary" id="sTalk"><svg><use href="#i-mic"/></svg>${t('chat.voice')}</button></div></div>
         <div class="set-row"><label>${t('hf.label')}</label><label class="tog"><input type="checkbox" id="sHF" ${S.voice.handsFree ? 'checked' : ''}><span>${t('hf.desc')}</span></label></div>
+        <div class="set-row"><label>„Hey ${escAttr(S.name)}"</label><label class="tog"><input type="checkbox" id="sWake" ${S.wakeWord ? 'checked' : ''}><span>${t('ww.desc')}</span></label></div>
         <div class="set-row"><label>${t('hf.sens')}</label>
           <div class="seg" id="sSens">${['low', 'medium', 'high'].map(v => `<button data-v="${v}" class="${S.voice.sensitivity === v ? 'active' : ''}">${t('hf.' + v)}</button>`).join('')}</div></div>
         <div class="set-row"><label>${t('set.orb')}</label>
@@ -131,8 +142,29 @@ window.SettingsUI = (function () {
         <div class="set-row"><label>${t('set.hotkey')}</label><input class="field" id="sHotkey" value="${escAttr(S.hotkey)}"></div>
         <div class="set-row"><span></span><span class="hint">API keys are encrypted with Windows (DPAPI) and only sent to the provider you picked.</span></div>
       </section>
+
+      <section class="set-section">
+        <h2>Discord</h2>
+        <div class="set-row"><span></span><div class="hint" style="margin:0">${t('dc.sub')}</div></div>
+        <div class="set-row"><label>${t('dc.how')}</label><ol class="li-steps small-steps">
+          <li>${t('dc.s1')} <a href="https://discord.com/developers/applications" data-ext>discord.com/developers ↗</a></li><li>${t('dc.s2')}</li><li>${t('dc.s3')}</li><li>${t('dc.s4')}</li></ol></div>
+        <div class="set-row"><label>Bot-Token</label><div class="key-row"><input class="field" type="password" id="sDcTok" placeholder="${S.keys.discord || 'MTA…'}"><button class="btn" id="sDcSave">OK</button></div></div>
+        <div class="set-row"><label>Status</label><div class="key-row" id="sDcStatus"><span class="muted small">…</span></div></div>
+      </section>
     </div>`;
     wire(p);
+    renderDiscord();
+  }
+
+  async function renderDiscord() {
+    const el = document.getElementById('sDcStatus'); if (!el) return;
+    const st = await window.kairo.discord.status();
+    el.innerHTML = st.running
+      ? `<span class="li-dot on"></span><span>${t('dc.online')} <b>${escAttr(st.name)}</b> · ${st.guilds} ${t('dc.servers')}</span><a class="btn sm" href="${escAttr(st.invite)}" data-ext>➕ ${t('dc.invite')}</a><button class="btn sm" id="sDcStop">${t('li.goOffline')}</button>`
+      : `<span class="li-dot"></span><span class="muted">${st.error ? escAttr(st.error === 'INTENTS' ? t('dc.intents') : st.error) : t('dc.offline')}</span><button class="btn sm primary" id="sDcStart" ${S.keys.discord ? '' : 'disabled'}>${t('li.goOnline')}</button>`;
+    const go = document.getElementById('sDcStart'), stop = document.getElementById('sDcStop');
+    if (go) go.onclick = async () => { go.disabled = true; go.textContent = '…'; const r = await window.kairo.discord.start(); if (!r.ok) toast(r.error.message); else await save({ discord: { enabled: true } }); renderDiscord(); };
+    if (stop) stop.onclick = async () => { await window.kairo.discord.stop(); await save({ discord: { enabled: false } }); renderDiscord(); };
   }
 
   function wire(p) {
@@ -145,6 +177,7 @@ window.SettingsUI = (function () {
     $('sLearn').onchange = e => save({ learnLanguage: e.target.value });
     $('sAutostart').onchange = e => save({ autostart: e.target.checked });
     $('sMini').onchange = e => save({ miniOrb: e.target.checked });
+    $('sDcSave').onclick = async () => { const v = $('sDcTok').value.trim(); if (!v) return; await save({ keys: { discord: v } }); render(); };
     $('sBg').querySelectorAll('button').forEach(b => b.onclick = () => save({ background: b.dataset.v }).then(() => { Extras.setBackground(b.dataset.v); render(); }));
     $('sTray').onchange = e => save({ closeToTray: e.target.checked });
     $('sBrief').onchange = e => save({ briefing: { enabled: e.target.checked } });
@@ -168,6 +201,20 @@ window.SettingsUI = (function () {
     $('sUse').onclick = () => save({ provider: p }).then(render);
 
     r.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => save({ theme: b.dataset.theme }).then(render));
+    // own theme: three colours, the rest is mixed from them
+    const tb = () => ({ bg: $('tbBg').value, panel: $('tbPanel').value, text: $('tbText').value });
+    $('sCustomTheme').onclick = () => save({ theme: 'custom', customTheme: S.customTheme || tb() }).then(render);
+    for (const id of ['tbBg', 'tbPanel', 'tbText']) {
+      $(id).oninput = () => window.App.previewTheme(tb());
+      $(id).onchange = () => save({ theme: 'custom', customTheme: tb() });
+    }
+    $('tbRandom').onclick = () => {
+      const h = Math.floor(Math.random() * 360), dark = Math.random() < 0.75;
+      const hsl = (s, l) => { const a = s * Math.min(l, 1 - l) / 100, f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); }; return '#' + f(0) + f(8) + f(4); };
+      const th = dark ? { bg: hsl(30, 0.09), panel: hsl(28, 0.14), text: hsl(25, 0.94) } : { bg: hsl(35, 0.95), panel: hsl(30, 0.9), text: hsl(30, 0.14) };
+      const acc = hsl(85, dark ? 0.62 : 0.48);
+      save({ theme: 'custom', customTheme: th, accent: acc }).then(render);
+    };
     r.querySelectorAll('[data-accent]').forEach(b => b.onclick = () => save({ accent: b.dataset.accent }).then(render));
     $('sAccent').onchange = e => save({ accent: e.target.value }).then(render);
     $('sAccent').oninput = e => window.App.applyAccent(e.target.value);
@@ -178,6 +225,7 @@ window.SettingsUI = (function () {
     $('sGVoice').onchange = e => save({ voice: { geminiVoice: e.target.value } });
     $('sTalk').onclick = () => LiveVoice.start();
     $('sHF').onchange = e => save({ voice: { handsFree: e.target.checked } });
+    $('sWake').onchange = e => save({ wakeWord: e.target.checked }).then(() => window.App.saveSettings({}));
     $('sSens').querySelectorAll('button').forEach(b => b.onclick = () => save({ voice: { sensitivity: b.dataset.v } }).then(render));
     $('sOrb').querySelectorAll('button').forEach(b => b.onclick = () => save({ voice: { orbStyle: b.dataset.v } }).then(render));
     root().querySelectorAll('[data-orbp]').forEach(b => b.onclick = () => save({ voice: { orbPalette: b.dataset.orbp } }).then(render));

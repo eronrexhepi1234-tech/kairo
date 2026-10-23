@@ -62,9 +62,12 @@ function buildSystemPrompt(settings, extra = '') {
     '- Reminder: `[[remind: <when> | <text>]]`. Alarm/wake-up with sound: `[[alarm: <when> | <text>]]`. <when> is "in 20 min", "in 2 h", "07:30" or an ISO date-time like 2026-10-24T18:00. Add " | daily" at the end for every day.',
     '- PC control: `[[pc: <action> <value>]]` with action volume_up/volume_down (value = steps, 1 step = 2 %), mute, play_pause, next, previous, brightness <0-100>, screenshot, lock, sleep, shutdown <minutes>, restart <minutes>, cancel_shutdown.',
     '- Tidy up the Downloads folder (shows a preview first): `[[tidy]]`.',
-    '- Smart lights: `[[light: <target> | on=true/false/toggle; brightness=1-100; color=<name or #hex or kelvin:2700>; scene=<gaming|lernen|film|chill|party|schlafen|morgen|aus>]]`. <target> is "all", a lamp name or a room. Only include the keys you need.',
     '- Show the morning briefing (weather, news, reminders): `[[briefing]]`. Start the quiz game: `[[quiz: <topic>]]`.',
     '- Flashcards to study a topic: `[[cards: <topic>]]`. Live interpreter between two languages (voice): `[[translate: <language A> | <language B>]]`.',
+    '- Draw/generate a picture: `[[image: <detailed English prompt>]]`. Make a PowerPoint presentation for school: `[[pptx: <topic> | <number of slides>]]`.',
+    '- School: add homework `[[homework: <subject> | <task> | <due YYYY-MM-DD>]]`, add an exam `[[exam: <subject> | <YYYY-MM-DD> | <topics>]]`.',
+    '- Pocket money: `[[money: <+income or -expense in CHF> | <what>]]` e.g. [[money: -4.50 | Döner]]. Diary entry: `[[diary: <mood emoji> | <short entry in the user\'s words>]]`.',
+    '- Run a routine the user created: `[[routine: <name>]]`.',
     '- Read the copied text aloud: `[[read]]`. Save the last 30 s of the screen as a clip (clip mode must be on): `[[clip]]`.',
     '- Music for a mood: use [[open: spotify:search:<mood playlist>]] or a YouTube search, e.g. gaming -> "gaming music mix", study -> "lofi study", chill -> "chill vibes".',
     'Homework: if a screenshot shows a school exercise, guide the user step by step and let them think; only give the full solution if they ask for it.',
@@ -80,7 +83,12 @@ function buildSystemPrompt(settings, extra = '') {
   ];
   const mem = require('./memory').promptText();
   if (mem) lines.push('', mem);
-  try { const home = require('./smarthome').promptText(); lines.push('', home || 'No smart lights are set up yet; if asked, tell the user to add them on the "Zuhause" page.'); } catch {}
+  try {
+    const life = require('./life');
+    const t = life.promptText(); if (t) lines.push('', t);
+    const r = life.list('routines'); if (r.length) lines.push('Routines the user made: ' + r.map(x => `"${x.name}"${x.phrase ? ' (says: ' + x.phrase + ')' : ''}`).join(', '));
+  } catch {}
+  if (settings.football?.team?.name) lines.push(`The user's favourite football team: ${settings.football.team.name}.`);
   if (settings.customInstructions?.trim()) lines.push('', 'User\'s own instructions:', settings.customInstructions.trim());
   if (extra) lines.push('', extra);
   return lines.join('\n');
