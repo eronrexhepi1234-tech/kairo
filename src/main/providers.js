@@ -226,7 +226,7 @@ async function speak(settings, text) {
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key },
     body: JSON.stringify({
       model: settings.voice.ttsModel, voice: settings.voice.openaiVoice, input: text.slice(0, 4000), format: 'mp3',
-      instructions: 'Speak naturally and relaxed, like a real person talking to a friend. Match the language of the text.'
+      instructions: (require('./extras2').role(settings)?.style || 'Speak naturally and relaxed, like a real person talking to a friend.') + ' Match the language of the text.'
     })
   });
   await ensureOk(res, 'OpenAI TTS');
@@ -238,6 +238,7 @@ const GEMINI_TTS = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini
 async function geminiSpeak(settings, text) {
   const key = settings.keys.gemini;
   if (!key) throw Object.assign(new Error('NO_KEY'), { code: 'NO_KEY' });
+  const role = require('./extras2').role(settings);
   let lastErr;
   for (const model of GEMINI_TTS) {
     try {
@@ -245,8 +246,8 @@ async function geminiSpeak(settings, text) {
         method: 'POST', signal: AbortSignal.timeout(30000),
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Say this naturally and relaxed, like a friend talking:\n' + text.slice(0, 3000) }] }],
-          generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: settings.voice.geminiVoice || 'Kore' } } } }
+          contents: [{ parts: [{ text: (role?.style || 'Say this naturally and relaxed, like a friend talking:') + '\n' + text.slice(0, 3000) }] }],
+          generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: role?.voice || settings.voice.geminiVoice || 'Kore' } } } }
         })
       });
       await ensureOk(res, 'Gemini TTS');

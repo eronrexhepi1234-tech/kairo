@@ -18,8 +18,10 @@ const WHERE_PROMPT = `The user wants to know WHERE the place on their screen is 
 const FRESH_RX = /(wann kommt|wann erscheint|release|erscheint|ist .{1,30} down|server.{0,10}(down|status)|morgen|aktuell|neueste|latest|newest|preis|price|kostet|score|ergebnis|resultat|spielstand|tabelle|transfer|update|patch|season|saison|turnier|tournament|this week|diese woche|gestern|yesterday|2026|2027)/i;
 const FREE_GAMES_RX = /((gratis|kostenlos|free|umsonst).{0,25}(spiel|game)|(spiel|game).{0,30}(gratis|kostenlos|free|umsonst)|\bepic\b)/i;
 const WEATHER_RX = /(wetter|weather|regnet es|schneit es|wird es (regnen|schneien|warm|kalt|heiss)|temperatur|grad draussen|is it raining|will it (rain|snow)|moti|kohë|météo|tiempo|meteo|hava durumu)/i;
-const MAKE_IMAGE_RX = /(mal|male|zeichne|bild|draw|paint|picture|image|vizato|foto)/i;
+const MAKE_IMAGE_RX = /\b(mal|male|zeichne|bild|draw|paint|picture|image|vizato|foto)\b/i;
 const FOOTBALL_RX = /(fussball|fußball|football|soccer|match|spielt|gespielt|gewonnen|verloren|unentschieden|tor(e)?\b|ergebnis|resultat|tabelle|super league|bundesliga|champions league|futboll|ndeshj)/i;
+const MAIL_RX = /(e-?mails?|posteingang|inbox|postfach|hab ich (post|mails?|nachrichten)|nachrichten bekommen|wer hat (mir )?geschrieben|heute.{0,25}(passiert|los|neu)|was gibt.{0,12}neues|happened today)/i;
+const HISTORY_RX = /(heute vor \d+ jahren|an diesem tag|this day in history|on this day|geschichte.{0,10}heute|heute in der geschichte|was geschah (am|heute))/i;
 const CLIP_RX = /(zwischenablage|clipboard|was ich kopiert|den kopierten|kopierte text|copied)/i;
 
 async function epicFreeGames() {
@@ -44,6 +46,8 @@ function detect(text) {
     freeGames: FREE_GAMES_RX.test(text),
     weather: WEATHER_RX.test(text) && !MAKE_IMAGE_RX.test(text),
     clip: CLIP_RX.test(text),
+    mail: MAIL_RX.test(text),
+    history: HISTORY_RX.test(text),
     screen: where || SCREEN_RX.test(text),
     news: !where && NEWS_RX.test(text),
     newsQuery: (text.match(NEWS_ABOUT_RX) || [])[1]?.replace(/[?.!]+$/, '') || ''
@@ -81,6 +85,16 @@ async function run(settings, req, onEvent, signal) {
   }
   if (want.freeGames) {
     try { const g = await epicFreeGames(); if (g.length) context.push('Epic Games Store free games right now (live data):\n' + g.join('\n')); } catch {}
+  }
+  if (want.mail && settings.mail?.enabled && settings.keys.mail) {
+    try {
+      onEvent('status', 'mail');
+      const x = require('./extras2');
+      context.push(x.mailText(await x.checkMail({ get: () => settings })));
+    } catch (e) { context.push(`The inbox could not be checked (${e.message}).`); }
+  }
+  if (want.history) {
+    try { const h = await require('./extras2').history(settings.language); context.push('On this day in history (Wikipedia):\n' + h.slice(0, 12).map(e => `${e.year}: ${e.text}`).join('\n')); } catch {}
   }
   if (want.weather) {
     // "Wetter in Thun" -> Thun; otherwise the home city

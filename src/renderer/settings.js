@@ -154,6 +154,7 @@ window.SettingsUI = (function () {
     </div>`;
     wire(p);
     renderDiscord();
+    window.Extras2?.renderSettings(root().querySelector('.settings-inner'), S, save, render);
   }
 
   async function renderDiscord() {

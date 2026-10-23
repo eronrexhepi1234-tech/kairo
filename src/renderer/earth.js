@@ -24,10 +24,15 @@ window.Earth = (function () {
       .atmosphereAltitude(0.18)
       .globeTileEngineUrl(SAT)
       .htmlElementsData([])
-      .htmlElement(() => { const d = document.createElement('div'); d.className = 'globe-pin'; return d; })
+      .htmlElement(d => { if (d.el) return d.el; const e = document.createElement('div'); e.className = 'globe-pin'; return e; })
+      .htmlAltitude(d => d.alt || 0)
+      .htmlTransitionDuration(0)
       .ringsData([])
-      .ringColor(() => t => `rgba(255,${Math.round(122 + 80 * t)},69,${1 - t})`)
-      .ringMaxRadius(4).ringPropagationSpeed(3).ringRepeatPeriod(650)
+      .ringColor(d => d.color || (t => `rgba(255,${Math.round(122 + 80 * t)},69,${1 - t})`))
+      .ringMaxRadius(d => d.maxR || 4).ringPropagationSpeed(d => d.speed || 3).ringRepeatPeriod(d => d.period || 650)
+      .pathsData([]).pathPoints('pts').pathPointLat(p => p[0]).pathPointLng(p => p[1]).pathPointAlt(p => p[2] || 0)
+      .pathColor(d => d.color || ['rgba(120,200,255,.9)', 'rgba(120,200,255,.1)']).pathStroke(d => d.stroke || 1.5)
+      .pathDashLength(d => d.dash || 0.02).pathDashGap(d => d.gap || 0.004).pathDashAnimateTime(d => d.anim || 30000).pathTransitionDuration(0)
       .onGlobeClick(({ lat, lng }) => { flight++; select(lat, lng); });
     const controls = globe.controls();
     controls.autoRotate = true;
@@ -55,6 +60,7 @@ window.Earth = (function () {
       const q = $('earthQuery').value.trim();
       if (q) flyToName(q, 'city');
     };
+    window.EarthLayers?.init();
     $('epWhat').onclick = whatHappened;
     $('epAsk').onclick = () => {
       if (!current) return;
@@ -73,7 +79,7 @@ window.Earth = (function () {
 
   async function select(lat, lng, knownName, knownCountry) {
     stopRotate();
-    globe.htmlElementsData([{ lat, lng }]);
+    setLayer('pin', { html: [{ lat, lng }] });
     const panel = $('earthPanel');
     panel.classList.add('open');
     $('epCoords').textContent = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
@@ -82,7 +88,7 @@ window.Earth = (function () {
     $('epWhat').disabled = $('epAsk').disabled = true;
     const info = knownCountry ? { country: knownCountry } : await window.kairo.geo.reverse(lat, lng);
     current = { lat, lng, name: knownName || info.name || `${lat.toFixed(2)}, ${lng.toFixed(2)}`, country: (info.country || "").split("/")[0] };
-    $('epPlace').textContent = current.name + (current.country && current.country !== current.name ? ', ' + current.country : '');
+    $('epPlace').textContent = current.name + (current.country && !current.name.includes(current.country) ? ', ' + current.country : '');
     $('epWhat').disabled = $('epAsk').disabled = false;
     // live weather at this spot
     const w = await window.kairo.weatherAt({ lat, lng, name: current.name, country: current.country });
@@ -120,7 +126,7 @@ window.Earth = (function () {
     const start = globe.pointOfView();
     const far = Math.hypot(start.lat - lat, ((start.lng - lng + 540) % 360) - 180) > 25;
     $('earthPanel').classList.remove('open');
-    globe.htmlElementsData([]); globe.ringsData([]);
+    setLayer('pin', { html: [], rings: [] });
     hud(true);
     const coords = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(2)}° ${lng >= 0 ? 'E' : 'W'}`;
     const hideTitle = title(name || '', [country, coords].filter(Boolean).join('  ·  '));
@@ -131,7 +137,7 @@ window.Earth = (function () {
     globe.pointOfView({ lat, lng, altitude: Math.max(1.6, Math.min(2.3, alt * 4)) }, (far ? 2000 : 1100) * m); await wait((far ? 2000 : 1100) * m);
     if (id !== flight) return;
     // 3) lock on: pulse rings + crosshair
-    globe.ringsData([{ lat, lng }]);
+    setLayer('pin', { rings: [{ lat, lng }] });
     hud(true, true);
     await wait(500 * m);
     // 4) dive in (two stages feel more like a real camera)
@@ -143,12 +149,12 @@ window.Earth = (function () {
     if (id !== flight) return;
     hideTitle();
     hud(false);
-    setTimeout(() => { if (id === flight) globe.ringsData([]); }, 3500);
+    setTimeout(() => { if (id === flight) setLayer('pin', { rings: [] }); }, 3500);
     return select(lat, lng, name, country);
   }
 
   // "Thun", "Paris | street", "Albania | country"
-  async function flyToName(q, zoomLevel) {
+  async function flyToName(q, zoomLevel, label) {
     let [place, z] = String(q).split('|').map(s => s.trim());
     z = zoomLevel || (z && (ZOOM[z] != null ? z : /street|strasse|nah|close|rein|zoom/i.test(z) ? 'street' : /land|country/i.test(z) ? 'country' : 'city')) || 'city';
     init();
@@ -157,7 +163,7 @@ window.Earth = (function () {
     const parts = (r.name || place).split(',').map(s => s.trim());
     const country = parts.length > 1 ? parts[parts.length - 1].split('/')[0] : '';
     const nameShown = place.length < 3 ? parts[0] : place.charAt(0).toUpperCase() + place.slice(1);
-    return flyTo(r.lat, r.lng, z, nameShown, country);
+    return flyTo(r.lat, r.lng, z, label || nameShown, country);
   }
 
   async function whatHappened() {
@@ -182,5 +188,14 @@ window.Earth = (function () {
     if (items.length) body.insertAdjacentHTML('beforeend', `<div class="sources">${items.slice(0, 6).map(n => `<a class="source" href="${escAttr(n.link)}" data-ext title="${escAttr(n.title)}">${escAttr(n.source || 'link')}</a>`).join('')}</div>`);
   }
 
-  return { init, flyTo, flyToName, zoom, ZOOM: Object.keys(ZOOM) };
+  // several layers (pin, planes, ISS, quakes...) share the globe's markers, rings and paths
+  const layers = {};
+  function setLayer(name, data) {
+    layers[name] = { ...(layers[name] || {}), ...data };
+    if (!globe) return;
+    const all = k => Object.values(layers).flatMap(l => l[k] || []);
+    globe.htmlElementsData(all('html')).ringsData(all('rings')).pathsData(all('paths'));
+  }
+
+  return { init, flyTo, flyToName, zoom, select, setLayer, globe: () => (init(), globe), current: () => current, panel: () => $('earthPanel'), stopRotate: () => stopRotate(), ZOOM: Object.keys(ZOOM) };
 })();

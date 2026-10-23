@@ -114,5 +114,5 @@ window.Voice = (function () {
     });
   }
 
-  return { speak, stop, startListening, stopListening, isListening: () => !!recorder, voices: () => speechSynthesis.getVoices() };
+  return { pcmToWavUrl, speak, stop, startListening, stopListening, isListening: () => !!recorder, voices: () => speechSynthesis.getVoices() };
 })();

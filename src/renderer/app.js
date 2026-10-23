@@ -75,6 +75,7 @@ function go(view) {
     $('viewName').textContent = t('nav.' + view);
     if (view === 'earth') Earth.init();
     if (view === 'settings') SettingsUI.render();
+    if (view === 'today') window.Extras2?.renderToday();
     if (view === 'phone') loadMac();
     if (view === 'today') { Today.refresh(); Life.refreshToday(); }
     if (view === 'school') Life.renderSchool();
@@ -171,7 +172,9 @@ function parseReply(text) {
   const money = split(/\[\[money:\s*([^\]]+)\]\]/gi).map(([amount, note]) => ({ amount: parseFloat(String(amount).replace(',', '.')) || 0, note: note || '' })).filter(m => m.amount);
   const diary = split(/\[\[diary:\s*([^\]]+)\]\]/gi).map(([mood, text]) => text ? { mood, text } : { mood: '🙂', text: mood });
   const routines = grab(/\[\[routine:\s*([^\]]+)\]\]/gi);
-  shown = shown.replace(/\[\[(image|pptx|homework|exam|money|diary|routine):[^\]]*\]\]/gi, '');
+  const layers = grab(/\[\[layer:\s*([^\]]+)\]\]/gi), tours = grab(/\[\[tour:\s*([^\]]+)\]\]/gi), roles = grab(/\[\[voice:\s*([^\]]+)\]\]/gi);
+  const countdowns = split(/\[\[countdown:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
+  shown = shown.replace(/\[\[(image|pptx|homework|exam|money|diary|routine|layer|tour|voice|countdown):[^\]]*\]\]/gi, '');
   const tidy = /\[\[tidy\]\]/i.test(shown), briefing = /\[\[briefing\]\]/i.test(shown);
   const cards = grab(/\[\[cards:\s*([^\]]+)\]\]/gi)[0] || null;
   const translate = grab(/\[\[translate:\s*([^\]]+)\]\]/gi).map(s => s.split('|').map(x => x.trim()))[0] || null;
@@ -180,7 +183,7 @@ function parseReply(text) {
   const quiz = grab(/\[\[quiz:\s*([^\]]+)\]\]/gi)[0] || null;
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
-  return { shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines };
+  return { shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns };
 }
 
 const EXT_LABEL = n => (n.match(/\.([a-z0-9]+)$/i) || [, 'TXT'])[1].toUpperCase().slice(0, 4);
@@ -220,6 +223,10 @@ async function runActions(m) {
   for (const x of p.money) { await L.add('money', x); m.done.push(`💰 ${x.amount > 0 ? '+' : ''}${x.amount.toFixed(2)} ${x.note}`); }
   for (const d of p.diary) { await L.add('diary', { date: new Date().toLocaleDateString('sv'), mood: d.mood, text: d.text }); m.done.push('📔 ' + d.mood); }
   if (p.money.length || p.diary.length) { Life.renderMoney(); Life.renderDiary(); }
+  for (const l of p.layers) { const k = l.toLowerCase(); go('earth'); Earth.init(); EarthLayers.set(k, true); m.done.push('🌍 ' + (t('lay.' + k) || k)); }
+  if (p.tours[0]) { m.done.push('🎬 ' + p.tours[0]); setTimeout(() => Tour.start(p.tours[0]), 400); }
+  for (const r of p.roles) { await Extras2.setRole(r.toLowerCase(), S); m.done.push('🎭 ' + r); }
+  for (const c of p.countdowns) { const r = await window.kairo.extras2.countdowns.add(c); m.done.push(r.ok ? '⏳ ' + c.name : '✕ ' + r.error.message); }
   for (const r of p.routines) { const res = await Life.runRoutine(r); m.done.push(res.ok ? '⚡ ' + res.name : '✕ ' + res.error); }
   m.imageResults = [];
   for (const prompt of p.images) {

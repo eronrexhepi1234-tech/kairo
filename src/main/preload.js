@@ -44,6 +44,16 @@ contextBridge.exposeInMainWorld('kairo', {
   },
   weather: city => invoke('weather:get', city),
   weatherAt: place => invoke('weather:at', place),
+  earth: {
+    flights: box => invoke('earth:flights', box), route: c => invoke('earth:route', c),
+    iss: () => invoke('earth:iss'), issPath: () => invoke('earth:issPath'), quakes: () => invoke('earth:quakes')
+  },
+  extras2: {
+    sample: (role, lang) => invoke('voice:sample', role, lang), roles: () => invoke('voice:roles'),
+    mail: { check: force => invoke('mail:check', force), test: cfg => invoke('mail:test', cfg), onNew: cb => on('mail:new', cb) },
+    history: () => invoke('history:today'),
+    countdowns: { list: () => invoke('countdown:list'), add: c => invoke('countdown:add', c), remove: id => invoke('countdown:remove', id) }
+  },
   briefing: { due: () => invoke('brief:due'), make: () => invoke('brief:make') },
   pc: (action, value) => invoke('pc:do', action, value),
   tidy: { plan: d => invoke('tidy:plan', d), run: p => invoke('tidy:run', p), undo: d => invoke('tidy:undo', d), canUndo: d => invoke('tidy:canUndo', d) },

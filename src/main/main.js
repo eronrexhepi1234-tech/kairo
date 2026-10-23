@@ -226,7 +226,9 @@ ipcMain.handle('live:config', async (_e, translate) => {
         'Only speak the translation: no comments, no greetings, no "he says". Keep the tone and meaning. Translate names and numbers correctly.'
       ].join('\n') };
     }
+    const role = require('./extras2').role(s);
     const system = buildSystemPrompt(s, [
+      ...(role ? [`VOICE ROLE: speak in the style of ${role.persona}. ${role.style} Keep facts correct.`] : []),
       'LIVE VOICE CONVERSATION. You are talking out loud with the user, hands-free.',
       'Speak like a real person: short natural sentences, no markdown, no lists, no emojis, no reading out URLs.',
       'Answer in the language the user speaks. Keep answers short unless asked for detail.',
@@ -239,7 +241,7 @@ ipcMain.handle('live:config', async (_e, translate) => {
       'IMPORTANT: to do something you MUST call the matching function. Never say you started, opened, set or saved something unless you called the function for it.',
       'Chess: "let\'s play chess" -> call chess_new_game. When the user says a move, call chess_move, then tell them the engine\'s reply move.'
     ].join('\n'));
-    return { ok: true, key: s.keys.gemini, models: [...new Set(models)], voice: s.voice.geminiVoice || 'Kore', system };
+    return { ok: true, key: s.keys.gemini, models: [...new Set(models)], voice: role?.voice || s.voice.geminiVoice || 'Kore', system };
   } catch (e) { return { ok: false, error: errInfo(e) }; }
 });
 ipcMain.handle('voice:transcribe', async (_e, data, mime) => {
@@ -397,6 +399,8 @@ if (gotLock) app.whenReady().then(() => {
   if (!process.env.KAIRO_SHOTS) system.applyAutostart(store);
   if (!process.env.KAIRO_SHOTS) system.watchForChanges(() => [win, overlay]);
   require('./features').register({ getWin: () => win, store, errInfo, tray: trayCtl });
+  optional('./earthdata', { register: () => {} }).register();
+  optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start
   if (process.env.KAIRO_SHOTS) {

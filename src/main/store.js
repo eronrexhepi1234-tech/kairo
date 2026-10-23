@@ -17,7 +17,7 @@ const DEFAULTS = {
     custom: 'llama3.2'
   },
   customBaseUrl: 'http://localhost:11434/v1',
-  keys: { anthropic: '', openai: '', gemini: '', custom: '', lichess: '', discord: '' },
+  keys: { anthropic: '', openai: '', gemini: '', custom: '', lichess: '', discord: '', mail: '' },
   theme: 'graphite',
   accent: '#ff7a45',
   density: 'comfortable',
@@ -25,10 +25,11 @@ const DEFAULTS = {
   font: 'system',
   voice: {
     engine: 'auto', systemVoice: '', openaiVoice: 'coral', geminiVoice: 'Kore', ttsModel: 'gpt-4o-mini-tts', sttModel: 'gpt-4o-mini-transcribe',
-    autoSpeak: false, rate: 1, liveModel: 'auto', orbStyle: 'orb', orbPalette: 'accent', handsFree: true, sensitivity: 'medium'
+    autoSpeak: false, rate: 1, liveModel: 'auto', orbStyle: 'orb', orbPalette: 'accent', handsFree: true, sensitivity: 'medium', role: 'normal'
   },
   schema: 3,
   miniOrb: true,
+  mail: { enabled: false, provider: 'gmail', user: '', host: '', port: 993, notify: true },
   football: { league: 'sui.1', team: null },
   wakeWord: false,
   customTheme: null,
