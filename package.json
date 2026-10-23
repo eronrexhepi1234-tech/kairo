@@ -1,0 +1,86 @@
+{
+  "name": "kairo",
+  "productName": "Kairo",
+  "version": "0.3.0",
+  "description": "A desktop companion for Windows: chat and talk hands-free with Claude, GPT or Gemini, let it look at your screen, explore the Earth, play chess, set reminders and control your PC from your phone.",
+  "author": "Kairo contributors",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icon": "electron scripts/make-icon.js",
+    "shortcut": "powershell -ExecutionPolicy Bypass -File scripts/create-shortcut.ps1",
+    "dist": "electron-builder --win nsis"
+  },
+  "keywords": [
+    "electron",
+    "ai",
+    "assistant",
+    "desktop",
+    "claude",
+    "openai",
+    "gemini",
+    "voice",
+    "chess"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "electron-updater": "^6.3.9",
+    "globe.gl": "^2.46.2",
+    "qrcode": "^1.5.4",
+    "stockfish": "^10.0.2"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  },
+  "build": {
+    "appId": "app.kairo.desktop",
+    "productName": "Kairo",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "node_modules/stockfish/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kairo",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "Kairo-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_GITHUB_NAME",
+        "repo": "kairo"
+      }
+    ]
+  }
+}

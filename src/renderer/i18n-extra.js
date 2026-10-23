@@ -1,0 +1,67 @@
+// Translations for the Today page, tools, quiz, analysis, Lichess and new personalities.
+Object.assign(I18N.en, {
+  'nav.today': 'Today', 'today.briefing': 'Briefing', 'today.play': 'Play', 'today.briefHint': 'Weather, top news and your reminders — read aloud. Comes automatically every morning.',
+  'today.briefMaking': 'Putting your briefing together…', 'today.reminders': 'Reminders & alarms', 'today.when': '18:30 · in 20 min', 'today.what': 'What?',
+  'today.memory': 'Kairo remembers', 'today.memAdd': 'e.g. My best friend is called Arben', 'today.noMemory': 'Nothing yet. Tell Kairo "remember …" or add it here.',
+  'today.noReminders': 'No reminders.', 'today.dj': 'Music DJ', 'today.pc': 'PC control', 'today.tools': 'Tools', 'today.clip': 'Clipboard helper',
+  'today.tidy': 'Tidy up Downloads', 'today.tidySub': 'Sort files into folders · preview first', 'today.quiz': 'Quiz', 'today.quizSub': 'Any topic, against the clock',
+  'today.cityPh': 'Your city for the weather', 'today.feels': 'feels', 'today.today': 'Today', 'today.tomorrow': 'Tomorrow', 'today.alarm': 'Alarm', 'today.reminder': 'Reminder',
+  'today.snooze': 'Snooze 5 min', 'today.done': 'Done', 'today.alarmSay': 'Wake up!', 'today.reminderSay': 'Reminder:', 'today.badTime': 'I did not understand the time',
+  'today.tidyPlan': '{n} files will be sorted into folders:', 'today.tidyFiles': 'Show all files', 'today.tidyNothing': 'Nothing to tidy — the folder is already clean ✨',
+  'today.tidyGo': 'Tidy up', 'today.cancel': 'Cancel', 'today.undo': 'Undo last tidy-up', 'today.tidyDone': '✓ {n} files sorted', 'today.undoDone': '↶ {n} files back', 'today.shutdown': 'Shut down in…',
+  'dj.gaming': 'Gaming', 'dj.study': 'Study', 'dj.chill': 'Chill', 'dj.party': 'Party', 'dj.focus': 'Focus', 'dj.workout': 'Workout', 'dj.sleep': 'Sleep', 'dj.albanian': 'Shqip', 'dj.rap': 'Deutschrap',
+  'games.analysis': 'Analysis', 'games.quizTab': 'Quiz',
+  'quiz.sub': 'Pick a topic — Kairo writes 10 questions. Faster answers and streaks give more points.', 'quiz.ownTopic': 'Or type your own topic…', 'quiz.easy': 'Easy', 'quiz.medium': 'Medium', 'quiz.hard': 'Hard',
+  'quiz.start': 'Start quiz', 'quiz.read': 'Read questions aloud', 'quiz.making': 'Kairo writes questions about {topic}…', 'quiz.fail': 'Could not make the quiz, try again.', 'quiz.points': 'points',
+  'quiz.right': 'correct', 'quiz.again': 'Play again', 'quiz.newTopic': 'New topic',
+  'an.sub': 'Load your real games from Lichess or Chess.com — Stockfish finds your mistakes and Kairo explains them.', 'an.user': 'Username', 'an.load': 'Load games', 'an.vs': 'vs',
+  'an.analyze': 'Analyse', 'an.none': 'No games found.', 'an.running': 'Stockfish analyses every move…', 'an.accuracy': 'accuracy', 'an.blunders': 'blunders', 'an.mistakes': 'mistakes', 'an.inacc': 'inaccuracies',
+  'an.was': 'was', 'an.blunder': 'a blunder', 'an.mistake': 'a mistake', 'an.inaccuracy': 'an inaccuracy', 'an.better': 'Better:', 'an.blue': 'blue squares', 'an.click': 'Click a move — your mistakes are coloured.',
+  'an.explain': 'Kairo explains my mistakes', 'an.nextMistake': 'Next mistake', 'an.back': 'Games', 'an.explainQ': 'Explain my biggest mistakes in this chess game simply, and give me 3 tips to improve.',
+  'li.sub': 'Kairo plays live on lichess.org as an official bot — with its own bot account, so it is allowed. You can challenge it or watch it play other bots.',
+  'li.s1': 'Create a NEW Lichess account for Kairo (never play a game with it):', 'li.s2': 'While logged in with that new account, create a token:', 'li.token': 'Create token',
+  'li.s3': 'Paste the token here:', 'li.save': 'Save', 'li.fair': 'Never use your normal account — engine help in your own games is cheating and gets accounts banned.',
+  'li.newToken': 'Use another token', 'li.notBot': 'The account {name} is not a bot account yet.', 'li.upgradeWarn': 'Lichess only allows this for accounts with 0 games (this one has {n}). It cannot be undone — use a fresh account just for Kairo.',
+  'li.upgrade': 'Turn into bot account', 'li.confirm': 'Turn {name} into a BOT account for good? It can then only play as a bot.', 'li.upgradeGo': 'Yes, make it a bot',
+  'li.noGames': 'no rated games yet', 'li.goOnline': 'Go online', 'li.goOffline': 'Go offline', 'li.strength': 'Strength', 'li.from': 'Accept from', 'li.everyone': 'everyone',
+  'li.challengeMe': 'Challenge Kairo', 'li.profile': 'Profile', 'li.vsBots': 'Play other bots', 'li.needOnline': 'Go online first', 'li.playing': 'Playing now', 'li.watch': 'Watch live',
+  'persona.tutor': 'Teacher', 'persona.commentator': 'Commentator', 'persona.pirate': 'Pirate', 'persona.robot': 'Robot',
+  'set.city': 'Your city', 'set.learn': 'Language to learn', 'set.learnHint': 'Used by the "Teacher" personality: talk in that language and Kairo corrects you.',
+  'set.autostart': 'Start with Windows', 'set.tray': 'Keep running in the tray when closed', 'set.briefing': 'Morning briefing', 'set.briefingSpeak': 'Every morning when Kairo opens'
+});
+
+Object.assign(I18N.de, {
+  'nav.today': 'Heute', 'today.briefing': 'Briefing', 'today.play': 'Abspielen', 'today.briefHint': 'Wetter, die wichtigsten News und deine Erinnerungen – vorgelesen. Kommt jeden Morgen automatisch.',
+  'today.briefMaking': 'Stelle dein Briefing zusammen…', 'today.reminders': 'Erinnerungen & Wecker', 'today.when': '18:30 · in 20 min', 'today.what': 'Was?',
+  'today.memory': 'Kairo merkt sich', 'today.memAdd': 'z. B. Mein bester Freund heisst Arben', 'today.noMemory': 'Noch nichts. Sag Kairo „Merk dir …“ oder trag es hier ein.',
+  'today.noReminders': 'Keine Erinnerungen.', 'today.dj': 'Musik-DJ', 'today.pc': 'PC-Steuerung', 'today.tools': 'Werkzeuge', 'today.clip': 'Zwischenablage-Helfer',
+  'today.tidy': 'Downloads aufräumen', 'today.tidySub': 'Dateien in Ordner sortieren · erst Vorschau', 'today.quiz': 'Quiz', 'today.quizSub': 'Jedes Thema, gegen die Zeit',
+  'today.cityPh': 'Deine Stadt fürs Wetter', 'today.feels': 'gefühlt', 'today.today': 'Heute', 'today.tomorrow': 'Morgen', 'today.alarm': 'Wecker', 'today.reminder': 'Erinnerung',
+  'today.snooze': '5 Min. schlummern', 'today.done': 'Erledigt', 'today.alarmSay': 'Aufwachen!', 'today.reminderSay': 'Erinnerung:', 'today.badTime': 'Die Zeit habe ich nicht verstanden',
+  'today.tidyPlan': '{n} Dateien werden in Ordner sortiert:', 'today.tidyFiles': 'Alle Dateien zeigen', 'today.tidyNothing': 'Nichts zu tun – der Ordner ist schon sauber ✨',
+  'today.tidyGo': 'Aufräumen', 'today.cancel': 'Abbrechen', 'today.undo': 'Letztes Aufräumen rückgängig', 'today.tidyDone': '✓ {n} Dateien sortiert', 'today.undoDone': '↶ {n} Dateien zurück', 'today.shutdown': 'Herunterfahren in…',
+  'dj.gaming': 'Gaming', 'dj.study': 'Lernen', 'dj.chill': 'Chillen', 'dj.party': 'Party', 'dj.focus': 'Fokus', 'dj.workout': 'Training', 'dj.sleep': 'Einschlafen', 'dj.albanian': 'Shqip', 'dj.rap': 'Deutschrap',
+  'games.analysis': 'Analyse', 'games.quizTab': 'Quiz',
+  'quiz.sub': 'Wähl ein Thema – Kairo schreibt 10 Fragen. Schnelle Antworten und Serien geben mehr Punkte.', 'quiz.ownTopic': 'Oder eigenes Thema eingeben…', 'quiz.easy': 'Leicht', 'quiz.medium': 'Mittel', 'quiz.hard': 'Schwer',
+  'quiz.start': 'Quiz starten', 'quiz.read': 'Fragen vorlesen', 'quiz.making': 'Kairo schreibt Fragen über {topic}…', 'quiz.fail': 'Das Quiz hat nicht geklappt, nochmal versuchen.', 'quiz.points': 'Punkte',
+  'quiz.right': 'richtig', 'quiz.again': 'Nochmal', 'quiz.newTopic': 'Neues Thema',
+  'an.sub': 'Lade deine echten Partien von Lichess oder Chess.com – Stockfish findet deine Fehler und Kairo erklärt sie dir.', 'an.user': 'Benutzername', 'an.load': 'Partien laden', 'an.vs': 'gegen',
+  'an.analyze': 'Analysieren', 'an.none': 'Keine Partien gefunden.', 'an.running': 'Stockfish prüft jeden Zug…', 'an.accuracy': 'Genauigkeit', 'an.blunders': 'Patzer', 'an.mistakes': 'Fehler', 'an.inacc': 'Ungenau',
+  'an.was': 'war', 'an.blunder': 'ein Patzer', 'an.mistake': 'ein Fehler', 'an.inaccuracy': 'ungenau', 'an.better': 'Besser:', 'an.blue': 'blaue Felder', 'an.click': 'Klick auf einen Zug – deine Fehler sind farbig.',
+  'an.explain': 'Kairo erklärt meine Fehler', 'an.nextMistake': 'Nächster Fehler', 'an.back': 'Partien', 'an.explainQ': 'Erklär mir einfach meine grössten Fehler in dieser Schachpartie und gib mir 3 Tipps, wie ich besser werde.',
+  'li.sub': 'Kairo spielt live auf lichess.org als offizieller Bot – mit eigenem Bot-Konto, darum ist es erlaubt. Du kannst ihn herausfordern oder zuschauen, wie er gegen andere Bots spielt.',
+  'li.s1': 'Erstelle ein NEUES Lichess-Konto nur für Kairo (spiel damit nie selbst):', 'li.s2': 'Eingeloggt mit diesem neuen Konto einen Token erstellen:', 'li.token': 'Token erstellen',
+  'li.s3': 'Token hier einfügen:', 'li.save': 'Speichern', 'li.fair': 'Nie dein normales Konto benutzen – Engine-Hilfe in eigenen Partien ist Betrug und führt zur Sperre.',
+  'li.newToken': 'Anderen Token verwenden', 'li.notBot': 'Das Konto {name} ist noch kein Bot-Konto.', 'li.upgradeWarn': 'Lichess erlaubt das nur bei Konten mit 0 Partien (dieses hat {n}). Es kann nicht rückgängig gemacht werden – nimm ein frisches Konto nur für Kairo.',
+  'li.upgrade': 'Zum Bot-Konto machen', 'li.confirm': '{name} für immer zum BOT-Konto machen? Es kann danach nur noch als Bot spielen.', 'li.upgradeGo': 'Ja, zum Bot machen',
+  'li.noGames': 'noch keine Wertung', 'li.goOnline': 'Online gehen', 'li.goOffline': 'Offline gehen', 'li.strength': 'Stärke', 'li.from': 'Annehmen von', 'li.everyone': 'allen',
+  'li.challengeMe': 'Kairo herausfordern', 'li.profile': 'Profil', 'li.vsBots': 'Gegen andere Bots', 'li.needOnline': 'Zuerst online gehen', 'li.playing': 'Spielt gerade', 'li.watch': 'Live zuschauen',
+  'persona.tutor': 'Lehrer', 'persona.commentator': 'Kommentator', 'persona.pirate': 'Pirat', 'persona.robot': 'Roboter',
+  'set.city': 'Deine Stadt', 'set.learn': 'Sprache lernen', 'set.learnHint': 'Für die Persönlichkeit „Lehrer“: Sprich in dieser Sprache, Kairo korrigiert dich.',
+  'set.autostart': 'Mit Windows starten', 'set.tray': 'Beim Schliessen im Tray weiterlaufen', 'set.briefing': 'Morgen-Briefing', 'set.briefingSpeak': 'Jeden Morgen, wenn Kairo aufgeht'
+});
+
+Object.assign(I18N.sq, {
+  'nav.today': 'Sot', 'today.reminders': 'Kujtesa & alarme', 'today.memory': 'Kairo mban mend', 'today.dj': 'DJ muzike', 'today.pc': 'Kontrolli i PC', 'today.tools': 'Mjete',
+  'persona.tutor': 'Mësues', 'persona.commentator': 'Komentator', 'persona.pirate': 'Pirat', 'persona.robot': 'Robot', 'games.analysis': 'Analizë', 'games.quizTab': 'Kuiz', 'dj.albanian': 'Shqip'
+});

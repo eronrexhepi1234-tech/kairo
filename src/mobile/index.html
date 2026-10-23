@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" id="mf">
+<title>Kairo Remote</title>
+<style>
+  :root { --bg: #111214; --bg2: #1a1b1e; --bg3: #232428; --line: #2c2d32; --text: #ececec; --muted: #8b8c92; --accent: #ff7a45; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.15); }
+  .host { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+  .tabs { display: flex; gap: 4px; padding: 10px 16px 0; }
+  .tabs button { flex: 1; border: 0; background: var(--bg2); color: var(--muted); padding: 9px; border-radius: 10px; font: inherit; font-size: 14px; }
+  .tabs button.on { background: var(--bg3); color: var(--text); }
+  main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .pane { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+  .pane.on { display: block; }
+  .msg { margin: 0 0 14px; animation: in .35s cubic-bezier(.2,.8,.2,1); white-space: pre-wrap; }
+  .msg.me { margin-left: 18%; background: var(--bg3); padding: 9px 13px; border-radius: 14px 14px 4px 14px; }
+  .msg.ai { border-left: 2px solid var(--accent); padding-left: 12px; }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } }
+  form { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+  form input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 22px; padding: 11px 16px; font: inherit; outline: 0; }
+  form button { border: 0; background: var(--accent); color: #1a0f0a; border-radius: 22px; padding: 0 18px; font-weight: 700; font: inherit; }
+  .opt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .act { border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 16px; padding: 20px 12px; font: inherit; display: grid; gap: 6px; justify-items: center; }
+  .act span { font-size: 26px; }
+  .act:active { transform: scale(.97); background: var(--bg3); }
+  .shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); margin-top: 12px; background: #000; min-height: 120px; }
+  .btn { width: 100%; border: 0; background: var(--accent); color: #1a0f0a; font: inherit; font-weight: 600; padding: 12px; border-radius: 12px; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+  .typing { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot" id="dot"></span>Kairo</div>
+  <span class="host" id="host">…</span>
+</header>
+<div class="tabs">
+  <button class="on" data-t="chat">Chat</button>
+  <button data-t="screen">Screen</button>
+  <button data-t="control">Control</button>
+</div>
+<main>
+  <div class="pane on" id="p-chat"><div id="log"></div></div>
+  <div class="pane" id="p-screen">
+    <button class="btn" id="refresh">Refresh screenshot</button>
+    <img class="shot" id="shot" alt="">
+  </div>
+  <div class="pane" id="p-control">
+    <div class="grid">
+      <button class="act" data-a="lock"><span>🔒</span>Lock PC</button>
+      <button class="act" data-a="sleep"><span>🌙</span>Sleep</button>
+      <button class="act" data-a="playpause"><span>⏯</span>Play / Pause</button>
+      <button class="act" data-a="mute"><span>🔇</span>Mute</button>
+      <button class="act" data-a="voldown"><span>🔉</span>Volume −</button>
+      <button class="act" data-a="volup"><span>🔊</span>Volume +</button>
+    </div>
+    <p class="note">To turn the PC on while it's off, use a Wake-on-LAN app with the MAC address shown in Kairo → Phone.</p>
+  </div>
+</main>
+<form id="f">
+  <input type="text" id="q" placeholder="Message Kairo…" autocomplete="off">
+  <label class="opt"><input type="checkbox" id="ws">👁</label>
+  <button>Send</button>
+</form>
+<script>
+  const token = new URLSearchParams(location.search).get('t') || localStorage.getItem('kairo.t') || '';
+  if (token) localStorage.setItem('kairo.t', token);
+  document.getElementById('mf').href = '/manifest.json?t=' + encodeURIComponent(token);
+  const api = (path, body) => fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'x-kairo-token': token, 'content-type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const $ = id => document.getElementById(id);
+
+  async function status() {
+    try {
+      const r = await api('/api/status');
+      if (!r.ok) throw 0;
+      const s = await r.json();
+      $('dot').classList.add('on');
+      $('host').textContent = s.host + ' · RAM ' + Math.round(s.mem * 100) + '%';
+    } catch { $('dot').classList.remove('on'); $('host').textContent = 'offline'; }
+  }
+  status(); setInterval(status, 10000);
+
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));
+    $('f').style.display = b.dataset.t === 'chat' ? '' : 'none';
+    if (b.dataset.t === 'screen') loadShot();
+  });
+
+  function add(cls, text) {
+    const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text;
+    $('log').appendChild(d); $('p-chat').scrollTop = 1e9; return d;
+  }
+  $('f').onsubmit = async e => {
+    e.preventDefault();
+    const text = $('q').value.trim(); if (!text) return;
+    $('q').value = '';
+    add('me', text);
+    const wait = add('ai typing', '…');
+    try {
+      const r = await api('/api/chat', { text, withScreen: $('ws').checked });
+      const j = await r.json();
+      wait.className = 'msg ai';
+      wait.textContent = (j.reply || j.error || '?').replace(/\[\[fly:[^\]]*\]\]/g, '').trim();
+    } catch (err) { wait.textContent = 'Error: ' + err.message; }
+  };
+
+  async function loadShot() {
+    const r = await api('/api/screen');
+    if (!r.ok) return;
+    $('shot').src = URL.createObjectURL(await r.blob());
+  }
+  $('refresh').onclick = loadShot;
+
+  document.querySelectorAll('.act').forEach(b => b.onclick = async () => {
+    if (b.dataset.a === 'sleep' && !confirm('Put the PC to sleep?')) return;
+    await api('/api/action', { action: b.dataset.a });
+    if (navigator.vibrate) navigator.vibrate(20);
+  });
+</script>
+</body>
+</html>

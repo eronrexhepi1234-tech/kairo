@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+<title>Kairo Clipboard</title>
+<style>
+  :root { --bg: #16171a; --bg2: #1f2024; --line: #2e2f35; --text: #ececec; --muted: #8b8c92; --accent: #ff7a45; --ink: #1a0f0a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; font: 13px/1.5 "Segoe UI Variable Text", "Segoe UI", sans-serif; color: var(--text); }
+  .card { position: absolute; inset: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 50px rgba(0,0,0,.5);
+    display: flex; flex-direction: column; overflow: hidden; animation: in .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+  header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); -webkit-app-region: drag; }
+  header b { font-size: 12px; letter-spacing: .04em; }
+  header i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  header button { -webkit-app-region: no-drag; margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 16px; cursor: pointer; }
+  .src { margin: 10px 14px 0; padding: 8px 10px; background: var(--bg2); border-radius: 10px; color: var(--muted); max-height: 70px; overflow: hidden; font-size: 12px; white-space: pre-wrap; }
+  .acts { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .acts button { border: 1px solid var(--line); background: var(--bg2); color: var(--text); padding: 6px 10px; border-radius: 99px; cursor: pointer; font: inherit; font-size: 12px; transition: all .15s; }
+  .acts button:hover { border-color: var(--accent); }
+  .acts button.on { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+  .out { flex: 1; margin: 0 14px; padding: 10px; border: 1px dashed var(--line); border-radius: 10px; overflow-y: auto; white-space: pre-wrap; min-height: 60px; }
+  .out.empty { color: var(--muted); }
+  footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; }
+  footer button { border: 0; border-radius: 10px; padding: 8px 14px; cursor: pointer; font: inherit; font-weight: 600; }
+  #copy { background: var(--accent); color: var(--ink); }
+  #copy:disabled { opacity: .4; }
+  .dots::after { content: "…"; animation: d 1s steps(3) infinite; }
+</style>
+</head>
+<body>
+<div class="card">
+  <header><i></i><b>KAIRO · ZWISCHENABLAGE</b><button id="x" title="Esc">✕</button></header>
+  <div class="src" id="src"></div>
+  <div class="acts" id="acts"></div>
+  <div class="out empty" id="out">Wähle, was Kairo mit dem kopierten Text machen soll.</div>
+  <footer><button id="copy" disabled>Kopieren & schliessen</button></footer>
+</div>
+<script>
+  const ACTIONS = [
+    ['translate', '🌍 Übersetzen'], ['shorter', '✂️ Kürzer'], ['friendlier', '🙂 Freundlicher'], ['fix', '✅ Korrigieren'],
+    ['formal', '👔 Formell'], ['explain', '💡 Erklären'], ['reply', '↩️ Antwort schreiben'], ['bullets', '• Stichpunkte']
+  ];
+  const $ = id => document.getElementById(id);
+  let text = '', result = '';
+  $('acts').innerHTML = ACTIONS.map(([k, l]) => `<button data-k="${k}">${l}</button>`).join('');
+  async function load() {
+    text = await window.kairo.clip.read();
+    $('src').textContent = text ? text.slice(0, 400) : '(Die Zwischenablage ist leer – kopiere zuerst einen Text mit Ctrl+C.)';
+    result = ''; $('out').textContent = 'Wähle, was Kairo mit dem kopierten Text machen soll.'; $('out').className = 'out empty'; $('copy').disabled = true;
+    document.querySelectorAll('.acts button').forEach(b => b.classList.remove('on'));
+  }
+  $('acts').onclick = async e => {
+    const b = e.target.closest('button'); if (!b || !text) return;
+    document.querySelectorAll('.acts button').forEach(x => x.classList.toggle('on', x === b));
+    $('out').className = 'out'; $('out').innerHTML = '<span class="dots">Kairo schreibt</span>';
+    const r = await window.kairo.clip.transform(b.dataset.k, text);
+    result = r.ok ? r.text : '';
+    $('out').textContent = r.ok ? r.text : 'Fehler: ' + r.error.message;
+    $('copy').disabled = !result;
+  };
+  $('copy').onclick = async () => { await window.kairo.clip.write(result); window.kairo.clip.close(); };
+  $('x').onclick = () => window.kairo.clip.close();
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') window.kairo.clip.close(); if (e.key === 'Enter' && e.ctrlKey && result) $('copy').click(); });
+  window.kairo.clip.onShow(load);
+  load();
+</script>
+</body>
+</html>

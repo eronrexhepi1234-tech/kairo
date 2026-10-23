@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en" data-theme="graphite" data-motion="full">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https: wss://generativelanguage.googleapis.com data: blob:; worker-src 'self' blob:; font-src 'self' data:">
+<title>Kairo</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles-extra.css">
+<link rel="stylesheet" href="styles-v3.css">
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+    <symbol id="i-earth" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.3 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.3-3.8-8.5s1.2-6.1 3.8-8.5z"/></symbol>
+    <symbol id="i-games" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.2 2.2L14 15h-4l-.8.7A3.5 3.5 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 10.5v3M6 12h3"/><circle cx="16" cy="11" r=".6"/><circle cx="17.5" cy="13" r=".6"/></symbol>
+    <symbol id="i-files" viewBox="0 0 24 24"><path d="M3.5 6.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16.5V20"/></symbol>
+    <symbol id="i-news" viewBox="0 0 24 24"><path d="M5 5h11v14H6a1 1 0 0 1-1-1z"/><path d="M16 9h3v9a1 1 0 0 1-2 0M8 9h5M8 12h5M8 15h3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9.5h3l5-4v13l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3.5"/><path d="M10.5 9.5v5l4.2-2.5z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15h6M9 18h4"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="6.5" width="13" height="11" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4.5a3 3 0 0 0-3 3 3 3 0 0 0-2 5.2A3 3 0 0 0 7 18a2.5 2.5 0 0 0 5 .5V5.5A2 2 0 0 0 9 4.5zM15 4.5a3 3 0 0 1 3 3 3 3 0 0 1 2 5.2A3 3 0 0 1 17 18a2.5 2.5 0 0 1-5 .5"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-pc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+  </defs>
+</svg>
+
+<canvas id="bgCanvas" hidden></canvas>
+
+<!-- boot animation -->
+<div id="boot">
+  <svg class="boot-mark" viewBox="0 0 120 120">
+    <circle class="boot-ring" cx="60" cy="60" r="34"/>
+    <ellipse class="boot-orbit" cx="60" cy="60" rx="52" ry="18" transform="rotate(-24 60 60)"/>
+    <circle class="boot-dot" cx="60" cy="60" r="5"/>
+  </svg>
+  <div class="boot-word"><span>K</span><span>a</span><span>i</span><span>r</span><span>o</span></div>
+</div>
+
+<header class="titlebar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 120 120"><circle cx="60" cy="60" r="34"/><ellipse cx="60" cy="60" rx="52" ry="18" transform="rotate(-24 60 60)"/><circle class="mark-dot" cx="98" cy="43" r="7"/></svg>
+    <span class="brand-name" id="brandName">Kairo</span>
+    <span class="brand-sep">/</span>
+    <span class="brand-view" id="viewName">Chat</span>
+  </div>
+  <span class="rec-pill" title="Clip-Modus">● REC</span>
+  <button class="hf-pill" id="hfPill" title="Hands-free"><i></i><span data-i18n="hf.label"></span></button>
+  <div class="focus-timer" id="focusTimer" hidden>
+    <span class="ft-label" data-i18n="lockin.timer"></span>
+    <span class="ft-time" id="ftTime">25:00</span>
+    <button class="ft-btn" id="ftToggle" title="Start / pause">▶</button>
+  </div>
+</header>
+
+<nav class="rail">
+  <button class="rail-btn active" data-view="chat"><svg><use href="#i-chat"/></svg><span data-i18n="nav.chat"></span></button>
+  <button class="rail-btn" data-view="today"><svg><use href="#i-sun"/></svg><span data-i18n="nav.today"></span></button>
+  <button class="rail-btn" data-view="home"><svg><use href="#i-bulb"/></svg><span data-i18n="nav.home"></span></button>
+  <button class="rail-btn" data-view="earth"><svg><use href="#i-earth"/></svg><span data-i18n="nav.earth"></span></button>
+  <button class="rail-btn" data-view="games"><svg><use href="#i-games"/></svg><span data-i18n="nav.games"></span></button>
+  <button class="rail-btn" data-view="files"><svg><use href="#i-files"/></svg><span data-i18n="nav.files"></span></button>
+  <button class="rail-btn" data-view="phone"><svg><use href="#i-phone"/></svg><span data-i18n="nav.phone"></span></button>
+  <div class="rail-spacer"></div>
+  <div class="presence" id="presence" title="Kairo"><i></i><i></i><i></i><i></i><i></i></div>
+  <button class="rail-btn" data-view="settings"><svg><use href="#i-settings"/></svg><span data-i18n="nav.settings"></span></button>
+</nav>
+
+<main class="stage">
+
+  <!-- CHAT -->
+  <section class="view active" id="view-chat">
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-empty" id="chatEmpty">
+        <button class="home-orb" id="homeOrbBtn">
+          <canvas id="homeOrb"></canvas>
+          <span class="home-orb-label"><svg><use href="#i-mic"/></svg><span id="homeOrbText"></span></span>
+        </button>
+        <h1 id="helloLine"></h1>
+        <p data-i18n="chat.sub"></p>
+        <div class="suggestions">
+          <button class="sugg" data-sugg="chat.s1"><svg><use href="#i-screen"/></svg><span data-i18n="chat.s1"></span></button>
+          <button class="sugg" data-sugg="chat.s2"><svg><use href="#i-news"/></svg><span data-i18n="chat.s2"></span></button>
+          <button class="sugg" data-sugg="chat.s5"><svg><use href="#i-play"/></svg><span data-i18n="chat.s5"></span></button>
+          <button class="sugg" data-sugg="chat.s6"><svg><use href="#i-doc"/></svg><span data-i18n="chat.s6"></span></button>
+          <button class="sugg" data-sugg="chat.s3"><svg><use href="#i-earth"/></svg><span data-i18n="chat.s3"></span></button>
+          <button class="sugg" data-sugg="chat.s4"><svg><use href="#i-chat"/></svg><span data-i18n="chat.s4"></span></button>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer" id="composer">
+        <div class="composer-top">
+          <div class="persona-switch" id="personaSwitch"></div>
+          <button class="ghost-btn" id="newChat"><svg><use href="#i-plus"/></svg><span data-i18n="chat.new"></span></button>
+        </div>
+        <textarea id="input" rows="1"></textarea>
+        <div class="composer-bottom">
+          <div class="chips">
+            <button class="chip" id="chipScreen" aria-pressed="false"><svg><use href="#i-screen"/></svg><span data-i18n="chip.screen"></span></button>
+            <button class="chip" id="chipNews" aria-pressed="false"><svg><use href="#i-news"/></svg><span data-i18n="chip.news"></span></button>
+            <button class="chip" id="chipFolder" aria-pressed="false"><svg><use href="#i-files"/></svg><span id="chipFolderLabel" data-i18n="chip.folder"></span></button>
+          </div>
+          <div class="composer-actions">
+            <span class="model-tag" id="modelTag"></span>
+            <button class="icon-btn" id="micBtn" title="Voice"><svg><use href="#i-mic"/></svg></button>
+            <button class="send-btn" id="sendBtn"><svg><use href="#i-send"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EARTH -->
+  <!-- TODAY -->
+  <section class="view" id="view-today">
+    <div class="today">
+      <div class="today-head">
+        <div>
+          <div class="today-date" id="tdDate"></div>
+          <div class="today-clock" id="tdClock">--:--</div>
+        </div>
+        <div class="weather-card" id="tdWeather"></div>
+      </div>
+
+      <div class="today-grid">
+        <div class="tcard brief-card">
+          <div class="tcard-h"><svg><use href="#i-sun"/></svg><b data-i18n="today.briefing"></b>
+            <button class="btn primary sm" id="tdBriefBtn"><span data-i18n="today.play"></span></button></div>
+          <div class="brief-text md" id="tdBrief"><p class="muted" data-i18n="today.briefHint"></p></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><svg><use href="#i-bell"/></svg><b data-i18n="today.reminders"></b></div>
+          <form class="rem-add" id="tdRemForm">
+            <input class="field" id="tdRemWhen" data-i18n-ph="today.when">
+            <input class="field" id="tdRemText" data-i18n-ph="today.what">
+            <label class="tog small" title="Wecker"><input type="checkbox" id="tdRemAlarm"><span>⏰</span></label>
+            <button class="btn sm">+</button>
+          </form>
+          <ul class="rem-list" id="tdRemList"></ul>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><svg><use href="#i-brain"/></svg><b data-i18n="today.memory"></b></div>
+          <form class="rem-add" id="tdMemForm"><input class="field" id="tdMemText" data-i18n-ph="today.memAdd"><button class="btn sm">+</button></form>
+          <div class="mem-list" id="tdMemList"></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><svg><use href="#i-music"/></svg><b data-i18n="today.dj"></b>
+            <div class="seg sm" id="tdDjSrc"><button data-v="spotify" class="active">Spotify</button><button data-v="youtube">YouTube</button></div></div>
+          <div class="dj-grid" id="tdDj"></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><svg><use href="#i-pc"/></svg><b data-i18n="today.pc"></b></div>
+          <div class="pc-grid">
+            <button class="pc-btn" data-pc="volume_down" title="Leiser">🔉</button>
+            <button class="pc-btn" data-pc="mute" title="Stumm">🔇</button>
+            <button class="pc-btn" data-pc="volume_up" title="Lauter">🔊</button>
+            <button class="pc-btn" data-pc="previous">⏮</button>
+            <button class="pc-btn" data-pc="play_pause">⏯</button>
+            <button class="pc-btn" data-pc="next">⏭</button>
+            <button class="pc-btn" data-pc="screenshot" title="Screenshot">📸</button>
+            <button class="pc-btn" data-pc="lock" title="Sperren">🔒</button>
+            <button class="pc-btn" data-pc="cancel_shutdown" title="Herunterfahren abbrechen">🛑</button>
+          </div>
+          <label class="pc-row"><span>☀</span><input type="range" id="tdBright" min="10" max="100" value="70"></label>
+          <div class="pc-row"><select class="field" id="tdShutdown"><option value="">⏻</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><b data-i18n="focus.title"></b><small class="muted" data-i18n="focus.note"></small></div>
+          <div id="tdFocus" class="focus"></div>
+        </div>
+
+        <div class="tcard">
+          <div class="tcard-h"><b data-i18n="today.tools"></b></div>
+          <button class="tool-row" id="tdClip"><span>📋</span><div><b data-i18n="today.clip"></b><small>Ctrl + Alt + K</small></div></button>
+          <button class="tool-row" id="tdTidy"><span>🧹</span><div><b data-i18n="today.tidy"></b><small data-i18n="today.tidySub"></small></div></button>
+          <button class="tool-row" id="tdTranslate"><span>🌍</span><div><b data-i18n="tr.title"></b><small data-i18n="tr.sub"></small></div></button>
+          <button class="tool-row" id="tdRead"><span>📖</span><div><b data-i18n="rd.title"></b><small data-i18n="rd.sub"></small></div></button>
+          <button class="tool-row" id="tdCards"><span>🗂</span><div><b data-i18n="fc.title"></b><small data-i18n="fc.sub"></small></div></button>
+          <button class="tool-row" id="tdClipMode"><span>🎬</span><div><b data-i18n="clip.title"></b><small id="tdClipModeSub" data-i18n="clip.sub"></small></div></button>
+          <button class="tool-row" id="tdQuiz"><span>🧠</span><div><b data-i18n="today.quiz"></b><small data-i18n="today.quizSub"></small></div></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SMART HOME -->
+  <section class="view" id="view-home"><div class="home" id="homeRoot"></div></section>
+
+  <section class="view" id="view-earth">
+    <div id="globe"></div>
+    <div class="earth-ui">
+      <form class="earth-search" id="earthSearch">
+        <svg><use href="#i-search"/></svg>
+        <input id="earthQuery" data-i18n-ph="earth.search" autocomplete="off">
+      </form>
+      <div class="earth-toggles">
+        <label class="tog"><input type="checkbox" id="earthSat" checked><span data-i18n="earth.satellite"></span></label>
+        <label class="tog"><input type="checkbox" id="earthNight"><span data-i18n="earth.night"></span></label>
+        <label class="tog"><input type="checkbox" id="earthRotate" checked><span data-i18n="earth.rotate"></span></label>
+      </div>
+    </div>
+    <aside class="earth-panel" id="earthPanel">
+      <div class="ep-coords" id="epCoords">—</div>
+      <h2 id="epPlace" data-i18n="earth.pick"></h2>
+      <div class="ep-actions">
+        <button class="btn primary" id="epWhat" disabled><span data-i18n="earth.what"></span></button>
+        <button class="btn" id="epAsk" disabled><span data-i18n="earth.ask"></span></button>
+      </div>
+      <div class="ep-body md" id="epBody"></div>
+    </aside>
+  </section>
+
+  <!-- GAMES -->
+  <section class="view" id="view-games">
+    <div class="page">
+      <div class="page-col">
+        <h2 data-i18n="games.coach"></h2>
+        <p class="muted" data-i18n="games.coachSub"></p>
+        <div class="game-grid" id="gameGrid"></div>
+        <input class="field" id="coachQuestion" data-i18n-ph="games.question">
+        <div class="row">
+          <button class="btn primary" id="coachGo"><svg><use href="#i-screen"/></svg><span data-i18n="games.analyze"></span></button>
+          <label class="tog"><input type="checkbox" id="coachWatch"><span data-i18n="games.watch"></span></label>
+          <label class="tog"><input type="checkbox" id="coachOverlay"><span data-i18n="games.overlay"></span></label>
+        </div>
+        <p class="note" data-i18n="games.fair"></p>
+        <div class="coach-result" id="coachResult"></div>
+      </div>
+      <div class="page-col">
+        <h2 data-i18n="games.play"></h2>
+        <div class="seg" id="miniTabs">
+          <button class="active" data-game="chess" data-i18n="games.chess"></button>
+          <button data-game="analysis" data-i18n="games.analysis"></button>
+          <button data-game="lichess">Lichess</button>
+          <button data-game="quiz" data-i18n="games.quizTab"></button>
+          <button data-game="cards" data-i18n="fc.tab"></button>
+          <button data-game="ttt" data-i18n="games.ttt"></button>
+          <button data-game="c4" data-i18n="games.c4"></button>
+        </div>
+
+        <div id="chessArea">
+          <div class="chess-top">
+            <div class="seg" id="chessColor"><button data-c="w" data-i18n="chess.white"></button><button data-c="b" data-i18n="chess.black"></button></div>
+            <label class="chess-level"><input type="range" id="chessLevel" min="1" max="20" value="8"><span id="chessLevelName"></span></label>
+          </div>
+          <div class="mini-status" id="chessStatus"></div>
+          <div class="chess-wrap">
+            <div class="chess-eval"><div class="chess-eval-fill" id="chessEvalFill"></div><span id="chessEvalTxt">0.0</span></div>
+            <div class="chess-board" id="chessBoard"></div>
+            <ol class="chess-moves" id="chessMoves"></ol>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="chessForMe"><span data-i18n="games.aiplays"></span></button>
+            <button class="btn" id="chessHint">💡 <span data-i18n="chess.hint"></span></button>
+            <button class="btn" id="chessAuto">⚔ <span data-i18n="chess.auto"></span></button>
+            <button class="btn" id="chessExplain"><span data-i18n="chess.explain"></span></button>
+            <button class="btn" id="chessUndo">↶</button>
+            <button class="btn" id="chessNew"><span data-i18n="games.reset"></span></button>
+          </div>
+        </div>
+
+        <div id="analysisArea" hidden>
+          <p class="muted" data-i18n="an.sub"></p>
+          <form class="an-form" id="anForm">
+            <div class="seg" id="anSite"><button type="button" data-v="lichess" class="active">Lichess</button><button type="button" data-v="chess.com">Chess.com</button></div>
+            <input class="field" id="anUser" data-i18n-ph="an.user">
+            <button class="btn primary"><span data-i18n="an.load"></span></button>
+          </form>
+          <div id="anGames" class="an-games"></div>
+          <div id="anResult"></div>
+        </div>
+
+        <div id="lichessArea" hidden></div>
+
+        <div id="quizArea" hidden></div>
+
+        <div id="cardsArea" hidden></div>
+
+        <div id="miniArea" hidden>
+          <div class="mini-status" id="miniStatus"></div>
+          <div class="mini-board" id="miniBoard"></div>
+          <div class="row">
+            <button class="btn" id="miniAI"><span data-i18n="games.aiplays"></span></button>
+            <button class="btn" id="miniReset"><span data-i18n="games.reset"></span></button>
+            <span class="score" id="miniScore"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILES -->
+  <section class="view" id="view-files">
+    <div class="files-head">
+      <button class="btn primary" id="pickFolder"><svg><use href="#i-files"/></svg><span data-i18n="files.pick"></span></button>
+      <span class="path" id="folderPath"></span>
+      <button class="btn" id="askFolder" disabled><span data-i18n="files.ask"></span></button>
+    </div>
+    <div class="files-body">
+      <div class="tree" id="tree"><p class="muted pad" data-i18n="files.empty"></p></div>
+      <div class="preview" id="preview"></div>
+    </div>
+  </section>
+
+  <!-- PHONE -->
+  <section class="view" id="view-phone">
+    <div class="page">
+      <div class="page-col">
+        <h2 data-i18n="phone.title"></h2>
+        <p class="muted" data-i18n="phone.sub"></p>
+        <div class="row">
+          <button class="btn primary" id="remoteStart"><span data-i18n="phone.start"></span></button>
+          <button class="btn" id="remoteStop" hidden><span data-i18n="phone.stop"></span></button>
+          <button class="btn" id="remoteReset"><span data-i18n="phone.reset"></span></button>
+        </div>
+        <div class="qr-card" id="qrCard" hidden>
+          <img id="qrImg" alt="QR">
+          <code id="qrLink"></code>
+        </div>
+        <p class="note" data-i18n="phone.firewall"></p>
+        <h3 data-i18n="phone.wol"></h3>
+        <p class="muted"><span data-i18n="phone.wolText"></span> <code id="macAddr">…</code></p>
+      </div>
+      <div class="page-col">
+        <h3 data-i18n="phone.activity"></h3>
+        <ul class="feed" id="remoteFeed"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="settings" id="settingsRoot"></div>
+  </section>
+</main>
+
+<!-- MODAL + ALERT -->
+<div class="modal-back" id="modal" hidden><div class="modal" id="modalBox"></div></div>
+<div class="alert" id="alertBox" hidden></div>
+
+<!-- VOICE MODE -->
+<div class="voice-mode" id="voiceMode" hidden data-state="idle">
+  <div class="vm-top">
+    <span class="vm-model" id="vmModel"></span>
+    <div class="vm-pickers">
+      <div class="seg vm-styles" id="vmStyles"></div>
+      <div class="vm-palettes" id="vmPalettes"></div>
+    </div>
+  </div>
+  <canvas class="vm-orb" id="vmOrb"></canvas>
+  <div class="vm-state" id="vmState"></div>
+  <div class="vm-captions" id="vmCaptions"></div>
+  <img class="vm-shot" id="vmShot" alt="" hidden>
+  <video class="vm-cam" id="vmCam" muted playsinline hidden></video>
+  <div class="vm-banner" id="vmBanner" hidden></div>
+  <div class="vm-controls">
+    <button class="vm-btn" id="vmMute" aria-pressed="false" title="Mute"><svg><use href="#i-mic"/></svg></button>
+    <button class="vm-btn" id="vmScreen" aria-pressed="false" title="Screen"><svg><use href="#i-screen"/></svg></button>
+    <button class="vm-btn" id="vmCamBtn" aria-pressed="false" title="Webcam"><svg><use href="#i-cam"/></svg></button>
+    <button class="vm-btn end" id="vmClose" title="End"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <div class="vm-hint" data-i18n="voice.hint"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../../node_modules/globe.gl/dist/globe.gl.min.js"></script>
+<script src="i18n.js"></script>
+<script src="i18n-extra.js"></script>
+<script src="i18n-v3.js"></script>
+<script src="markdown.js"></script>
+<script src="voice.js"></script>
+<script src="orb.js"></script>
+<script src="live.js"></script>
+<script src="earth.js"></script>
+<script src="chess-ui.js"></script>
+<script src="today.js"></script>
+<script src="home.js"></script>
+<script src="quiz.js"></script>
+<script src="extras.js"></script>
+<script src="chess-extra.js"></script>
+<script src="games.js"></script>
+<script src="settings.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

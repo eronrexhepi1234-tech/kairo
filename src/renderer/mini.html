@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+<title>Kairo Mini</title>
+<style>
+  :root { --accent: #ff7a45; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  .wrap { position: absolute; inset: 0; -webkit-app-region: drag; border-radius: 50%; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hit { position: absolute; inset: 26%; border-radius: 50%; -webkit-app-region: no-drag; cursor: pointer; }
+  .hit:hover + .ring { opacity: 1; }
+  .ring { position: absolute; inset: 14%; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; transition: opacity .2s; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="wrap"><canvas id="c"></canvas><div class="hit" id="hit" title="Kairo öffnen"></div><div class="ring"></div></div>
+<script src="orb.js"></script>
+<script>
+  let live = { level: 0, state: 'idle' };
+  const orb = Orb.create();
+  async function setup() {
+    const s = await window.kairo.settings.get();
+    document.documentElement.style.setProperty('--accent', s.accent);
+    Orb.configure(s.voice.orbStyle, s.voice.orbPalette);
+    orb.start(document.getElementById('c'), () => ({ level: Math.max(live.level, 0.05 + 0.03 * Math.sin(performance.now() / 600)), state: live.state }));
+  }
+  window.kairo.onMini(m => { if (m.level != null) live = m; if (m.refresh) setup(); });
+  document.getElementById('hit').onclick = () => window.kairo.showWindow();
+  setup();
+</script>
+</body>
+</html>
