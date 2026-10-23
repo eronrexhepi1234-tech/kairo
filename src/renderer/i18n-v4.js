@@ -64,3 +64,7 @@ Object.assign(I18N.en, {
   'dc.intents': 'Switch on "Message Content Intent" in the Developer Portal.'
 });
 Object.assign(I18N.sq, { 'nav.school': 'Shkolla', 'sc.homework': 'Detyrat', 'sc.exams': 'Provimet', 'ft.title': 'Futboll', 'mn.title': 'Portofoli', 'dy.title': 'Ditari', 'rt.title': 'Rutinat' });
+
+Object.assign(I18N.de, { 'status.weather': 'Hole das Wetter…', 'wx.hum': 'Feuchte', 'wx.clear': 'Sonnig', 'wx.night': 'Klare Nacht', 'wx.partly': 'Teils bewölkt', 'wx.partly-night': 'Teils bewölkt', 'wx.cloudy': 'Bewölkt', 'wx.rain': 'Regen', 'wx.storm': 'Gewitter', 'wx.snow': 'Schnee', 'wx.fog': 'Nebel' });
+Object.assign(I18N.en, { 'status.weather': 'Getting the weather…', 'wx.hum': 'humidity', 'wx.clear': 'Sunny', 'wx.night': 'Clear night', 'wx.partly': 'Partly cloudy', 'wx.partly-night': 'Partly cloudy', 'wx.cloudy': 'Cloudy', 'wx.rain': 'Rain', 'wx.storm': 'Thunderstorm', 'wx.snow': 'Snow', 'wx.fog': 'Fog' });
+Object.assign(I18N.sq, { 'wx.clear': 'Me diell', 'wx.rain': 'Shi', 'wx.snow': 'Borë', 'wx.cloudy': 'Vranët', 'wx.storm': 'Stuhi' });

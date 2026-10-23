@@ -15,7 +15,9 @@ window.LiveVoice = (function () {
     { googleSearch: {} },
     { functionDeclarations: [
       { name: 'look_at_screen', description: "Take a fresh screenshot of the user's screen so you can see it. Use whenever the user refers to their screen, a game, a picture or 'this'." },
-      { name: 'fly_to', description: 'Show a place on the 3D Earth inside the app.', parameters: { type: 'OBJECT', properties: { place: { type: 'STRING', description: 'Place name, e.g. "Prizren, Kosovo"' } }, required: ['place'] } },
+      { name: 'fly_to', description: 'Fly the 3D satellite Earth to a place with a cinematic zoom. zoom: country, city (default), close, street ("zoom in" / "ganz nah" = street).', parameters: { type: 'OBJECT', properties: { place: { type: 'STRING', description: 'Place name, e.g. "Thun, Schweiz"' }, zoom: { type: 'STRING' } }, required: ['place'] } },
+      { name: 'zoom_earth', description: 'Zoom the Earth view in or out from where it is now.', parameters: { type: 'OBJECT', properties: { direction: { type: 'STRING', description: 'in or out' } }, required: ['direction'] } },
+      { name: 'show_weather', description: 'Show the animated weather card for a place (or the user\'s home city) and get the data to talk about.', parameters: { type: 'OBJECT', properties: { place: { type: 'STRING' } } } },
       { name: 'open_url', description: 'Open a website or app link. YouTube search: https://www.youtube.com/results?search_query=..., Google: https://www.google.com/search?q=..., WhatsApp message: whatsapp://send?text=... (user picks contact and presses send), Steam: steam://store/<appid> or steam://install/<appid> (user confirms), Spotify: spotify:search:..., e-mail draft: mailto:...?subject=...&body=...', parameters: { type: 'OBJECT', properties: { url: { type: 'STRING' } }, required: ['url'] } },
       { name: 'open_app', description: 'Open a program on the PC, e.g. spotify, discord, steam, notepad, calculator, explorer, settings, word, excel, chrome, minecraft.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' } }, required: ['name'] } },
       { name: 'create_file', description: "Create a file in the user's Documents\\Kairo folder. Use .docx for Word documents (content in Markdown: # headings, - bullets, **bold**), .txt/.md for notes, .html, .csv, or code files. Write the complete content.", parameters: { type: 'OBJECT', properties: { name: { type: 'STRING', description: 'File name with extension' }, content: { type: 'STRING' } }, required: ['name', 'content'] } },
@@ -143,8 +145,21 @@ window.LiveVoice = (function () {
         addCaption('system', '📍 ' + place);
         $('voiceMode').classList.add('with-earth');
         window.App.go('earth');
-        setTimeout(() => Earth.flyToName(place), 150);
-        result = 'The Earth view now shows ' + place;
+        setTimeout(() => Earth.flyToName(place, c.args?.zoom || 'city'), 150);
+        result = 'The Earth view is flying to ' + place + ' now (takes a few seconds), then shows the local weather.';
+      }
+      if (c.name === 'zoom_earth') {
+        $('voiceMode').classList.add('with-earth');
+        window.App.go('earth');
+        Earth.zoom(/out|raus/i.test(c.args?.direction || '') ? 2.6 : 0.3);
+        result = 'Zoomed ' + (c.args?.direction || 'in');
+      }
+      if (c.name === 'show_weather') {
+        const w = await window.kairo.weatherAt(c.args?.place || window.App.settings().city || '');
+        if (w.ok) {
+          WeatherFX.show(w);
+          result = `Shown. ${w.place}: now ${w.now.temp}°C, ${w.now.text}, feels ${w.now.feels}°C, wind ${w.now.wind} km/h. Today ${w.days[0].min}–${w.days[0].max}°C, rain ${w.days[0].rain}%. Next days: ` + w.days.slice(1, 4).map(d => `${d.date} ${d.min}–${d.max}°C ${d.text}`).join('; ');
+        } else result = w.error?.code === 'NO_CITY' ? 'No home city set; ask which place.' : 'Failed: ' + (w.error?.message || '');
       }
       if (c.name === 'open_url') {
         const r = await window.kairo.action({ type: 'open', url: c.args?.url });

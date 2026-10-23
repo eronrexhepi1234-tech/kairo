@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('kairo', {
     snooze: (r, m) => invoke('rem:snooze', r, m), onFire: fn => on('reminder:fire', fn)
   },
   weather: city => invoke('weather:get', city),
+  weatherAt: place => invoke('weather:at', place),
   briefing: { due: () => invoke('brief:due'), make: () => invoke('brief:make') },
   pc: (action, value) => invoke('pc:do', action, value),
   tidy: { plan: d => invoke('tidy:plan', d), run: p => invoke('tidy:run', p), undo: d => invoke('tidy:undo', d), canUndo: d => invoke('tidy:canUndo', d) },

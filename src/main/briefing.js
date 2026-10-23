@@ -27,21 +27,27 @@ async function locate(city, lang = 'de') {
   return loc;
 }
 
+// city name, or { lat, lng, name } for a point (e.g. from the Earth view)
 async function weather(city, lang) {
   if (!city) throw Object.assign(new Error('NO_CITY'), { code: 'NO_CITY' });
-  const loc = await locate(city, lang);
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lng}&timezone=auto&forecast_days=4` +
-    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset';
+  const loc = typeof city === 'object' ? { name: city.name || `${(+city.lat).toFixed(2)}, ${(+city.lng).toFixed(2)}`, country: city.country || '', lat: +city.lat, lng: +city.lng } : await locate(city, lang);
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lng}&timezone=auto&forecast_days=5&forecast_hours=24` +
+    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,is_day,precipitation,cloud_cover' +
+    '&hourly=temperature_2m,precipitation_probability,weather_code,is_day' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max';
   const j = await (await fetch(url, { signal: AbortSignal.timeout(10000) })).json();
   const c = j.current;
   return {
-    place: `${loc.name}, ${loc.country}`,
-    now: { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), icon: wmo(c.weather_code)[0], text: wmo(c.weather_code)[1], wind: Math.round(c.wind_speed_10m), humidity: c.relative_humidity_2m },
+    place: loc.country ? `${loc.name}, ${loc.country}` : loc.name, lat: loc.lat, lng: loc.lng, timezone: j.timezone, utcOffset: j.utc_offset_seconds,
+    now: {
+      temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), code: c.weather_code, icon: wmo(c.weather_code)[0], text: wmo(c.weather_code)[1],
+      wind: Math.round(c.wind_speed_10m), windDir: c.wind_direction_10m, humidity: c.relative_humidity_2m, isDay: !!c.is_day, clouds: c.cloud_cover, precip: c.precipitation
+    },
+    hours: (j.hourly?.time || []).map((t, i) => ({ time: t.slice(11, 16), temp: Math.round(j.hourly.temperature_2m[i]), rain: j.hourly.precipitation_probability[i], code: j.hourly.weather_code[i], isDay: !!j.hourly.is_day[i] })),
     days: j.daily.time.map((d, i) => ({
-      date: d, icon: wmo(j.daily.weather_code[i])[0], text: wmo(j.daily.weather_code[i])[1],
+      date: d, code: j.daily.weather_code[i], icon: wmo(j.daily.weather_code[i])[0], text: wmo(j.daily.weather_code[i])[1],
       max: Math.round(j.daily.temperature_2m_max[i]), min: Math.round(j.daily.temperature_2m_min[i]),
-      rain: j.daily.precipitation_probability_max[i], sunrise: j.daily.sunrise[i]?.slice(11), sunset: j.daily.sunset[i]?.slice(11)
+      rain: j.daily.precipitation_probability_max[i], sunrise: j.daily.sunrise[i]?.slice(11), sunset: j.daily.sunset[i]?.slice(11), uv: j.daily.uv_index_max?.[i]
     }))
   };
 }

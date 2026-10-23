@@ -17,7 +17,8 @@ const WHERE_PROMPT = `The user wants to know WHERE the place on their screen is 
 // questions whose answer changes over time -> let Gemini search Google
 const FRESH_RX = /(wann kommt|wann erscheint|release|erscheint|ist .{1,30} down|server.{0,10}(down|status)|morgen|aktuell|neueste|latest|newest|preis|price|kostet|score|ergebnis|resultat|spielstand|tabelle|transfer|update|patch|season|saison|turnier|tournament|this week|diese woche|gestern|yesterday|2026|2027)/i;
 const FREE_GAMES_RX = /((gratis|kostenlos|free|umsonst).{0,25}(spiel|game)|(spiel|game).{0,30}(gratis|kostenlos|free|umsonst)|\bepic\b)/i;
-const WEATHER_RX = /(wetter|weather|regnet|regen|schnee|temperatur|grad draussen|moti|kohë|météo|tiempo|meteo|hava durumu)/i;
+const WEATHER_RX = /(wetter|weather|regnet es|schneit es|wird es (regnen|schneien|warm|kalt|heiss)|temperatur|grad draussen|is it raining|will it (rain|snow)|moti|kohë|météo|tiempo|meteo|hava durumu)/i;
+const MAKE_IMAGE_RX = /(mal|male|zeichne|bild|draw|paint|picture|image|vizato|foto)/i;
 const FOOTBALL_RX = /(fussball|fußball|football|soccer|match|spielt|gespielt|gewonnen|verloren|unentschieden|tor(e)?\b|ergebnis|resultat|tabelle|super league|bundesliga|champions league|futboll|ndeshj)/i;
 const CLIP_RX = /(zwischenablage|clipboard|was ich kopiert|den kopierten|kopierte text|copied)/i;
 
@@ -41,7 +42,7 @@ function detect(text) {
     where,
     fresh: FRESH_RX.test(text),
     freeGames: FREE_GAMES_RX.test(text),
-    weather: WEATHER_RX.test(text),
+    weather: WEATHER_RX.test(text) && !MAKE_IMAGE_RX.test(text),
     clip: CLIP_RX.test(text),
     screen: where || SCREEN_RX.test(text),
     news: !where && NEWS_RX.test(text),
@@ -82,11 +83,19 @@ async function run(settings, req, onEvent, signal) {
     try { const g = await epicFreeGames(); if (g.length) context.push('Epic Games Store free games right now (live data):\n' + g.join('\n')); } catch {}
   }
   if (want.weather) {
+    // "Wetter in Thun" -> Thun; otherwise the home city
+    const m = (req.text || '').match(/\b(?:in|für|fuer|bei|von|at|for|në|ne|à|en|a)\s+([A-ZÄÖÜÉÈ][\p{L}.'-]+(?:[\s-]+[A-ZÄÖÜÉÈ][\p{L}.'-]+){0,2})/u);
+    const place = m?.[1] && !/^(der|die|das|dem|den|the|this|meiner?)$/i.test(m[1]) ? m[1] : settings.city;
     try {
-      const w = await require('./briefing').weather(settings.city, settings.language);
-      context.push(`Live weather for ${w.place}: now ${w.now.temp}°C, ${w.now.text}, feels ${w.now.feels}°C, wind ${w.now.wind} km/h.\n` +
-        w.days.map(d => `${d.date}: ${d.min}–${d.max}°C, ${d.text}, rain ${d.rain}%`).join('\n') + '\n(If the user asks about another place, say this is for their home city and use Google Search for the other place.)');
-    } catch (e) { if (e.code === 'NO_CITY') context.push('No home city is set. Ask the user for their city, and tell them they can set it under Settings → Profile.'); }
+      onEvent('status', 'weather');
+      const w = await require('./briefing').weather(place, settings.language);
+      onEvent('weather', w);
+      context.push(`Live weather for ${w.place} (the app shows it as an animated card above your answer): now ${w.now.temp}°C, ${w.now.text}, feels ${w.now.feels}°C, wind ${w.now.wind} km/h.\n` +
+        w.days.map(d => `${d.date}: ${d.min}–${d.max}°C, ${d.text}, rain ${d.rain}%`).join('\n'));
+    } catch (e) {
+      if (e.code === 'NO_CITY') context.push('No home city is set. Ask the user for their city, and tell them they can set it under Settings → Profile.');
+      else context.push(`Weather for "${place}" could not be loaded (${e.message}). Use Google Search if possible.`);
+    }
   }
   if (want.clip) {
     const t = require('electron').clipboard.readText();

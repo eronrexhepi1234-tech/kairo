@@ -32,15 +32,20 @@ async function image(settings, prompt) {
       } catch {}
     }
   }
-  // the free service is sometimes busy: try a few times with a short pause
-  let r;
-  for (const [i, model] of ['flux', 'turbo', 'flux'].entries()) {
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt.slice(0, 400))}?width=1024&height=1024&nologo=true&model=${model}&seed=${(Date.now() + i) % 100000}`;
+  // free service: max. 1 picture every ~45 s per IP. If it says "Retry after Ns" we wait exactly that long.
+  let r, models = ['flux', ''], tries = 0;
+  while (models.length && tries++ < 5) {
+    const model = models[0];
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt.slice(0, 400))}?width=1024&height=1024&nologo=true${model ? '&model=' + model : ''}&seed=${Date.now() % 100000}`;
     r = await fetch(url, { signal: AbortSignal.timeout(120000) }).catch(() => null);
-    if (r?.ok) break;
-    await new Promise(res => setTimeout(res, 2500));
+    if (r?.ok && /image/.test(r.headers.get('content-type') || '')) break;
+    const body = r ? await r.text().catch(() => '') : '';
+    const wait = +(body.match(/retry after (\d+)\s*s/i) || [])[1];
+    if (r?.status === 402 && wait) { await new Promise(res => setTimeout(res, Math.min(wait + 2, 60) * 1000)); continue; }
+    if (r?.status === 402 || r?.status === 401) { models.shift(); continue; } // model needs a paid key -> try the default one
+    await new Promise(res => setTimeout(res, 4000));
   }
-  if (!r?.ok) throw new Error('Der Gratis-Bilddienst ist gerade überlastet (' + (r?.status || 'offline') + '). Versuch es in ein paar Minuten nochmal.');
+  if (!r?.ok) throw new Error('Der Gratis-Bilddienst ist gerade überlastet (' + (r?.status || 'offline') + '). Versuch es in einer Minute nochmal.');
   const buf = Buffer.from(await r.arrayBuffer());
   const file = path.join(dir, `Bild ${stamp()}.jpg`);
   fs.writeFileSync(file, buf);

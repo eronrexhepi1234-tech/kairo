@@ -320,7 +320,7 @@ One line per day ("**Mon 26.10.** – what to do, 20-45 min"), the last day only
       <div class="row"><span class="muted small">${t('im.note')}</span><span style="flex:1"></span><button class="btn primary" id="imGo">✨ ${t('sc.create')}</button></div><div id="imOut"></div>`);
     $('imGo').onclick = async () => {
       const p = $('imPrompt').value.trim(); if (!p) return $('imPrompt').focus();
-      $('imGo').disabled = true; $('imOut').innerHTML = `<div class="msg-status">${t('im.making')}</div>`;
+      $('imGo').disabled = true; $('imOut').innerHTML = `<div class="paint"><span>${t('im.making')}</span></div>`;
       // let the AI turn the idea into a good English prompt first
       const better = await window.kairo.complete({ text: `Turn this picture idea into one detailed English image-generation prompt (style, lighting, composition). Only output the prompt.\nIdea: ${p}` });
       const r = await window.kairo.create.image(better.ok ? better.text.trim() : p);

@@ -125,7 +125,7 @@ function loadHistory() { try { chatLog = JSON.parse(localStorage.getItem('kairo.
 
 const FLY_RX = /\[\[fly:\s*([^\]]+)\]\]/g;
 const SHOW_EARTH_RX = /(zeig|show|trego|montre|muestra|mostra|göster|open).{0,20}(erde|earth|tokën|toka|terre|tierra|terra|dünya|globus|globe)/i;
-const WANTS_SEE_RX = /(zeig|show|trego|montre|muestra|mostra|göster|wo ist|where is|ku është|où est|dónde|dove|nerede)/i;
+const WANTS_SEE_RX = /(zeig|show|trego|montre|muestra|mostra|göster|wo ist|where is|ku është|où est|dónde|dove|nerede|geh|flieg|fly|zoom|reise|bring mich|take me|go to|shko|vai|ve a|git)/i;
 
 function msgEl(m, i) {
   const el = document.createElement('div');
@@ -269,7 +269,7 @@ function fillAI(el, m, streaming) {
   tools.className = 'msg-tools';
   tools.innerHTML = `<button class="tool-btn" data-a="copy"><svg><use href="#i-copy"/></svg>${t('chat.copy')}</button>
     <button class="tool-btn" data-a="speak"><svg><use href="#i-volume"/></svg>${t('chat.speak')}</button>` +
-    places.map(p => `<button class="tool-btn" data-a="fly" data-place="${escAttr(p)}"><svg><use href="#i-pin"/></svg>${escAttr(p)}</button>`).join('');
+    places.map(p => `<button class="tool-btn" data-a="fly" data-place="${escAttr(p)}"><svg><use href="#i-pin"/></svg>${escAttr(p.split('|')[0].trim())}</button>`).join('');
   tools.onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.a === 'copy') { navigator.clipboard.writeText(shown.replace(/%%FILE(\d+)%%/g, (_, i) => files[i].content)); toast('✓'); }
@@ -300,7 +300,10 @@ $('homeOrbBtn').onclick = () => {
 function renderAll() {
   const box = $('messages');
   box.innerHTML = '';
-  chatLog.forEach((m, i) => box.appendChild(msgEl(m, i)));
+  chatLog.forEach((m, i) => {
+    if (m.weather) { const w = document.createElement('div'); w.className = 'msg wx-msg'; box.appendChild(w); WeatherFX.card(w, m.weather); }
+    box.appendChild(msgEl(m, i));
+  });
   $('chatEmpty').hidden = chatLog.length > 0;
   syncHomeOrb();
   scrollDown();
@@ -393,6 +396,9 @@ async function send(text, opts = {}) {
     if (userEl && !userEl.querySelector('.shot')) { const img = document.createElement('img'); img.className = 'shot'; img.src = u.shot; userEl.appendChild(img); }
     delete u.shot; // don't store screenshots in chatLog
   }
+  // pictures take a few seconds: show the answer with a "painting" placeholder meanwhile
+  const pending = r.ok ? parseReply(aiMsg.text) : null;
+  if (pending?.images.length) { el.classList.remove('streaming'); fillAI(el, { ...aiMsg, done: [] }); pending.images.forEach(() => el.insertAdjacentHTML('beforeend', `<div class="paint"><span>${t('im.making')}</span></div>`)); scrollDown(); }
   if (r.ok) await runActions(aiMsg);
   fillAI(el, aiMsg);
   saveHistory();
@@ -409,6 +415,15 @@ window.kairo.chat.onEvent((id, type, payload) => {
   const m = chatLog[chatLog.length - 1];
   if (type === 'status') el.innerHTML = `<div class="msg-status">${t('status.' + payload)}</div>`;
   if (type === 'sources') m.sources = payload;
+  if (type === 'weather') {
+    // animated weather card goes above the streaming answer
+    m.weather = payload;
+    const wrap = document.createElement('div');
+    wrap.className = 'msg wx-msg';
+    el.before(wrap);
+    WeatherFX.card(wrap, payload);
+    scrollDown();
+  }
   if (type === 'chunk') {
     m.text += payload;
     fillAI(el, m, true);
@@ -526,6 +541,29 @@ $('remoteStart').onclick = async () => { showRemote(await window.kairo.remote.st
 $('remoteStop').onclick = async () => { await window.kairo.remote.stop(); $('qrCard').hidden = true; $('remoteStart').hidden = false; $('remoteStop').hidden = true; };
 $('remoteReset').onclick = async () => { await window.kairo.remote.reset(); $('qrCard').hidden = true; $('remoteStart').hidden = false; $('remoteStop').hidden = true; toast('✓'); };
 window.kairo.remote.onAutostart(async () => showRemote(await window.kairo.remote.start()));
+// lightbox: click a picture, it grows from where it is to the middle of the screen
+document.addEventListener('click', e => {
+  const img = e.target.closest('.gen-img img, .preview img');
+  if (!img || img.closest('.lightbox')) return;
+  e.preventDefault();
+  const r = img.getBoundingClientRect();
+  const box = document.createElement('div'); box.className = 'lightbox';
+  const big = img.cloneNode(); big.removeAttribute('style');
+  Object.assign(big.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  box.appendChild(big); document.body.appendChild(box);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    box.classList.add('on');
+    const ratio = r.width / r.height, maxW = innerWidth * 0.86, maxH = innerHeight * 0.86;
+    const w = Math.min(maxW, maxH * ratio), h = w / ratio;
+    Object.assign(big.style, { left: (innerWidth - w) / 2 + 'px', top: (innerHeight - h) / 2 + 'px', width: w + 'px', height: h + 'px' });
+  }));
+  box.onclick = () => {
+    box.classList.remove('on');
+    Object.assign(big.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    setTimeout(() => box.remove(), 550);
+  };
+});
+
 // requests from the phone
 window.kairo.remote.onRequest('remote:today', async () => {
   const [rem, hw] = await Promise.all([window.kairo.reminders.list(), window.kairo.life.list('homework')]);

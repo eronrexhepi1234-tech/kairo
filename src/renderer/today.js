@@ -42,11 +42,10 @@ window.Today = (function () {
     el.innerHTML = `<div class="muted">${t('earth.loading')}</div>`;
     const r = await window.kairo.weather();
     if (!r.ok) { el.innerHTML = `<div class="muted">${escAttr(r.error.message)}</div>`; return; }
-    const day = d => new Date(d + 'T12:00').toLocaleDateString(window.APP_LANG || 'en', { weekday: 'short' });
-    el.innerHTML = `
-      <div class="w-now"><span class="w-ico">${r.now.icon}</span><span class="w-temp">${r.now.temp}°</span>
-        <div><b>${escAttr(r.place.split(',')[0])}</b><small>${t('today.feels')} ${r.now.feels}° · ${r.now.wind} km/h</small></div></div>
-      <div class="w-days">${r.days.slice(0, 4).map((d, i) => `<div style="animation-delay:${i * 60}ms"><small>${i ? day(d.date) : t('today.today')}</small><span>${d.icon}</span><b>${d.max}°</b><small>${d.min}° · 💧${d.rain}%</small></div>`).join('')}</div>`;
+    // the animated weather card; click it to see the big version with the 24-hour curve
+    el.innerHTML = '';
+    WeatherFX.card(el, r, { compact: true });
+    el.onclick = () => WeatherFX.show(r);
   }
 
   // ---------- briefing ----------

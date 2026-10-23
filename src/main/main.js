@@ -407,6 +407,15 @@ if (gotLock) app.whenReady().then(() => {
     win.webContents.once('did-finish-load', async () => {
       await wait(3000);
       if (process.env.KAIRO_SHOT_PRE) { await win.webContents.executeJavaScript(process.env.KAIRO_SHOT_PRE); await wait(4000); }
+      // optional test steps: KAIRO_SHOT_STEPS=[{"js":"...","wait":3000,"name":"x"}]
+      if (process.env.KAIRO_SHOT_STEPS) {
+        for (const st of JSON.parse(process.env.KAIRO_SHOT_STEPS)) {
+          if (st.js) await win.webContents.executeJavaScript(st.js).catch(e => console.log('step error', e.message));
+          await wait(st.wait || 1000);
+          if (st.name) fs.writeFileSync(path.join(dir, st.name + '.png'), (await win.webContents.capturePage()).toPNG());
+        }
+        return app.quit();
+      }
       const views = await win.webContents.executeJavaScript(`[...document.querySelectorAll('.rail-btn')].map(b => b.dataset.view)`);
       for (const v of views) {
         await win.webContents.executeJavaScript(`App.go('${v}')`);

@@ -67,6 +67,7 @@ function register({ getWin, store, errInfo }) {
 
   // weather & briefing
   ipcMain.handle('weather:get', wrap(city => briefing.weather(city || store.get().city, store.get().language)));
+  ipcMain.handle('weather:at', wrap(place => briefing.weather(place, store.get().language)));
   ipcMain.handle('brief:due', () => briefing.isDue(store.get()));
   ipcMain.handle('brief:make', wrap(async () => {
     const b = await briefing.make(store.get());
