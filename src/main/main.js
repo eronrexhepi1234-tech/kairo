@@ -266,6 +266,8 @@ ipcMain.handle('live:config', async (_e, translate) => {
     const system = buildSystemPrompt(s, [
       ...(role ? [`VOICE ROLE: speak in the style of ${role.persona}. ${role.style} Keep facts correct.`] : []),
       'LIVE VOICE CONVERSATION. You are talking out loud with the user, hands-free.',
+      'NEVER say function names, tool names, parameters, code, JSON, "true", "false", "on", "next" or other English command words out loud. Use the tools silently, then talk normally in the user\'s language.',
+      'For anything in the app that has no own tool (Jarvis mode, pet, party, games, flights, music quiz, world TV, radio show, layers, recipes, countdowns, guard, subtitles...), call kairo_do with a short German instruction.',
       'Speak like a real person: short natural sentences, no markdown, no lists, no emojis, no reading out URLs.',
       'Answer in the language the user speaks. Keep answers short unless asked for detail.',
       'Use Google Search for anything current: news, "what happened today", prices, sports, weather, and to research places.',

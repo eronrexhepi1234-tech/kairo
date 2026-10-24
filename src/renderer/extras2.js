@@ -13,6 +13,7 @@ window.Extras2 = (function () {
       <div class="role-card ${(S.voice.role || 'normal') === id ? 'active' : ''}" data-role="${id}" tabindex="0">
         <div class="role-emoji">${r.emoji}</div>
         <div class="role-txt"><b>${esc(r[L][0])}</b><small>${esc(r[L][1])}</small></div>
+        <button class="role-pick" data-pick="${id}">${(S.voice.role || 'normal') === id ? '✓' : t('role.pick')}</button>
         <button class="role-play" data-play="${id}" title="${t('role.preview')}"><span class="rp-icon">▶</span><span class="rp-eq"><i></i><i></i><i></i><i></i></span><svg class="rp-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16"/></svg></button>
       </div>`).join('');
   }
@@ -77,7 +78,8 @@ window.Extras2 = (function () {
       renderToday();
     };
     $('roleGrid').querySelectorAll('.role-card').forEach(c => {
-      c.onclick = e => { if (e.target.closest('[data-play]')) return; setRole(c.dataset.role, S); playSample(c, c.dataset.role); };
+      c.onclick = e => { if (e.target.closest('[data-play],[data-pick]')) return; playSample(c, c.dataset.role); };
+      c.querySelector('[data-pick]').onclick = async e => { e.stopPropagation(); await setRole(c.dataset.role, S); document.querySelectorAll('.role-card [data-pick]').forEach(b => { b.textContent = b.dataset.pick === c.dataset.role ? '✓' : t('role.pick'); }); };
       c.querySelector('[data-play]').onclick = e => { e.stopPropagation(); playSample(c, c.dataset.role); };
     });
   }

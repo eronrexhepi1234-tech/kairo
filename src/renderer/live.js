@@ -92,6 +92,13 @@ window.LiveVoice = (function () {
       { name: 'stop_conversation', description: 'End the voice conversation when the user says goodbye or asks you to stop listening.' }
     ] }
   ];
+  // Too many tools confuse the live model (it starts reading code out loud), so it only gets the
+  // most important ones plus "kairo_do" for everything else.
+  const KEEP = new Set(['look_at_screen', 'fly_to', 'zoom_earth', 'show_weather', 'open_url', 'open_app', 'create_file', 'remember', 'set_reminder', 'pc_control', 'create_image', 'show_card', 'check_inbox', 'morning_briefing', 'chess_new_game', 'chess_move', 'use_camera', 'start_translator', 'stop_conversation']);
+  const LIVE_TOOLS = [TOOLS[0], { functionDeclarations: [...TOOLS[1].functionDeclarations.filter(f => KEEP.has(f.name)), {
+    name: 'kairo_do', description: 'Do anything else in the Kairo app. Give a short German instruction, e.g. "Jarvis-Modus an", "Haustier zeigen", "Party", "Musik-Quiz starten", "Welt-TV", "Radio-Show", "Flug LX8 verfolgen", "Spiel bauen: Drache weicht Meteoriten aus", "Regenradar an", "Weltreise Japan", "Rezept Pancakes", "PC-Check", "Countdown Ferien 19.12.", "Geburtstag Lena 14.3.", "Wächter an", "Live-Untertitel an", "Kommentator an", "Stimme auf Pirat ändern". The result tells you what happened.',
+    parameters: { type: 'OBJECT', properties: { command: { type: 'STRING' } }, required: ['command'] } }] }];
+
 
   function setState(s) {
     state = s;
@@ -353,6 +360,7 @@ window.LiveVoice = (function () {
       }
       if (c.name === 'make_game') { GameMaker.open(); const r = await GameMaker.make(a.idea || 'ein lustiges Spiel'); result = r ? `The game "${r.title}" is running on screen and saved in Documents/Kairo/Spiele.` : 'Could not build the game.'; }
       if (c.name === 'track_flight') { const f = await Flight.track(a.flight || ''); result = f ? `Tracking ${f.route?.flight || f.code}: ${f.route ? f.route.from?.city + ' to ' + f.route.to?.city + '. ' : ''}${f.pos ? `Altitude ${f.pos.alt} m, ${f.pos.speed} km/h${f.etaMin != null ? ', lands in about ' + f.etaMin + ' min' : ''}.` : 'Not in the air right now.'}` : 'Flight not found.'; }
+      if (c.name === 'kairo_do') { result = await window.App.runCommand(String(a.command || '')); addCaption('system', '⚡ ' + (a.command || '')); }
       if (c.name === 'write_prompt') {
         const r = await window.kairo.prompt.open(a.target || 'ChatGPT', a.prompt || '');
         window.App.addVoiceTurn('', `[[prompt: ${a.target || 'ChatGPT'}]]
@@ -422,7 +430,7 @@ ${a.prompt || ''}
       model: 'models/' + model,
       generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: cfg.voice } } } },
       systemInstruction: { parts: [{ text: cfg.system }] },
-      tools: translating ? [] : TOOLS,
+      tools: translating ? [] : LIVE_TOOLS,
       inputAudioTranscription: {},
       outputAudioTranscription: {}
     } });

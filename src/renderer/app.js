@@ -474,7 +474,7 @@ async function send(text, opts = {}) {
   scrollDown();
 
   const { places, shown } = parseReply(aiMsg.text);
-  if (places.length && WANTS_SEE_RX.test(text)) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 150); }
+  if (places.length) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 250); }
   if (S.voice.autoSpeak && r.ok) Voice.speak(shown.replace(/%%FILE\d+%%/g, ''), S);
 }
 
@@ -738,6 +738,32 @@ window.App = {
     renderAll();
   },
   askInChat(text, opts) { go('chat'); setTimeout(() => send(text, opts), 100); },
+  // a spoken command from voice mode ("Jarvis-Modus an", "Flug LX8 verfolgen"...)
+  async runCommand(cmd) {
+    const c = cmd.toLowerCase(), off = /\b(aus|ausschalten|stopp|stop|weg|beenden|off)\b/.test(c);
+    const quick = [
+      [/jarvis|hud/, () => (Jarvis.set(!off), 'Jarvis-Modus ' + (off ? 'aus' : 'an'))],
+      [/haustier|\bpet\b|drache(n)? zeigen/, () => (Pet.set(!off), 'Haustier ' + (off ? 'versteckt' : 'ist da'))],
+      [/party|feuerwerk/, () => (Party.party(), 'Party gestartet')],
+      [/musik-?quiz/, () => (MusicQuiz.open(), 'Musik-Quiz gestartet')],
+      [/welt-?tv|webcams? der welt/, () => (WorldTV.open(), 'Welt-TV läuft')],
+      [/radio/, () => (RadioShow.open(), 'Radio-Show startet')],
+      [/untertitel|subtitle/, () => (off ? Subtitles.stop() : Subtitles.start(), 'Live-Untertitel ' + (off ? 'aus' : 'an'))],
+      [/kommentator|kommentier/, () => (Commentator.set(!off), 'Kommentator ' + (off ? 'aus' : 'an'))],
+      [/wetter auf (dem )?(desktop|bildschirm)/, () => (DesktopWeather.set(!off), 'Wetter auf dem Desktop ' + (off ? 'aus' : 'an'))]
+    ];
+    for (const [rx, fn] of quick) if (rx.test(c)) return fn();
+    const fl = cmd.match(/\b([a-z]{2,3}\s?\d{1,4}[a-z]?)\b/i);
+    if (/flug|flight/.test(c) && fl) { const f = await Flight.track(fl[1]); return f ? 'Flug wird verfolgt' : 'Flug nicht gefunden'; }
+    // everything else: the AI picks the app action tags, the app runs them
+    const r = await window.kairo.complete({ text: cmd, extraSystem: 'This is a command for the app (from voice mode). Reply with ONLY the app action tag(s) that do it, plus at most one short sentence.' });
+    if (!r.ok) return 'Hat nicht geklappt: ' + (r.error?.message || '');
+    const m = { role: 'assistant', text: r.text };
+    await runActions(m);
+    const { places, shown } = parseReply(r.text);
+    if (places.length) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 150); m.done.push('🌍 ' + places[0]); }
+    return ((m.done || []).join(', ') + ' ' + shown).trim() || 'Erledigt';
+  },
   async attachPath(p) { go('chat'); await attachFile(await window.kairo.attachPath(p)); }
 };
 window.kairo.onFocusInput(() => { go('chat'); $('input').focus(); });

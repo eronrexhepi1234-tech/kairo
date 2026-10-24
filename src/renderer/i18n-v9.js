@@ -27,3 +27,6 @@ Object.assign(I18N.en, {
   'wk.morning': 'Good morning', 'wk.hello': 'Time to get up, {name}!', 'wk.up': "I'm up!", 'wk.say': 'Good morning {name}! It is {time}.',
   'pt.goal': 'GOAL!', 'pt.sub': 'Kairo celebrates with you!'
 });
+
+Object.assign(I18N.de, { 'role.pick': 'Wählen', 'earth.notFound': 'Ort nicht gefunden' });
+Object.assign(I18N.en, { 'role.pick': 'Choose', 'earth.notFound': 'Place not found' });

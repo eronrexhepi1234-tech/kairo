@@ -163,8 +163,11 @@ window.Earth = (function () {
     let [place, z] = String(q).split('|').map(s => s.trim());
     z = zoomLevel || (z && (ZOOM[z] != null ? z : /street|strasse|nah|close|rein|zoom/i.test(z) ? 'street' : /land|country/i.test(z) ? 'country' : 'city')) || 'city';
     init();
-    const r = await window.kairo.geo.search(place);
-    if (!r) return window.toast('? ' + place);
+    // try the full name, then simpler versions ("Thun, Bern, Schweiz" -> "Thun")
+    let r = null;
+    const simple = place.split(/\s+/).filter(w => !/^(stadt|city|zentrum|altstadt)$/i.test(w)).join(' ');
+    for (const q of [place, place.split(',')[0], simple]) { if (q && (r = await window.kairo.geo.search(q))) break; }
+    if (!r) { window.toast(t('earth.notFound') + ': ' + place); return null; }
     const parts = (r.name || place).split(',').map(s => s.trim());
     const country = parts.length > 1 ? parts[parts.length - 1].split('/')[0] : '';
     const nameShown = place.length < 3 ? parts[0] : place.charAt(0).toUpperCase() + place.slice(1);
