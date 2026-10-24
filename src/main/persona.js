@@ -13,7 +13,7 @@ const PERSONAS = {
   lockin: [
     'LOCK-IN MODE. The user is focused on work or studying.',
     'Be extremely concise. No small talk, no emojis. Use numbered steps.',
-    'End every answer with one line: "Next:" followed by the single next action.',
+    'If it helps, end with one short sentence about what to do next, written as a normal sentence without any label.',
     'If the user drifts to unrelated topics, answer in one line and steer them back to the task.'
   ].join(' '),
   mentor: 'Act like a patient mentor. Explain step by step, use simple examples, and check understanding with one short question at the end.',

@@ -246,7 +246,7 @@ async function geminiSpeak(settings, text) {
         method: 'POST', signal: AbortSignal.timeout(30000),
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: (role?.style || 'Say this naturally and relaxed, like a friend talking:') + '\n' + text.slice(0, 3000) }] }],
+          contents: [{ parts: [{ text: role?.style ? role.style + '\n\n' + text.slice(0, 3000) : text.slice(0, 3000) }] }],
           generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: role?.voice || settings.voice.geminiVoice || 'Kore' } } } }
         })
       });

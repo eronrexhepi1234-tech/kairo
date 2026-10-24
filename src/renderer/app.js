@@ -195,6 +195,8 @@ function parseReply(text) {
   const quiz = grab(/\[\[quiz:\s*([^\]]+)\]\]/gi)[0] || null;
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
+  // leftovers like empty ``` fences around removed tags
+  shown = shown.replace(/^\s*`{1,3}\s*$/gm, '').replace(/`{2,3}(?=\s*$)/g, '').replace(/\n{3,}/g, '\n\n').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
   return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show };
