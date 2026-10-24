@@ -82,6 +82,10 @@ contextBridge.exposeInMainWorld('kairo', {
   discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
   orbMode: () => invoke('app:orbMode'),
+  alerts: {
+    get: () => invoke('alerts:get'), newTopic: () => invoke('alerts:newTopic'), test: k => invoke('alerts:test', k), qr: s => invoke('alerts:qr', s), guard: on => invoke('alerts:guard', on),
+    onNew: fn => on('alert:new', fn), onGuard: fn => on('alert:guard', fn), onSay: fn => on('remote:say', fn)
+  },
   onWinState: fn => on('win:state', fn),
   fun: {
     patch: g => invoke('fun:patch', g), playtime: () => invoke('fun:playtime'), pc: () => invoke('fun:pc'), nowPlaying: () => invoke('fun:nowPlaying'),

@@ -56,6 +56,30 @@
   .shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); margin-top: 12px; background: #000; min-height: 120px; }
   .btn { width: 100%; border: 0; background: var(--accent); color: #1a0f0a; font: inherit; font-weight: 600; padding: 12px; border-radius: 12px; }
   .note { color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat div { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 20px; } .stat small { color: var(--muted); font-size: 11px; }
+  .bar { height: 5px; border-radius: 4px; background: var(--bg3); margin-top: 6px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .6s; }
+  .guard { display: flex; align-items: center; gap: 12px; } .guard .big { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 28px; background: var(--bg3); color: var(--text); flex: none; transition: .3s; }
+  .guard .big.on { background: #e5243b; box-shadow: 0 0 0 8px rgba(229,36,59,.18); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 14px rgba(229,36,59,.08); } }
+  .al { display: flex; gap: 10px; align-items: flex-start; } .al .em { font-size: 20px; } .al div { flex: 1; min-width: 0; } .al small { color: var(--muted); display: block; }
+  .say { display: flex; gap: 8px; } .say input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 12px; padding: 10px 12px; font: inherit; }
+  .say button { border: 0; background: var(--accent); color: #1a0f0a; border-radius: 12px; padding: 0 14px; font-weight: 600; }
+  /* incoming call */
+  .call { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: 70px 24px 60px;
+    background: radial-gradient(120% 80% at 50% 20%, #3a1d12, #0b0b0d 70%); text-align: center; }
+  .call.on { display: flex; animation: in .4s; }
+  .call small { color: #c9a99a; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+  .call h1 { margin: 10px 0 4px; font-size: 30px; } .call p { margin: 0; color: #e6d6cc; font-size: 16px; max-width: 320px; }
+  .ring { position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  .ring i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); animation: ripple 2s ease-out infinite; opacity: 0; }
+  .ring i:nth-child(2) { animation-delay: .65s; } .ring i:nth-child(3) { animation-delay: 1.3s; }
+  @keyframes ripple { from { transform: scale(.55); opacity: .9; } to { transform: scale(1.5); opacity: 0; } }
+  .ring canvas { width: 140px; height: 140px; }
+  .call .btns { display: flex; gap: 70px; } .call .btns button { width: 72px; height: 72px; border-radius: 50%; border: 0; font-size: 30px; color: #fff; }
+  .call .no { background: #e5243b; } .call .yes { background: #22c55e; animation: shake 1s infinite; }
+  @keyframes shake { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-12deg); } 20%, 40% { transform: rotate(12deg); } }
   .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 99px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
   .toast.show { opacity: 1; }
 </style>
@@ -87,6 +111,21 @@
       <button class="act" data-a="playpause"><span>⏯</span>Play/Pause</button>
       <button class="act" data-a="lock"><span>🔒</span>Sperren</button>
       <button class="act" data-a="sleep"><span>🌙</span>Schlafen</button>
+      <button class="act" data-a="prev"><span>⏮</span>Zurück</button>
+      <button class="act" data-a="next"><span>⏭</span>Weiter</button>
+      <button class="act" data-a="off30"><span>⏻</span>Aus in 30 min</button>
+      <button class="act" data-a="off60"><span>⏻</span>Aus in 1 h</button>
+      <button class="act" data-a="canceloff"><span>✖</span>Ausschalten stoppen</button>
+    </div>
+    <h3>Status</h3>
+    <div class="stat" id="stat"><div><b>–</b><small>CPU</small></div><div><b>–</b><small>RAM</small></div><div><b>–</b><small>Frei auf C:</small></div></div>
+    <h3>Kairo spricht am PC</h3>
+    <div class="say"><input id="sayT" placeholder="z. B. Essen ist fertig!"><button id="sayB">Sagen</button></div>
+    <h3>Programme starten</h3>
+    <div class="grid">
+      <button class="act" data-app="spotify"><span>🎵</span>Spotify</button>
+      <button class="act" data-app="discord"><span>💬</span>Discord</button>
+      <button class="act" data-app="steam"><span>🎮</span>Steam</button>
     </div>
     <h3>Musik auf dem PC</h3>
     <div class="grid">
@@ -100,6 +139,12 @@
     <h3>Routinen</h3>
     <div class="grid" id="routines"></div>
     <p class="note">PC einschalten, wenn er aus ist: Wake-on-LAN-App mit der MAC-Adresse aus Kairo → Handy.</p>
+  </div>
+  <div class="pane" id="p-alarm">
+    <div class="card guard"><button class="big" id="guardB">👁</button><div><b>Wächter-Modus</b><div class="note" style="margin:0" id="guardT">Aus. Wenn an: Bewegt jemand Maus oder Tastatur am PC, sperrt Kairo ihn und ruft dich an.</div></div></div>
+    <h3>Letzte Meldungen</h3>
+    <div id="alerts"><p class="note">Noch keine Meldungen.</p></div>
+    <p class="note">Anrufe und Push gehen auch, wenn du nicht zu Hause bist – richte sie am PC ein: Einstellungen → Handy & Anrufe.</p>
   </div>
   <div class="pane" id="p-screen">
     <button class="btn" id="refresh">Bildschirm neu laden</button>
@@ -116,8 +161,12 @@
   <button data-t="today"><span>☀️</span>Heute</button>
   <button data-t="control"><span>🎛</span>Steuern</button>
   <button data-t="screen"><span>🖥</span>Bildschirm</button>
+  <button data-t="alarm"><span>🚨</span>Alarm</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="call" id="call"><div><small>Kairo ruft an</small><h1 id="callT">Chef!</h1><p id="callM"></p></div>
+  <div class="ring"><i></i><i></i><i></i><canvas id="callOrb"></canvas></div>
+  <div class="btns"><button class="no" id="callNo">✕</button><button class="yes" id="callYes">✆</button></div></div>
 <script src="/orb.js"></script>
 <script>
   const token = new URLSearchParams(location.search).get('t') || localStorage.getItem('kairo.t') || '';
@@ -169,6 +218,8 @@
     $('f').style.display = b.dataset.t === 'chat' ? '' : 'none';
     if (b.dataset.t === 'screen') loadShot();
     if (b.dataset.t === 'today' || b.dataset.t === 'control') loadToday();
+    if (b.dataset.t === 'control') loadStat();
+    if (b.dataset.t === 'alarm') loadAlerts();
   });
 
   function add(cls, text) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; $('log').appendChild(d); $('p-chat').scrollTop = 1e9; return d; }
@@ -205,8 +256,59 @@
 
   document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
     if (b.dataset.a === 'sleep' && !confirm('PC in den Ruhezustand versetzen?')) return;
+    if (/^off/.test(b.dataset.a) && !confirm('PC wirklich ausschalten lassen? (Du kannst es mit „Ausschalten stoppen“ abbrechen)')) return;
     await api('/api/action', { action: b.dataset.a }); toast('✓'); if (navigator.vibrate) navigator.vibrate(20);
   });
+  // PC status, say on PC, apps
+  async function loadStat() {
+    try {
+      const s = await (await api('/api/pcinfo')).json();
+      const gb = n => (n / 1073741824).toFixed(0);
+      $('stat').innerHTML = `<div><b>${s.cpu}%</b><small>CPU</small><div class="bar"><i style="width:${s.cpu}%"></i></div></div>
+        <div><b>${Math.round(s.ramUsed / s.ramTotal * 100)}%</b><small>RAM</small><div class="bar"><i style="width:${s.ramUsed / s.ramTotal * 100}%"></i></div></div>
+        <div><b>${s.disk ? gb(s.disk.free) + ' GB' : '–'}</b><small>Frei auf C:</small><div class="bar"><i style="width:${s.disk ? (1 - s.disk.free / s.disk.total) * 100 : 0}%"></i></div></div>`;
+    } catch {}
+  }
+  $('sayB').onclick = async () => { const t = $('sayT').value.trim(); if (!t) return; await api('/api/say', { text: t }); $('sayT').value = ''; toast('🔊 gesagt'); };
+  document.querySelectorAll('[data-app]').forEach(b => b.onclick = async () => { await api('/api/app', { name: b.dataset.app }); toast('▶ ' + b.textContent.trim()); });
+
+  // alarm tab + incoming call screen
+  let seen = localStorage.getItem('kairo.lastAlert') || '', guardOn = false;
+  const EM = { security: '⚠️', guard: '🚨', mail: '✉️', update: '🔄', disk: '💾', goal: '⚽', birthday: '🎂', reminder: '🔔', test: '👋' };
+  async function loadAlerts(first) {
+    let d; try { d = await (await api('/api/alerts')).json(); } catch { return; }
+    guardOn = !!d.guard;
+    $('guardB').classList.toggle('on', guardOn);
+    $('guardT').textContent = guardOn ? 'An. Kairo passt auf deinen PC auf.' : 'Aus. Wenn an: Bewegt jemand Maus oder Tastatur am PC, sperrt Kairo ihn und ruft dich an.';
+    const list = d.history || [];
+    $('alerts').innerHTML = list.map(a => `<div class="card al"><span class="em">${EM[a.trigger] || '🔔'}</span><div><b>${esc(a.title)}</b><small>${esc(a.message)} · ${new Date(a.time).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}</small></div></div>`).join('') || '<p class="note">Noch keine Meldungen.</p>';
+    const top = list[0];
+    if (top && top.id !== seen) {
+      seen = top.id; localStorage.setItem('kairo.lastAlert', seen);
+      if (!first && top.level === 'call') incoming(top);
+      else if (!first) toast((EM[top.trigger] || '🔔') + ' ' + top.title);
+    }
+  }
+  $('guardB').onclick = async () => { await api('/api/guard', { on: !guardOn }); toast(!guardOn ? '👁 Wächter an' : 'Wächter aus'); if (navigator.vibrate) navigator.vibrate(30); setTimeout(loadAlerts, 400); };
+  let ringTimer = 0, ringCtx = null;
+  function incoming(a) {
+    $('callT').textContent = a.title; $('callM').textContent = a.message;
+    $('call').classList.add('on');
+    const o = Orb.create(); o.start($('callOrb'), () => ({ level: .25 + .2 * Math.abs(Math.sin(performance.now() / 300)), state: 'speaking' }));
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 1200, 400, 200, 400]);
+    // ringtone (works once the page has been touched)
+    try {
+      ringCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const beep = () => { [0, .5].forEach(off => { const os = ringCtx.createOscillator(), g = ringCtx.createGain(); os.frequency.value = 440 + off * 300; g.gain.setValueAtTime(.0001, ringCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, ringCtx.currentTime + off + .05); g.gain.exponentialRampToValueAtTime(.0001, ringCtx.currentTime + off + .4); os.connect(g); g.connect(ringCtx.destination); os.start(ringCtx.currentTime + off); os.stop(ringCtx.currentTime + off + .45); }); };
+      beep(); ringTimer = setInterval(beep, 2200);
+    } catch {}
+    const end = () => { clearInterval(ringTimer); ringCtx?.close(); $('call').classList.remove('on'); if (navigator.vibrate) navigator.vibrate(0); };
+    $('callNo').onclick = end;
+    $('callYes').onclick = () => { end(); say(a.speech || a.message); toast('📞 Kairo spricht'); };
+    setTimeout(() => { if ($('call').classList.contains('on')) end(); }, 45000);
+  }
+  loadAlerts(true); setInterval(loadAlerts, 5000);
+
   document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => { await api('/api/music', { mood: b.dataset.m }); toast('🎵 ' + b.textContent.trim()); });
 </script>
 </body>

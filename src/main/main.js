@@ -323,7 +323,7 @@ async function startRemote() {
   remoteInfo = await remote.start({ port: s.remote.port, token }, {
     notify: ev => win?.webContents.send('remote:event', ev),
     screenshot: () => tools.captureScreen(1280),
-    pc: action => require('./pc').run(action, 3),
+    pc: (action, value) => require('./pc').run(action, value ?? 3),
     chat: async (text, withScreen) => {
       const r = await agent.run(store.get(), { history: remoteHistory, text, attachScreen: withScreen }, () => {});
       remoteHistory.push({ role: 'user', text }, { role: 'assistant', text: r.text });
@@ -339,7 +339,19 @@ async function startRemote() {
     today: async () => (await askRenderer('remote:today')) || {},
     routine: name => askRenderer('remote:routine', name),
     music: mood => askRenderer('remote:music', mood),
-    party: (action, params, body) => require('./party').handle(action, params, body)
+    party: (action, params, body) => require('./party').handle(action, params, body),
+    alerts: () => { const a = require('./alerts'); return { history: a.history(), guard: a.guardOn() }; },
+    guard: on => require('./alerts').setGuard(!!on),
+    sayOnPc: text => win?.webContents.send('remote:say', String(text).slice(0, 400)),
+    app: name => require('./actions').openApp(name),
+    pcinfo: async () => {
+      const os = require('os');
+      const snap = () => os.cpus().map(c => c.times);
+      const a = snap(); await new Promise(r => setTimeout(r, 500)); const b = snap();
+      let idle = 0, total = 0; b.forEach((t, i) => { const p = a[i]; total += Object.keys(t).reduce((s, k) => s + t[k] - p[k], 0); idle += t.idle - p.idle; });
+      let disk = null; try { const s = await require('fs').promises.statfs('C:\\'); disk = { free: s.bavail * s.bsize, total: s.blocks * s.bsize }; } catch {}
+      return { cpu: total ? Math.round((1 - idle / total) * 100) : 0, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), uptime: os.uptime(), disk, idle: require('electron').powerMonitor.getSystemIdleTime() };
+    }
   });
   return remoteInfo;
 }
@@ -444,6 +456,14 @@ if (gotLock) app.whenReady().then(() => {
   optional('./earthdata', { register: () => {} }).register();
   optional('./pdf', { register: () => {} }).register({ getWin: () => win });
   optional('./earth2', { register: () => {} }).register({ store });
+  optional('./alerts', { register: () => {} }).register({
+    store, getWin: () => win,
+    speakWav: async text => {
+      const st = store.get();
+      const r = ttsEngine(st) === 'openai' ? await providers.speak(st, text) : await providers.geminiSpeak(st, text);
+      return /L16|pcm/i.test(r.mime) ? { b64: pcmToWav(r.audio, +(r.mime.match(/rate=(\d+)/) || [])[1] || 24000), ext: 'wav' } : { b64: r.audio, ext: /wav/.test(r.mime) ? 'wav' : /mpeg|mp3/.test(r.mime) ? 'mp3' : 'ogg' };
+    }
+  });
   optional('./fun', { register: () => {} }).register({ getWin: () => win, store });
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);

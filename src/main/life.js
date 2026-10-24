@@ -77,6 +77,7 @@ async function pollLive(store, send) {
         const msg = `⚽ ${e.home.name} ${score} ${e.away.name}`;
         try { new Notification({ title: 'Tor!', body: msg }).show(); } catch {}
         send('football:goal', { text: msg, event: e });
+        global.kairoAlert?.('goal', { text: msg });
       }
     }
   } catch {}

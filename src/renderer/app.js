@@ -176,8 +176,9 @@ function parseReply(text) {
   const routines = grab(/\[\[routine:\s*([^\]]+)\]\]/gi);
   const recipes = grab(/\[\[recipe:\s*([^\]]+)\]\]/gi), patches = grab(/\[\[patch:\s*([^\]]+)\]\]/gi), vfx = grab(/\[\[voicefx:\s*([^\]]+)\]\]/gi);
   const bdays = split(/\[\[birthday:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
-  const flags = { viz: /\[\[visualizer\]\]/i.test(shown), song: /\[\[song\]\]/i.test(shown), pc: /\[\[pccheck\]\]/i.test(shown), geo: /\[\[geoguessr\]\]/i.test(shown), riddle: /\[\[riddle\]\]/i.test(shown) };
-  shown = shown.replace(/\[\[(visualizer|song|pccheck|geoguessr|riddle)\]\]/gi, '');
+  const guardTag = (shown.match(/\[\[guard:\s*(on|off|an|aus)\s*\]\]/i) || [])[1];
+  const flags = { guard: guardTag ? /on|an/i.test(guardTag) : null, viz: /\[\[visualizer\]\]/i.test(shown), song: /\[\[song\]\]/i.test(shown), pc: /\[\[pccheck\]\]/i.test(shown), geo: /\[\[geoguessr\]\]/i.test(shown), riddle: /\[\[riddle\]\]/i.test(shown) };
+  shown = shown.replace(/\[\[(visualizer|song|pccheck|geoguessr|riddle)\]\]/gi, '').replace(/\[\[guard:[^\]]*\]\]/gi, '');
   const countries = grab(/\[\[country:\s*([^\]]+)\]\]/gi), cams = grab(/\[\[webcam:\s*([^\]]+)\]\]/gi);
   const layers = grab(/\[\[layer:\s*([^\]]+)\]\]/gi), tours = grab(/\[\[tour:\s*([^\]]+)\]\]/gi), roles = grab(/\[\[voice:\s*([^\]]+)\]\]/gi);
   const countdowns = split(/\[\[countdown:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
@@ -257,6 +258,7 @@ async function runActions(m) {
   if (p.patches[0]) { m.done.push('📜 ' + p.patches[0]); setTimeout(() => { go('games'); GamesExtra.mount(); GamesExtra.patch(p.patches[0]); }, 300); }
   if (p.vfx[0]) { VoiceFX.set(p.vfx[0].toLowerCase()); setTimeout(() => { go('games'); Games.showGame('voicefx'); }, 300); m.done.push('🎤 ' + p.vfx[0]); }
   for (const b of p.bdays) { const r = await window.kairo.fun.bdAdd(b); m.done.push(r.ok ? '🎂 ' + b.name : '✕ ' + r.error.message); }
+  if (p.flags.guard != null) { await AlertsUI.setGuard(p.flags.guard); m.done.push((p.flags.guard ? '👁 ' : '') + t(p.flags.guard ? 'al.guardOnToast' : 'al.guardOffToast')); }
   if (p.flags.viz) { m.done.push('🎧'); setTimeout(() => MusicViz.open(), 300); }
   if (p.flags.song) { m.done.push('🎶'); setTimeout(() => SongFinder.open(), 300); }
   if (p.flags.pc) { m.done.push('🧮'); setTimeout(() => PcCheck.open(), 300); }

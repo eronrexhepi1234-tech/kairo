@@ -1,0 +1,22 @@
+/* ===== phone & calls settings ===== */
+.al-sec h2 { display: flex; align-items: center; gap: 8px; }
+.al-steps { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.al-step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--text) 3%, transparent); border: 1px solid var(--line); animation: chipIn .5s backwards; }
+.al-step:nth-child(2) { animation-delay: .08s; } .al-step:nth-child(3) { animation-delay: .16s; }
+.al-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--accent), #7a5cff); }
+.al-step b { font-size: 14.5px; } .al-step p { margin: 4px 0 10px; line-height: 1.5; }
+.al-topic { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.al-topic code { font: 600 14px var(--font-mono); padding: 7px 12px; border-radius: 10px; background: rgba(0,0,0,.25); border: 1px dashed color-mix(in srgb, var(--accent) 50%, var(--line)); user-select: all; }
+.al-qr { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; } .al-qr img { width: 120px; height: 120px; border-radius: 12px; } .al-qr small { color: var(--muted); }
+.al-step .key-row { margin-top: 6px; flex-wrap: wrap; }
+.al-trig { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 8px 0 10px; }
+.al-t { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; }
+.al-t:hover { background: rgba(255,255,255,.03); } .al-t .tog span { display: inline-flex; gap: 7px; align-items: center; } .al-t .tog .ic { color: var(--accent); }
+.seg.sm button { padding: 4px 10px; font-size: 12px; }
+.al-guard { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-radius: 16px; margin: 10px 0;
+  background: linear-gradient(120deg, rgba(229,36,59,.12), transparent); border: 1px solid rgba(229,36,59,.25); }
+.al-guard > div { display: flex; gap: 12px; align-items: center; } .al-guard > div > .ic-wrap .ic, .al-guard > div > svg { width: 26px; height: 26px; color: #ff6b7d; }
+.al-guard b { display: block; } .al-guard small { color: var(--muted); }
+/* guard mode active: a red pulsing frame around the app */
+body.guard-on::before { content: ''; position: fixed; inset: 0; z-index: 600; pointer-events: none; border: 3px solid rgba(229,36,59,.75); border-radius: 10px; animation: guardPulse 1.8s ease-in-out infinite; }
+@keyframes guardPulse { 50% { border-color: rgba(229,36,59,.25); } }

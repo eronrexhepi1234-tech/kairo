@@ -60,6 +60,7 @@ function tick() {
       const n = new Notification({ title: r.kind === 'alarm' ? '⏰ Kairo – Wecker' : '🔔 Kairo – Erinnerung', body: r.text, silent: r.kind !== 'alarm' });
       n.show();
     } catch {}
+    global.kairoAlert?.('reminder', r);
     onFire(r);
   }
   save();

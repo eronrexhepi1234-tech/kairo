@@ -40,7 +40,10 @@ function readJson(req) {
 }
 
 // Buttons on the phone page -> names understood by pc.js
-const PHONE_BUTTONS = { lock: 'lock', sleep: 'sleep', mute: 'mute', volup: 'volume_up', voldown: 'volume_down', playpause: 'play_pause' };
+const PHONE_BUTTONS = { lock: 'lock', sleep: 'sleep', mute: 'mute', volup: 'volume_up', voldown: 'volume_down', playpause: 'play_pause', next: 'next', prev: 'previous', off30: 'shutdown', off60: 'shutdown', canceloff: 'cancel_shutdown' };
+const PHONE_VALUES = { off30: 30, off60: 60 };
+// apps the phone may start (nothing else)
+const PHONE_APPS = ['spotify', 'discord', 'steam', 'chrome', 'explorer', 'calculator', 'notepad'];
 
 /**
  * hooks: { chat(text, withScreen), screenshot(), pc(action), notify(event) }
@@ -110,8 +113,18 @@ async function start({ port, token }, hooks) {
         const { action } = await readJson(req);
         if (!PHONE_BUTTONS[action]) return reply(400, { error: 'unknown button' });
         hooks.notify({ type: 'remote-action', action });
-        await hooks.pc(PHONE_BUTTONS[action]);
+        await hooks.pc(PHONE_BUTTONS[action], PHONE_VALUES[action]);
         return reply(200, { ok: true });
+      }
+      if (url.pathname === '/api/alerts') return reply(200, hooks.alerts ? hooks.alerts() : { history: [] });
+      if (url.pathname === '/api/guard' && req.method === 'POST') { const { on } = await readJson(req); hooks.notify({ type: 'remote-action', action: on ? 'guard on' : 'guard off' }); return reply(200, { on: hooks.guard(!!on) }); }
+      if (url.pathname === '/api/pcinfo') return reply(200, await hooks.pcinfo());
+      if (url.pathname === '/api/say' && req.method === 'POST') { const { text } = await readJson(req); hooks.sayOnPc(String(text || '')); return reply(200, { ok: true }); }
+      if (url.pathname === '/api/app' && req.method === 'POST') {
+        const { name } = await readJson(req);
+        if (!PHONE_APPS.includes(String(name))) return reply(400, { error: 'not allowed' });
+        hooks.notify({ type: 'remote-action', action: '▶ ' + name });
+        hooks.app(name); return reply(200, { ok: true });
       }
       reply(404, { error: 'not found' });
     } catch (e) {

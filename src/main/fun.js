@@ -167,6 +167,7 @@ function bdWatch(getWin) {
       const title = b.days === 0 ? `🎂 Heute hat ${b.name} Geburtstag!` : `🎁 Morgen hat ${b.name} Geburtstag`;
       if (Notification.isSupported()) new Notification({ title, body: b.age ? `${b.name} wird ${b.age}.` : 'Nicht vergessen zu gratulieren!' }).show();
       getWin()?.webContents.send('bd:soon', b);
+      global.kairoAlert?.('birthday', b);
     }
   };
   setTimeout(check, 20000);

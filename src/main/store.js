@@ -29,6 +29,8 @@ const DEFAULTS = {
   },
   schema: 4,
   miniOrb: true,
+  userTitle: '',
+  alerts: { enabled: false, ntfyTopic: '', telegram: '', callAtPc: false, quietFrom: 22, quietTo: 7, triggers: {} },
   worldClock: [{ name: 'New York', tz: 'America/New_York', lat: 40.71, lng: -74.01 }, { name: 'Tokio', tz: 'Asia/Tokyo', lat: 35.69, lng: 139.69 }, { name: 'Tirana', tz: 'Europe/Tirane', lat: 41.33, lng: 19.82 }],
   mail: { enabled: false, provider: 'gmail', user: '', host: '', port: 993, notify: true },
   football: { league: 'sui.1', team: null },

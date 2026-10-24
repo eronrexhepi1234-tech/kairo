@@ -146,6 +146,7 @@ function startMailWatch(store, getWin) {
       const maxUid = Math.max(0, ...data.list.map(m => m.uid));
       if (st.lastUid && maxUid > st.lastUid) {
         const fresh = data.list.filter(m => m.uid > st.lastUid && !m.seen);
+        if (fresh.length) global.kairoAlert?.('mail', fresh);
         if (fresh.length) {
           getWin()?.webContents.send('mail:new', fresh.map(({ from, subject, date }) => ({ from, subject, date })));
           if (s.mail.notify !== false && Notification.isSupported()) new Notification({ title: fresh.length === 1 ? `✉ ${fresh[0].from}` : `✉ ${fresh.length} neue Mails`, body: fresh.map(m => m.subject).join('\n').slice(0, 200), silent: true }).show();

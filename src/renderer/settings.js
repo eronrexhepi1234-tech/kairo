@@ -155,6 +155,7 @@ window.SettingsUI = (function () {
     wire(p);
     renderDiscord();
     window.Extras2?.renderSettings(root().querySelector('.settings-inner'), S, save, render);
+    window.AlertsUI?.renderSettings(root().querySelector('.settings-inner'), S, save, render);
   }
 
   async function renderDiscord() {
