@@ -191,7 +191,7 @@ window.Today = (function () {
     $('tdTidy').onclick = tidy;
     $('tdQuiz').onclick = () => { window.App.go('games'); Games.showGame('quiz'); };
     $('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
-    window.kairo.reminders.onFire(r => { showAlert(r); loadReminders(); });
+    window.kairo.reminders.onFire(r => { (window.Today?.showAlert || showAlert)(r); loadReminders(); });
     refresh();
   }
 

@@ -25,7 +25,7 @@ const names = new Set([...Object.values(EMOJI), 'chevron-right', 'chevron-left',
   'radio', 'thermometer', 'memory-stick', 'clock-3', 'sunset', 'crosshair', 'navigation', 'locate', 'video', 'cake', 'utensils', 'list-checks', 'timer-reset',
   'gauge', 'cpu', 'hard-drive', 'zap-off', 'audio-waveform', 'audio-lines', 'wand-sparkles', 'scan-search', 'disc-3', 'mountain', 'flag', 'medal', 'skull', 'ghost',
   'laugh', 'eye', 'eye-off', 'circle-help', 'chef-hat', 'cooking-pot', 'map', 'telescope', 'rocket', 'webcam', 'cctv', 'square-play', 'file-type', 'files', 'merge',
-  'message-square-quote', 'terminal', 'bot-message-square', 'sparkle', 'calendar-heart', 'party-popper', 'heart', 'settings-2', 'refresh-ccw', 'circle-gauge', 'grid-3x3', 'newspaper', 'clock', 'users', 'building-2', 'cctv', 'orbit', 'tv-minimal-play', 'external-link']);
+  'message-square-quote', 'terminal', 'bot-message-square', 'sparkle', 'calendar-heart', 'party-popper', 'heart', 'settings-2', 'refresh-ccw', 'circle-gauge', 'grid-3x3', 'newspaper', 'clock', 'users', 'building-2', 'cctv', 'orbit', 'tv-minimal-play', 'external-link', 'radio', 'cat', 'scan-search', 'skip-back', 'skip-forward', 'message-circle', 'cloud-rain', 'party-popper', 'music-2', 'tv', 'moon-star', 'sun']);
 const out = {}, missing = [];
 for (const n of names) { const f = path.join(dir, n + '.svg'); if (fs.existsSync(f)) out[n] = strip(fs.readFileSync(f, 'utf8')); else missing.push(n); }
 fs.writeFileSync(path.join(__dirname, '..', 'src', 'renderer', 'icons-data.js'),

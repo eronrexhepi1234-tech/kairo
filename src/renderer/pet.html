@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'">
+<title>Kairo Pet</title>
+<style>
+  @font-face { font-family: 'Inter Var'; font-weight: 100 900; src: url(assets/fonts/inter-latin-wght-normal.woff2) format('woff2'); }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font: 12px/1.35 'Inter Var', 'Segoe UI', sans-serif; color: #eef2f8; user-select: none; }
+  #c { position: absolute; left: 0; bottom: 0; width: 230px; height: 130px; }
+  .bubble { position: absolute; left: 10px; right: 10px; bottom: 112px; padding: 9px 11px; border-radius: 14px; background: rgba(16,19,27,.92); border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,.7); opacity: 0; transform: translateY(8px) scale(.95); transition: .25s cubic-bezier(.34,1.4,.64,1); pointer-events: none; }
+  .bubble.on { opacity: 1; transform: none; pointer-events: auto; }
+  .bubble::after { content: ''; position: absolute; left: var(--tx, 50%); bottom: -6px; width: 12px; height: 12px; background: inherit; border-right: 1px solid rgba(255,255,255,.14); border-bottom: 1px solid rgba(255,255,255,.14); transform: rotate(45deg); }
+  .bubble b { font-size: 13px; } .bubble small { color: #9aa6ba; }
+  .bars { display: grid; grid-template-columns: auto 1fr; gap: 3px 6px; align-items: center; margin: 6px 0; font-size: 11px; color: #b9c3d6; }
+  .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; } .bar i { display: block; height: 100%; border-radius: 3px; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .btns button { border: 0; border-radius: 9px; padding: 6px 4px; background: rgba(255,255,255,.08); color: #eef2f8; font: inherit; cursor: pointer; }
+  .btns button:hover { background: #ff7a45; }
+  .say { font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="bubble" id="bub"></div>
+<canvas id="c"></canvas>
+<script src="pet.js"></script>
+</body>
+</html>

@@ -75,7 +75,7 @@ function go(view) {
     $('viewName').textContent = t('nav.' + view);
     if (view === 'earth') Earth.init();
     if (view === 'settings') SettingsUI.render();
-    if (view === 'today') { window.Extras2?.renderToday(); window.Fun?.init(); }
+    if (view === 'today') { window.Extras2?.renderToday(); window.Fun?.init(); window.Show?.mount(); }
     if (view === 'games') window.Fun?.init();
     if (view === 'phone') loadMac();
     if (view === 'today') { Today.refresh(); Life.refreshToday(); }
@@ -176,6 +176,10 @@ function parseReply(text) {
   const routines = grab(/\[\[routine:\s*([^\]]+)\]\]/gi);
   const recipes = grab(/\[\[recipe:\s*([^\]]+)\]\]/gi), patches = grab(/\[\[patch:\s*([^\]]+)\]\]/gi), vfx = grab(/\[\[voicefx:\s*([^\]]+)\]\]/gi);
   const bdays = split(/\[\[birthday:\s*([^\]]+)\]\]/gi).map(([name, date]) => ({ name, date }));
+  const sw = name => { const m = shown.match(new RegExp('\\[\\[' + name + '(?::\\s*(on|off|an|aus))?\\s*\\]\\]', 'i')); return m ? !/off|aus/i.test(m[1] || 'on') : null; };
+  const show = { jarvis: sw('jarvis'), pet: sw('pet'), subs: sw('subtitles'), comment: sw('commentator'), dweather: sw('desktopweather'), radio: /\[\[radio\]\]/i.test(shown), quiz: /\[\[musicquiz\]\]/i.test(shown), tv: /\[\[worldtv\]\]/i.test(shown), party: /\[\[party\]\]/i.test(shown),
+    game: (shown.match(/\[\[game:\s*([^\]]+)\]\]/i) || [])[1] || null, flight: (shown.match(/\[\[flight:\s*([^\]]+)\]\]/i) || [])[1] || null };
+  shown = shown.replace(/\[\[(jarvis|pet|subtitles|commentator|desktopweather)(:[^\]]*)?\]\]/gi, '').replace(/\[\[(radio|musicquiz|worldtv|party)\]\]/gi, '').replace(/\[\[(game|flight):[^\]]*\]\]/gi, '');
   const guardTag = (shown.match(/\[\[guard:\s*(on|off|an|aus)\s*\]\]/i) || [])[1];
   const flags = { guard: guardTag ? /on|an/i.test(guardTag) : null, viz: /\[\[visualizer\]\]/i.test(shown), song: /\[\[song\]\]/i.test(shown), pc: /\[\[pccheck\]\]/i.test(shown), geo: /\[\[geoguessr\]\]/i.test(shown), riddle: /\[\[riddle\]\]/i.test(shown) };
   shown = shown.replace(/\[\[(visualizer|song|pccheck|geoguessr|riddle)\]\]/gi, '').replace(/\[\[guard:[^\]]*\]\]/gi, '');
@@ -193,7 +197,7 @@ function parseReply(text) {
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
-  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags };
+  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show };
 }
 
 // prompt for another AI: card with copy + open buttons
@@ -254,6 +258,18 @@ async function runActions(m) {
   for (const x of p.money) { await L.add('money', x); m.done.push(`💰 ${x.amount > 0 ? '+' : ''}${x.amount.toFixed(2)} ${x.note}`); }
   for (const d of p.diary) { await L.add('diary', { date: new Date().toLocaleDateString('sv'), mood: d.mood, text: d.text }); m.done.push('📔 ' + d.mood); }
   if (p.money.length || p.diary.length) { Life.renderMoney(); Life.renderDiary(); }
+  const sh = p.show;
+  if (sh.jarvis != null) { Jarvis.set(sh.jarvis); m.done.push('🦾 Jarvis'); }
+  if (sh.pet != null) { Pet.set(sh.pet); m.done.push('🐉 ' + t('sh.pet')); }
+  if (sh.subs != null) { sh.subs ? Subtitles.start() : Subtitles.stop(); m.done.push('💬 ' + t('sh.subs')); }
+  if (sh.comment != null) { Commentator.set(sh.comment); m.done.push('🎙 ' + t('sh.comment')); }
+  if (sh.dweather != null) { DesktopWeather.set(sh.dweather); m.done.push('🌧 ' + t('sh.weather')); }
+  if (sh.radio) setTimeout(() => RadioShow.open(), 300);
+  if (sh.quiz) setTimeout(() => MusicQuiz.open(), 300);
+  if (sh.tv) setTimeout(() => WorldTV.open(), 300);
+  if (sh.party) Party.party();
+  if (sh.game) { m.done.push('🎮 ' + sh.game); setTimeout(() => GameMaker.open(sh.game), 300); }
+  if (sh.flight) { m.done.push('✈ ' + sh.flight); setTimeout(() => Flight.track(sh.flight), 300); }
   if (p.recipes[0]) { m.done.push('🍳 ' + p.recipes[0]); setTimeout(() => Cook.open(p.recipes[0]), 300); }
   if (p.patches[0]) { m.done.push('📜 ' + p.patches[0]); setTimeout(() => { go('games'); GamesExtra.mount(); GamesExtra.patch(p.patches[0]); }, 300); }
   if (p.vfx[0]) { VoiceFX.set(p.vfx[0].toLowerCase()); setTimeout(() => { go('games'); Games.showGame('voicefx'); }, 300); m.done.push('🎤 ' + p.vfx[0]); }

@@ -84,7 +84,7 @@
         if (closed) return; closed = true; clearTimeout(timer);
         el.classList.remove('in'); el.classList.add('out');
         setTimeout(() => comet(target, orb, fast ? 380 : 650, () => { burst(orb.x, orb.y, 18); }, { burst: 0 }), 120);
-        setTimeout(() => { el.remove(); live = live.filter(c => c !== card); if (!live.length && !captionOn) setTimeout(() => { if (!live.length && !captionOn) window.kairo.stage.idle(); }, 900); }, 700);
+        setTimeout(() => { el.remove(); live = live.filter(c => c !== card); if (!live.length && !captionOn) setTimeout(() => { if (!live.length && !captionOn) (!window.stageBusy?.() && window.kairo.stage.idle()); }, 900); }, 700);
       }
     };
     live.push(card);
@@ -117,8 +117,8 @@
     el.style.right = Math.max(16, W - orb.x + 66) + 'px';
     el.style.bottom = Math.max(16, H - orb.y - 18) + 'px';
     requestAnimationFrame(() => el.classList.add('on'));
-    if (p.done) capTimer = setTimeout(() => { el.classList.remove('on'); setTimeout(() => { el.hidden = true; captionOn = false; if (!live.length) window.kairo.stage.idle(); }, 450); }, 5000);
+    if (p.done) capTimer = setTimeout(() => { el.classList.remove('on'); setTimeout(() => { el.hidden = true; captionOn = false; if (!live.length) (!window.stageBusy?.() && window.kairo.stage.idle()); }, 450); }, 5000);
   }
 
-  window.kairo.stage.onShow(p => (p.type === 'caption' ? caption(p) : show(p)));
+  window.kairo.stage.onShow(p => (['jarvis', 'subtitle', 'weatherfx', 'fireworks'].includes(p.type) ? Stage2.handle(p) : p.type === 'caption' ? caption(p) : show(p)));
 })();

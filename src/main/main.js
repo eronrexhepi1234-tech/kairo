@@ -134,6 +134,7 @@ ipcMain.on('stage:open', () => { if (stage && !stage.isDestroyed()) stage.hide()
 function registerHotkey() {
   globalShortcut.unregisterAll();
   try { globalShortcut.register('CommandOrControl+Alt+K', () => require('./features').openClip()); } catch {}
+  try { globalShortcut.register('CommandOrControl+Shift+J', () => win?.webContents.send('jarvis:toggle')); } catch {}
   require('./media').hotkeys(() => win);
   try {
     globalShortcut.register(store.get().voiceHotkey, () => {
@@ -466,6 +467,7 @@ if (gotLock) app.whenReady().then(() => {
   });
   optional('./fun', { register: () => {} }).register({ getWin: () => win, store });
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./show', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start
   if (process.env.KAIRO_SHOTS) {
@@ -483,6 +485,7 @@ if (gotLock) app.whenReady().then(() => {
           if (st.js) await win.webContents.executeJavaScript(st.js).catch(e => console.log('step error', e.message));
           await wait(st.wait || 1000);
           if (st.name) fs.writeFileSync(path.join(dir, st.name + '.png'), (await win.webContents.capturePage()).toPNG());
+          if (st.all) for (const w of BrowserWindow.getAllWindows()) { if (w !== win && w.isVisible()) fs.writeFileSync(path.join(dir, st.all + '-' + (w.getTitle() || 'win').replace(/[^a-z0-9]/gi, '_') + '.png'), (await w.webContents.capturePage()).toPNG()); }
           if (st.stage && stage && !stage.isDestroyed()) fs.writeFileSync(path.join(dir, st.stage + '.png'), (await stage.webContents.capturePage()).toPNG());
         }
         return app.quit();

@@ -82,6 +82,17 @@ contextBridge.exposeInMainWorld('kairo', {
   discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
   orbMode: () => invoke('app:orbMode'),
+  show: {
+    jarvis: () => invoke('show:jarvis'), onJarvis: fn => on('jarvis:toggle', fn),
+    game: (idea, prev) => invoke('show:game', idea, prev), games: () => invoke('show:games'), gameFile: f => invoke('show:gameFile', f),
+    subtitle: (b64, mime, lang) => invoke('show:subtitle', b64, mime, lang), comment: () => invoke('show:comment'),
+    flight: q => invoke('show:flight', q), musicQuiz: n => invoke('show:musicQuiz', n), radio: () => invoke('show:radio')
+  },
+  pet: {
+    get: () => invoke('pet:get'), show: on => invoke('pet:show', on), give: (k, n) => invoke('pet:give', k, n), rename: n => invoke('pet:rename', n),
+    move: (x, y) => ipcRenderer.send('pet:move', x, y), mouse: on => ipcRenderer.send('pet:mouse', on), area: () => invoke('pet:area'), openKairo: () => ipcRenderer.send('pet:open'),
+    onState: fn => on('pet:state', fn), onEvent: fn => on('pet:event', fn), onEvolve: fn => on('pet:evolve', fn)
+  },
   alerts: {
     get: () => invoke('alerts:get'), newTopic: () => invoke('alerts:newTopic'), test: k => invoke('alerts:test', k), qr: s => invoke('alerts:qr', s), guard: on => invoke('alerts:guard', on),
     onNew: fn => on('alert:new', fn), onGuard: fn => on('alert:guard', fn), onSay: fn => on('remote:say', fn)
