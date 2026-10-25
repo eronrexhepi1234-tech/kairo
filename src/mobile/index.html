@@ -153,6 +153,18 @@
   @keyframes pulse { 50% { box-shadow: 0 0 0 16px rgba(229,36,59,.06); } }
   .guard b { font-size: 15px; } .guard p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
 
+  /* ---------- call: connected / conversation ---------- */
+  .call.talk { justify-content: flex-start; gap: 14px; padding-top: calc(40px + env(safe-area-inset-top)); }
+  .call.talk .ring { width: 130px; height: 130px; overflow: visible; } .call.talk .ring canvas { width: 130px; height: 130px; } .call.talk .ring i { display: none; }
+  .call.talk .btns, .call .conv { display: none; } .call.talk .conv { display: flex; }
+  .call .timer { color: #9fe3bf; font: 600 13px 'Inter'; letter-spacing: .1em; }
+  .conv { flex: 1; width: 100%; flex-direction: column; gap: 10px; min-height: 0; text-align: left; }
+  .conv .lines { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+  .conv .q { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; } .conv .q::-webkit-scrollbar { display: none; }
+  .conv .q button { flex: none; border: 1px solid var(--line); background: var(--glass); border-radius: 99px; padding: 8px 12px; font-size: 13px; }
+  .conv form { display: flex; gap: 8px; padding: 5px; border-radius: 24px; background: rgba(255,255,255,.07); border: 1px solid var(--line); }
+  .conv input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); padding: 10px; font: inherit; font-size: 16px; outline: 0; }
+  .conv .hang { align-self: center; width: 64px; height: 64px; border-radius: 50%; border: 0; background: #e5243b; color: #fff; display: grid; place-items: center; box-shadow: 0 10px 24px -8px #e5243b; margin-top: 4px; }
   /* ---------- incoming call ---------- */
   .call { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: calc(70px + env(safe-area-inset-top)) 24px calc(60px + env(safe-area-inset-bottom));
     background: radial-gradient(120% 80% at 50% 20%, #3a1d22, #0b0b10 70%); text-align: center; }
@@ -291,7 +303,11 @@
 <div class="guide" id="guide"><div class="sheet" id="guideBox"></div></div>
 <div class="call" id="call"><div><small>Kairo ruft an</small><h1 id="callT">Chef!</h1><p id="callM"></p></div>
   <div class="ring"><i></i><i></i><i></i><canvas id="callOrb"></canvas></div>
-  <div class="btns"><button class="no" id="callNo"><svg class="i" data-ic="x"></svg></button><button class="yes" id="callYes"><svg class="i" data-ic="phone"></svg></button></div></div>
+  <div class="btns"><button class="no" id="callNo"><svg class="i" data-ic="x"></svg></button><button class="yes" id="callYes"><svg class="i" data-ic="phone"></svg></button></div>
+  <div class="conv"><div class="lines" id="callLines"></div>
+    <div class="q" id="callQ"><button>Lies mir die Mails vor</button><button>Wer hat geschrieben?</button><button>Was ist sonst neu?</button><button>Erinnere mich später</button></div>
+    <form id="callF"><input id="callIn" placeholder="Antworten… (🎤 auf der Tastatur)" autocomplete="off"><button class="round send"><svg class="i" data-ic="send"></svg></button></form>
+    <button class="hang" id="callEnd"><svg class="i" data-ic="phone"></svg></button></div></div>
 <script src="/orb.js"></script>
 <script>
   // line icons (Lucide style)
@@ -480,12 +496,46 @@
       const beep = () => { [0, .5].forEach(off => { const os = ringCtx.createOscillator(), g = ringCtx.createGain(); os.frequency.value = 440 + off * 300; g.gain.setValueAtTime(.0001, ringCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, ringCtx.currentTime + off + .05); g.gain.exponentialRampToValueAtTime(.0001, ringCtx.currentTime + off + .4); os.connect(g); g.connect(ringCtx.destination); os.start(ringCtx.currentTime + off); os.stop(ringCtx.currentTime + off + .45); }); };
       beep(); ringTimer = setInterval(beep, 2200);
     } catch {}
-    const end = () => { clearInterval(ringTimer); ringCtx?.close(); $('call').classList.remove('on'); buzz(0); };
+    const stopRing = () => { clearInterval(ringTimer); ringCtx?.close(); ringCtx = null; buzz(0); };
+    const end = () => { stopRing(); clearInterval(callClock); $('call').classList.remove('on', 'talk'); };
     $('callNo').onclick = end;
-    $('callYes').onclick = () => { end(); say(a.speech || a.message); toast('📞 Kairo spricht'); };
-    setTimeout(() => { if ($('call').classList.contains('on')) end(); }, 45000);
+    $('callEnd').onclick = end;
+    $('callYes').onclick = () => { stopRing(); talk(a, end); };
+    setTimeout(() => { if ($('call').classList.contains('on') && !$('call').classList.contains('talk')) end(); }, 45000);
+  }
+
+  // after picking up: Kairo speaks, then you can answer (type or dictate with the keyboard mic)
+  let callClock = 0;
+  function talk(a, end) {
+    $('call').classList.add('talk');
+    $('call').querySelector('small').textContent = 'Verbunden';
+    const t0 = Date.now();
+    $('callT').innerHTML = '<span class="timer" id="callTime">00:00</span>';
+    callClock = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); if ($('callTime')) $('callTime').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+    $('callM').textContent = '';
+    $('callLines').innerHTML = '';
+    const line = (who, text) => { const d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = text; $('callLines').appendChild(d); $('callLines').scrollTop = 1e9; return d; };
+    const opener = a.speech || a.message;
+    line('ai', opener); say(opener);
+    const context = `(Du hast mich gerade auf dem Handy angerufen wegen: ${a.title} – ${a.message}. Antworte kurz und gesprochen, wie am Telefon.) `;
+    const reply = async text => {
+      if (!text) return;
+      line('me', text);
+      const w = line('ai typing', ''); w.innerHTML = '<i></i><i></i><i></i>';
+      try {
+        const j = await (await api('/api/chat', { text: context + text })).json();
+        w.className = 'msg ai'; w.textContent = (j.reply || j.error || '?').replace(/\*\*|__|`/g, '');
+        if (j.reply) say(j.reply.replace(/[#*_`>|]/g, ''));
+        if (/tschüss|danke.*(das wars|fertig)|auflegen/i.test(text)) setTimeout(end, 4000);
+      } catch (e) { w.className = 'msg ai'; w.textContent = 'Fehler: ' + e.message; }
+    };
+    $('callF').onsubmit = e => { e.preventDefault(); const v = $('callIn').value.trim(); $('callIn').value = ''; buzz(10); reply(v); };
+    $('callQ').querySelectorAll('button').forEach(b => b.onclick = () => { buzz(10); if (/später/.test(b.textContent)) reply('Erinnere mich in 30 Minuten nochmal daran.'); else reply(b.textContent); });
   }
   loadAlerts(true); setInterval(loadAlerts, 5000);
+  // opened by tapping the ntfy notification: show that call right away
+  const callId = new URLSearchParams(location.search).get('call');
+  if (callId) (async () => { try { const d = await (await api('/api/alerts')).json(); const a = (d.history || []).find(x => x.id === callId) || (d.history || [])[0]; if (a) incoming(a); } catch {} })();
 
   // ---------- "install as app" ----------
   // Once Kairo runs as an installed app (or was installed), the banner never shows again.

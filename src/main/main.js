@@ -460,7 +460,7 @@ if (gotLock) app.whenReady().then(() => {
   optional('./pdf', { register: () => {} }).register({ getWin: () => win });
   optional('./earth2', { register: () => {} }).register({ store });
   optional('./alerts', { register: () => {} }).register({
-    store, getWin: () => win,
+    store, getWin: () => win, getLink: () => (remoteInfo ? `http://${remoteInfo.ip}:${remoteInfo.port}/` : null),
     speakWav: async text => {
       const st = store.get();
       const r = ttsEngine(st) === 'openai' ? await providers.speak(st, text) : await providers.geminiSpeak(st, text);

@@ -9,7 +9,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 
-let store = null, getWin = null, speakWav = null;
+let store = null, getWin = null, speakWav = null, getLink = () => null;
 const history = [];           // last alerts, also shown on the phone
 const lastSent = {};          // trigger -> time, so nothing spams you
 let guard = { on: false, since: 0, lastIdle: 0, timer: null };
@@ -32,6 +32,8 @@ async function pushNtfy(c, a, withVoice) {
   if (!c.ntfyTopic) return false;
   const url = 'https://ntfy.sh/' + encodeURIComponent(c.ntfyTopic);
   const headers = { Title: encodeHeader(a.title), Priority: a.level === 'call' ? '5' : '3', Tags: a.tag || 'robot' };
+  const link = getLink();
+  if (link) { const u = link + (a.level === 'call' ? '?call=' + a.id : ''); headers.Click = u; if (a.level === 'call') headers.Actions = `view, Abnehmen, ${u}, clear=true`; }
   try {
     if (withVoice && speakWav) {
       // Kairo's own voice as an audio file attached to the notification
@@ -142,6 +144,7 @@ async function checkSystem() {
 
 function register(ctx) {
   ({ store, getWin, speakWav } = ctx);
+  if (ctx.getLink) getLink = ctx.getLink;
   // other modules report events here
   global.kairoAlert = (type, data) => {
     try {
