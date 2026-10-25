@@ -57,13 +57,14 @@ async function start({ port, token }, hooks) {
     const url = new URL(req.url, 'http://x');
     const reply = (code, body, type = 'application/json') => {
       res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' });
-      res.end(type === 'application/json' ? JSON.stringify(body) : body);
+      res.end(/json/.test(type) && typeof body !== 'string' && !Buffer.isBuffer(body) ? JSON.stringify(body) : body);
     };
 
     if (url.pathname === '/' || url.pathname === '/index.html') return reply(200, page, 'text/html; charset=utf-8');
     if (url.pathname === '/manifest.json') {
-      return reply(200, { name: 'Kairo', short_name: 'Kairo', display: 'standalone', background_color: '#111214', theme_color: '#111214', start_url: '/' + url.search,
-        icons: [{ src: '/icon.png', sizes: '256x256', type: 'image/png' }] });
+      return reply(200, { id: '/kairo', name: 'Kairo', short_name: 'Kairo', description: 'Dein Kairo vom PC', display: 'standalone', display_override: ['standalone', 'fullscreen'], orientation: 'portrait',
+        background_color: '#0b0d14', theme_color: '#0b0d14', start_url: '/' + url.search, scope: '/',
+        icons: [{ src: '/icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] }, 'application/manifest+json');
     }
     // public files: app icon, the orb animation, and the quiz-party page for friends
     const PUBLIC = { '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'],

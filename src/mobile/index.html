@@ -169,6 +169,23 @@
   .call .no { background: #e5243b; box-shadow: 0 10px 24px -8px #e5243b; } .call .yes { background: #22c55e; box-shadow: 0 10px 24px -8px #22c55e; animation: shake 1s infinite; }
   @keyframes shake { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-12deg); } 20%, 40% { transform: rotate(12deg); } }
 
+  /* install banner + guide */
+  .inst { position: fixed; left: 12px; right: 12px; top: calc(70px + env(safe-area-inset-top)); z-index: 40; display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; border-radius: 22px;
+    background: rgba(25,28,40,.92); border: 1px solid rgba(255,122,69,.35); backdrop-filter: blur(18px); box-shadow: 0 16px 40px -14px #000; animation: up .6s var(--spring); }
+  .inst[hidden] { display: none; }
+  .inst img { width: 44px; height: 44px; border-radius: 12px; }
+  .inst div { flex: 1; min-width: 0; } .inst b { display: block; font-size: 14px; } .inst small { color: var(--muted); font-size: 12px; }
+  .inst .go { border: 0; background: var(--grad); color: #fff; font-weight: 700; padding: 10px 14px; border-radius: 14px; display: flex; gap: 6px; align-items: center; }
+  .inst .x { border: 0; background: none; color: var(--muted); padding: 6px; }
+  .guide { position: fixed; inset: 0; z-index: 55; display: none; align-items: flex-end; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); }
+  .guide.on { display: flex; }
+  .guide .sheet { width: 100%; padding: 22px 20px calc(24px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: #151824; border-top: 1px solid var(--line); animation: up .45s var(--ease); }
+  .guide h2 { margin: 0 0 4px; font: 700 22px 'Grotesk', sans-serif; } .guide p { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; }
+  .step { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 16px; background: var(--glass); margin-bottom: 8px; font-size: 14.5px; }
+  .step span { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; font-weight: 700; }
+  .step kbd { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 8px; background: rgba(255,255,255,.1); font: 600 13px 'Inter'; }
+  .guide .btn { margin-top: 10px; }
+  .arrow { position: fixed; z-index: 56; font-size: 34px; animation: bob 1s ease-in-out infinite; pointer-events: none; }
   .toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); transform: translate(-50%, -30px); background: rgba(25,28,40,.92); border: 1px solid var(--line); color: var(--text); padding: 10px 16px; border-radius: 99px; font-size: 13px; font-weight: 600;
     opacity: 0; transition: .35s var(--spring); pointer-events: none; z-index: 60; backdrop-filter: blur(16px); box-shadow: 0 10px 30px -10px #000; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -269,6 +286,9 @@
   <button data-t="alarm"><svg class="i" data-ic="bell"></svg>Alarm</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="inst" id="inst" hidden><img src="/icon.png" alt=""><div><b>Kairo als App</b><small>Aufs Handy laden</small></div>
+  <button class="go" id="instGo"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 15V3M7 10l5 5 5-5M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Installieren</button><button class="x" id="instX">✕</button></div>
+<div class="guide" id="guide"><div class="sheet" id="guideBox"></div></div>
 <div class="call" id="call"><div><small>Kairo ruft an</small><h1 id="callT">Chef!</h1><p id="callM"></p></div>
   <div class="ring"><i></i><i></i><i></i><canvas id="callOrb"></canvas></div>
   <div class="btns"><button class="no" id="callNo"><svg class="i" data-ic="x"></svg></button><button class="yes" id="callYes"><svg class="i" data-ic="phone"></svg></button></div></div>
@@ -466,6 +486,41 @@
     setTimeout(() => { if ($('call').classList.contains('on')) end(); }, 45000);
   }
   loadAlerts(true); setInterval(loadAlerts, 5000);
+
+  // ---------- "install as app" ----------
+  // Once Kairo runs as an installed app (or was installed), the banner never shows again.
+  const isApp = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+  if (isApp) localStorage.setItem('kairo.installed', '1');
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), android = /android/i.test(navigator.userAgent);
+  let deferred = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; });
+  addEventListener('appinstalled', () => { localStorage.setItem('kairo.installed', '1'); $('inst').hidden = true; toast('✓ Kairo ist installiert'); });
+  const later = +localStorage.getItem('kairo.instLater') || 0;
+  if (!isApp && !localStorage.getItem('kairo.installed') && Date.now() - later > 3 * 864e5) setTimeout(() => { $('inst').hidden = false; }, 1200);
+  $('instX').onclick = () => { $('inst').hidden = true; localStorage.setItem('kairo.instLater', Date.now()); };
+  $('instGo').onclick = async () => {
+    buzz(15);
+    if (deferred) { deferred.prompt(); const r = await deferred.userChoice; deferred = null; if (r.outcome === 'accepted') { localStorage.setItem('kairo.installed', '1'); $('inst').hidden = true; } return; }
+    const box = $('guideBox');
+    box.innerHTML = ios
+      ? `<h2>Kairo installieren</h2><p>Auf dem iPhone geht das in 3 Schritten (nur in <b>Safari</b>):</p>
+         <div class="step"><span>1</span><div>Unten auf <kbd>Teilen ⬆︎</kbd> tippen</div></div>
+         <div class="step"><span>2</span><div>Runterscrollen: <kbd>Zum Home-Bildschirm</kbd></div></div>
+         <div class="step"><span>3</span><div>Oben rechts <kbd>Hinzufügen</kbd></div></div>`
+      : `<h2>Kairo installieren</h2><p>So kommt Kairo als App auf dein Handy:</p>
+         <div class="step"><span>1</span><div>Oben rechts auf <kbd>⋮</kbd> tippen</div></div>
+         <div class="step"><span>2</span><div><kbd>Zum Startbildschirm hinzufügen</kbd> oder <kbd>App installieren</kbd></div></div>
+         <div class="step"><span>3</span><div><kbd>Hinzufügen</kbd> drücken – fertig!</div></div>`;
+    box.insertAdjacentHTML('beforeend', `<button class="btn" id="guideOk">Erledigt ✓</button><p style="margin:12px 0 0;text-align:center">Danach Kairo immer über das neue Symbol öffnen.</p>`);
+    $('guide').classList.add('on');
+    // arrow pointing to the right menu
+    const ar = document.createElement('div'); ar.className = 'arrow'; ar.id = 'arrow'; ar.textContent = ios ? '⬇' : '⬆';
+    ar.style.cssText = ios ? 'left:50%;bottom:8px;transform:translateX(-50%)' : 'right:14px;top:4px';
+    document.body.appendChild(ar);
+    const close = done => { $('guide').classList.remove('on'); $('arrow')?.remove(); if (done) { localStorage.setItem('kairo.installed', '1'); $('inst').hidden = true; } };
+    $('guideOk').onclick = () => close(true);
+    $('guide').onclick = e => { if (e.target === $('guide')) close(false); };
+  };
 
   document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => { buzz(15); await api('/api/music', { mood: b.dataset.m }); toast('🎵 ' + b.textContent.trim()); });
 </script>
