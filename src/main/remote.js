@@ -66,7 +66,8 @@ async function start({ port, token }, hooks) {
         icons: [{ src: '/icon.png', sizes: '256x256', type: 'image/png' }] });
     }
     // public files: app icon, the orb animation, and the quiz-party page for friends
-    const PUBLIC = { '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'] };
+    const PUBLIC = { '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'],
+      '/fonts/inter.woff2': ['renderer/assets/fonts/inter-latin-wght-normal.woff2', 'font/woff2'], '/fonts/grotesk.woff2': ['renderer/assets/fonts/space-grotesk-latin-wght-normal.woff2', 'font/woff2'] };
     if (PUBLIC[url.pathname]) return reply(200, fs.readFileSync(path.join(__dirname, '..', PUBLIC[url.pathname][0])), PUBLIC[url.pathname][1]);
     // quiz party: friends only need the party code, nothing else of Kairo is reachable with it
     if (url.pathname.startsWith('/party/') && hooks.party) {

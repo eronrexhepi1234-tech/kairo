@@ -3,179 +3,321 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#111214">
+<meta name="theme-color" content="#0b0d14">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="/icon.png">
 <link rel="icon" href="/icon.png">
 <link rel="manifest" id="mf">
 <title>Kairo</title>
 <style>
-  :root { --bg: #111214; --bg2: #1a1b1e; --bg3: #232428; --line: #2c2d32; --text: #ececec; --muted: #8b8c92; --accent: #ff7a45; }
+  @font-face { font-family: 'Inter'; font-weight: 100 900; font-display: swap; src: url(/fonts/inter.woff2) format('woff2'); }
+  @font-face { font-family: 'Grotesk'; font-weight: 300 700; font-display: swap; src: url(/fonts/grotesk.woff2) format('woff2'); }
+  :root {
+    --bg: #0b0d14; --glass: rgba(255,255,255,.055); --glass2: rgba(255,255,255,.09); --line: rgba(255,255,255,.09);
+    --text: #f1f3f8; --muted: #8e97aa; --accent: #ff7a45; --accent2: #ff4f8b; --ok: #3ddc97;
+    --grad: linear-gradient(135deg, var(--accent), var(--accent2));
+    --ease: cubic-bezier(.16,1,.3,1); --spring: cubic-bezier(.34,1.56,.64,1);
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
-  body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
-  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .02em; }
-  .brand img { width: 26px; height: 26px; border-radius: 7px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .dot.on { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.15); }
-  .host { font: 11px ui-monospace, Menlo, monospace; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-  main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-  .pane { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: none; }
-  .pane.on { display: block; }
-  nav { display: flex; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); background: var(--bg); }
-  nav button { flex: 1; border: 0; background: none; color: var(--muted); padding: 9px 0 8px; font: inherit; font-size: 11px; display: grid; justify-items: center; gap: 2px; }
-  nav button span { font-size: 20px; } nav button.on { color: var(--accent); }
-  /* chat */
-  .orb-wrap { display: grid; justify-items: center; margin: 0 0 6px; }
-  #orb { width: 150px; height: 150px; }
-  .orb-hint { font-size: 12px; color: var(--muted); margin-top: -8px; }
-  .msg { margin: 0 0 12px; animation: in .35s cubic-bezier(.2,.8,.2,1); white-space: pre-wrap; }
-  .msg.me { margin-left: 18%; background: var(--bg3); padding: 9px 13px; border-radius: 16px 16px 4px 16px; }
-  .msg.ai { border-left: 2px solid var(--accent); padding-left: 12px; }
-  .msg.ai.typing::after { content: "…"; animation: blink 1s infinite; }
-  @keyframes blink { 50% { opacity: .2; } }
-  @keyframes in { from { opacity: 0; transform: translateY(8px); } }
-  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: none; }
-  .chips button { flex: none; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 99px; padding: 7px 12px; font: inherit; font-size: 13px; }
-  form { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
-  form input[type=text] { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 22px; padding: 11px 16px; font: inherit; font-size: 16px; outline: 0; }
-  .round { width: 42px; height: 42px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--bg2); color: var(--text); font-size: 18px; }
-  .round.on { background: var(--accent); border-color: var(--accent); color: #1a0f0a; }
-  .send { border: 0; background: var(--accent); color: #1a0f0a; }
-  /* cards */
-  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; }
-  .card { background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px; animation: in .35s cubic-bezier(.2,.8,.2,1) backwards; }
-  .weather { display: flex; align-items: center; gap: 12px; } .weather .ic { font-size: 38px; } .weather b { font-size: 28px; }
-  .row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 4px 0; } .row small { color: var(--muted); }
-  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .act { border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 16px; padding: 14px 6px; font: inherit; font-size: 12px; display: grid; gap: 4px; justify-items: center; }
-  .act span { font-size: 24px; } .act:active { transform: scale(.96); background: var(--bg3); }
+  html { background: var(--bg); }
+  html, body { margin: 0; height: 100%; color: var(--text); font: 15px/1.5 'Inter', -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* animated background glow */
+  .aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .aurora i { position: absolute; width: 70vw; height: 70vw; border-radius: 50%; filter: blur(70px); opacity: .32; animation: float 18s ease-in-out infinite; }
+  .aurora i:nth-child(1) { background: #ff7a45; top: -20vw; left: -20vw; }
+  .aurora i:nth-child(2) { background: #6a5cff; top: 30vh; right: -30vw; animation-delay: -6s; }
+  .aurora i:nth-child(3) { background: #ff4f8b; bottom: -30vw; left: 10vw; animation-delay: -12s; opacity: .18; }
+  @keyframes float { 50% { transform: translate(8vw, 6vh) scale(1.15); } }
+
+  /* header */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 8px; }
+  .hello small { display: block; color: var(--muted); font-size: 12px; letter-spacing: .02em; }
+  .hello b { font: 700 22px/1.15 'Grotesk', 'Inter', sans-serif; letter-spacing: -.01em; }
+  .pill { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 99px; background: var(--glass); border: 1px solid var(--line); font-size: 11.5px; color: var(--muted); backdrop-filter: blur(14px); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #5b6275; transition: .3s; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 4px rgba(61,220,151,.16), 0 0 12px var(--ok); }
+
+  main { flex: 1; position: relative; overflow: hidden; }
+  .pane { position: absolute; inset: 0; overflow-y: auto; padding: 6px 16px 150px; opacity: 0; transform: translateY(14px) scale(.985); pointer-events: none; transition: opacity .35s var(--ease), transform .45s var(--ease); scrollbar-width: none; }
+  .pane::-webkit-scrollbar { display: none; }
+  .pane.on { opacity: 1; transform: none; pointer-events: auto; }
+  .pane.on > * { animation: up .55s var(--ease) backwards; }
+  .pane.on > *:nth-child(2) { animation-delay: .04s; } .pane.on > *:nth-child(3) { animation-delay: .08s; } .pane.on > *:nth-child(4) { animation-delay: .12s; }
+  .pane.on > *:nth-child(5) { animation-delay: .16s; } .pane.on > *:nth-child(n+6) { animation-delay: .2s; }
+  @keyframes up { from { opacity: 0; transform: translateY(16px); } }
+
+  h3 { display: flex; align-items: center; gap: 8px; font: 600 12px 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 22px 2px 10px; }
+  .card { background: var(--glass); border: 1px solid var(--line); border-radius: 22px; padding: 14px 16px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .note { color: var(--muted); font-size: 12.5px; margin: 10px 2px; line-height: 1.5; }
+
+  /* ---------- chat ---------- */
+  .hero { display: grid; justify-items: center; padding: 6px 0 4px; position: relative; }
+  .hero::before { content: ''; position: absolute; top: 18px; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, rgba(255,122,69,.35), transparent 70%); filter: blur(10px); animation: breathe 4s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.12); opacity: .7; } }
+  #orb { width: 180px; height: 180px; position: relative; }
+  .hero small { color: var(--muted); font-size: 12px; margin-top: -10px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 12px 2px 6px; scrollbar-width: none; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button { flex: none; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--glass); border-radius: 99px; padding: 9px 14px; font-size: 13px; backdrop-filter: blur(12px); transition: .2s; }
+  .chips button:active { transform: scale(.95); background: var(--glass2); }
+  .chips svg.i { width: 16px; height: 16px; color: var(--accent); }
+  #log { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .msg { max-width: 86%; padding: 11px 14px; border-radius: 20px; white-space: pre-wrap; word-wrap: break-word; animation: pop .4s var(--spring); font-size: 14.5px; }
+  .msg.me { align-self: flex-end; background: var(--grad); color: #fff; border-bottom-right-radius: 6px; box-shadow: 0 8px 22px -10px rgba(255,79,139,.6); }
+  .msg.ai { align-self: flex-start; background: var(--glass); border: 1px solid var(--line); border-bottom-left-radius: 6px; backdrop-filter: blur(14px); }
+  .msg.typing { display: flex; gap: 5px; padding: 15px 16px; }
+  .msg.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: dots 1.2s infinite; }
+  .msg.typing i:nth-child(2) { animation-delay: .15s; } .msg.typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dots { 0%, 60%, 100% { transform: none; opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+
+  /* input bar floats above the tab bar */
+  form#f { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; gap: 8px; align-items: center; padding: 6px; border-radius: 28px;
+    background: rgba(20,23,34,.78); border: 1px solid var(--line); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 12px 30px -12px rgba(0,0,0,.6); z-index: 10; transition: .35s var(--ease); }
+  form#f.hide { opacity: 0; transform: translateY(20px); pointer-events: none; }
+  form#f input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); padding: 10px 6px; font: inherit; font-size: 16px; outline: 0; }
+  form#f input::placeholder { color: #6f778a; }
+  .round { width: 42px; height: 42px; flex: none; border-radius: 50%; border: 0; background: var(--glass2); display: grid; place-items: center; transition: .2s var(--spring); }
+  .round:active { transform: scale(.9); }
+  .round.on { background: rgba(255,122,69,.22); color: var(--accent); }
+  .send { background: var(--grad); color: #fff; box-shadow: 0 6px 16px -6px var(--accent2); }
+
+  /* ---------- tab bar ---------- */
+  nav { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); height: 64px; display: flex; padding: 6px; border-radius: 26px; z-index: 11;
+    background: rgba(20,23,34,.82); border: 1px solid var(--line); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); box-shadow: 0 16px 40px -14px rgba(0,0,0,.7); }
+  nav .ind { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); border-radius: 20px; background: rgba(255,122,69,.14); border: 1px solid rgba(255,122,69,.28); transition: transform .45s var(--spring); }
+  nav button { position: relative; flex: 1; border: 0; background: none; color: var(--muted); display: grid; justify-items: center; align-content: center; gap: 2px; font-size: 10.5px; font-weight: 600; transition: color .25s; }
+  nav button svg.i { width: 22px; height: 22px; transition: transform .35s var(--spring); }
+  nav button.on { color: var(--accent); } nav button.on svg.i { transform: translateY(-1px) scale(1.12); }
+
+  /* ---------- today ---------- */
+  .wx { position: relative; overflow: hidden; border-radius: 26px; padding: 20px; color: #fff; background: linear-gradient(150deg, #3a7bd5, #6a5cff 70%); box-shadow: 0 18px 40px -18px rgba(106,92,255,.7); }
+  .wx.warm { background: linear-gradient(150deg, #ff9a3d, #ff4f8b 75%); box-shadow: 0 18px 40px -18px rgba(255,79,139,.7); }
+  .wx.cold { background: linear-gradient(150deg, #43c6ff, #3a58d5 75%); }
+  .wx::after { content: ''; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.18); filter: blur(4px); animation: breathe 6s ease-in-out infinite; }
+  .wx small { opacity: .85; font-size: 13px; } .wx .t { font: 300 64px/1 'Grotesk', sans-serif; letter-spacing: -.03em; margin: 8px 0 2px; }
+  .wx .ic { position: absolute; right: 20px; top: 18px; font-size: 54px; z-index: 1; animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: var(--glass); border: 1px solid var(--line); }
+  .item .chip { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,122,69,.14); color: var(--accent); flex: none; }
+  .item .chip svg.i { width: 18px; height: 18px; }
+  .item div { flex: 1; min-width: 0; } .item b { display: block; font-size: 14px; font-weight: 600; } .item small { color: var(--muted); font-size: 12px; }
+
+  /* ---------- control ---------- */
+  .media { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
+  .media .big { width: 74px; height: 74px; border-radius: 50%; border: 0; background: var(--grad); color: #fff; display: grid; place-items: center; box-shadow: 0 12px 28px -10px var(--accent2); transition: .25s var(--spring); }
+  .media .big svg.i { width: 30px; height: 30px; }
+  .media .sm { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass2); display: grid; place-items: center; transition: .2s var(--spring); }
+  .media button:active { transform: scale(.88); }
+  .vol { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .act { position: relative; border: 1px solid var(--line); background: var(--glass); border-radius: 20px; padding: 16px 6px 13px; font-size: 12px; font-weight: 600; display: grid; gap: 8px; justify-items: center; backdrop-filter: blur(12px); transition: transform .2s var(--spring), background .2s; overflow: hidden; }
+  .act span { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.07); }
+  .act:active { transform: scale(.94); background: var(--glass2); }
+  .act.warn span { background: rgba(255,93,93,.16); color: #ff7b7b; } .act.c1 span { background: rgba(255,122,69,.16); color: var(--accent); } .act.c2 span { background: rgba(106,92,255,.2); color: #a89cff; }
+  .act.c3 span { background: rgba(61,220,151,.16); color: var(--ok); } .act.c4 span { background: rgba(255,210,122,.16); color: #ffd27a; } .act.c5 span { background: rgba(111,211,255,.16); color: #6fd3ff; } .act.c6 span { background: rgba(255,79,139,.16); color: var(--accent2); }
+  .act::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,.25), transparent 50%); opacity: 0; transition: opacity .4s; }
+  .act.flash::after { opacity: 1; transition: 0s; }
   .wide { grid-column: span 3; }
-  .shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); margin-top: 12px; background: #000; min-height: 120px; }
-  .btn { width: 100%; border: 0; background: var(--accent); color: #1a0f0a; font: inherit; font-weight: 600; padding: 12px; border-radius: 12px; }
-  .note { color: var(--muted); font-size: 12px; margin-top: 12px; }
-  .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat div { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center; }
-  .stat b { display: block; font-size: 20px; } .stat small { color: var(--muted); font-size: 11px; }
-  .bar { height: 5px; border-radius: 4px; background: var(--bg3); margin-top: 6px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .6s; }
-  .guard { display: flex; align-items: center; gap: 12px; } .guard .big { width: 64px; height: 64px; border-radius: 50%; border: 0; font-size: 28px; background: var(--bg3); color: var(--text); flex: none; transition: .3s; }
-  .guard .big.on { background: #e5243b; box-shadow: 0 0 0 8px rgba(229,36,59,.18); animation: pulse 1.6s infinite; }
-  @keyframes pulse { 50% { box-shadow: 0 0 0 14px rgba(229,36,59,.08); } }
-  .al { display: flex; gap: 10px; align-items: flex-start; } .al .em { font-size: 20px; } .al div { flex: 1; min-width: 0; } .al small { color: var(--muted); display: block; }
-  .say { display: flex; gap: 8px; } .say input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg2); color: var(--text); border-radius: 12px; padding: 10px 12px; font: inherit; }
-  .say button { border: 0; background: var(--accent); color: #1a0f0a; border-radius: 12px; padding: 0 14px; font-weight: 600; }
-  /* incoming call */
-  .call { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: 70px 24px 60px;
-    background: radial-gradient(120% 80% at 50% 20%, #3a1d12, #0b0b0d 70%); text-align: center; }
-  .call.on { display: flex; animation: in .4s; }
-  .call small { color: #c9a99a; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
-  .call h1 { margin: 10px 0 4px; font-size: 30px; } .call p { margin: 0; color: #e6d6cc; font-size: 16px; max-width: 320px; }
-  .ring { position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  .stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .gauge { display: grid; justify-items: center; gap: 4px; padding: 14px 6px; }
+  .gauge svg { width: 74px; height: 74px; transform: rotate(-90deg); } .gauge circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+  .gauge .bg { stroke: rgba(255,255,255,.08); } .gauge .fg { stroke: url(#gg); stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1.2s var(--ease); }
+  .gauge b { font: 700 16px 'Grotesk', sans-serif; margin-top: -52px; height: 52px; } .gauge small { color: var(--muted); font-size: 11px; }
+  .say { display: flex; gap: 8px; padding: 6px; border-radius: 22px; }
+  .say input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); padding: 10px 10px; font: inherit; font-size: 15px; outline: 0; }
+  .say button { border: 0; background: var(--grad); color: #fff; border-radius: 16px; padding: 0 16px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+  /* ---------- screen ---------- */
+  .screen { position: relative; border-radius: 22px; overflow: hidden; background: #000; border: 1px solid var(--line); min-height: 200px; box-shadow: 0 20px 40px -20px #000; }
+  .screen img { width: 100%; display: block; animation: fadeIn .5s; } @keyframes fadeIn { from { opacity: 0; filter: blur(8px); } }
+  .screen .live { position: absolute; left: 12px; top: 12px; display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.55); font: 700 11px 'Inter'; letter-spacing: .1em; }
+  .screen .live i { width: 7px; height: 7px; border-radius: 50%; background: #ff3b5c; animation: blink 1.2s infinite; } @keyframes blink { 50% { opacity: .3; } }
+  .btn { width: 100%; border: 0; background: var(--grad); color: #fff; font-weight: 700; padding: 14px; border-radius: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; box-shadow: 0 10px 24px -12px var(--accent2); }
+  .btn:active { transform: scale(.98); }
+  .loading { display: grid; place-items: center; height: 200px; color: var(--muted); }
+  .spin { width: 32px; height: 32px; border-radius: 50%; border: 3px solid rgba(255,255,255,.12); border-top-color: var(--accent); animation: rot .8s linear infinite; } @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ---------- alarm ---------- */
+  .guard { display: flex; align-items: center; gap: 14px; padding: 16px; }
+  .guard .big { width: 66px; height: 66px; border-radius: 50%; border: 0; background: var(--glass2); display: grid; place-items: center; flex: none; transition: .35s var(--spring); }
+  .guard .big svg.i { width: 28px; height: 28px; }
+  .guard .big.on { background: #e5243b; color: #fff; box-shadow: 0 0 0 8px rgba(229,36,59,.18); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 16px rgba(229,36,59,.06); } }
+  .guard b { font-size: 15px; } .guard p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+
+  /* ---------- incoming call ---------- */
+  .call { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: calc(70px + env(safe-area-inset-top)) 24px calc(60px + env(safe-area-inset-bottom));
+    background: radial-gradient(120% 80% at 50% 20%, #3a1d22, #0b0b10 70%); text-align: center; }
+  .call.on { display: flex; animation: up .45s var(--ease); }
+  .call small { color: #d7a9b0; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; font-weight: 600; }
+  .call h1 { margin: 10px 0 6px; font: 700 30px/1.2 'Grotesk', sans-serif; } .call p { margin: 0; color: #ead6da; font-size: 16px; max-width: 320px; }
+  .ring { position: relative; width: 180px; height: 180px; display: grid; place-items: center; }
   .ring i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); animation: ripple 2s ease-out infinite; opacity: 0; }
   .ring i:nth-child(2) { animation-delay: .65s; } .ring i:nth-child(3) { animation-delay: 1.3s; }
   @keyframes ripple { from { transform: scale(.55); opacity: .9; } to { transform: scale(1.5); opacity: 0; } }
-  .ring canvas { width: 140px; height: 140px; }
-  .call .btns { display: flex; gap: 70px; } .call .btns button { width: 72px; height: 72px; border-radius: 50%; border: 0; font-size: 30px; color: #fff; }
-  .call .no { background: #e5243b; } .call .yes { background: #22c55e; animation: shake 1s infinite; }
+  .ring canvas { width: 150px; height: 150px; }
+  .call .btns { display: flex; gap: 80px; } .call .btns button { width: 74px; height: 74px; border-radius: 50%; border: 0; color: #fff; display: grid; place-items: center; }
+  .call .btns svg.i { width: 30px; height: 30px; }
+  .call .no { background: #e5243b; box-shadow: 0 10px 24px -8px #e5243b; } .call .yes { background: #22c55e; box-shadow: 0 10px 24px -8px #22c55e; animation: shake 1s infinite; }
   @keyframes shake { 0%, 60%, 100% { transform: rotate(0); } 10%, 30%, 50% { transform: rotate(-12deg); } 20%, 40% { transform: rotate(12deg); } }
-  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 99px; font-size: 13px; opacity: 0; transition: opacity .25s; pointer-events: none; }
-  .toast.show { opacity: 1; }
+
+  .toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); transform: translate(-50%, -30px); background: rgba(25,28,40,.92); border: 1px solid var(--line); color: var(--text); padding: 10px 16px; border-radius: 99px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: .35s var(--spring); pointer-events: none; z-index: 60; backdrop-filter: blur(16px); box-shadow: 0 10px 30px -10px #000; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#ff7a45"/><stop offset="1" stop-color="#ff4f8b"/></linearGradient></defs></svg>
 <header>
-  <div class="brand"><img src="/icon.png" alt="">Kairo</div>
-  <span class="host"><span class="dot" id="dot"></span><span id="host">…</span></span>
+  <div class="hello"><small id="today-date"></small><b id="greet">Hallo 👋</b></div>
+  <span class="pill"><span class="dot" id="dot"></span><span id="host">…</span></span>
 </header>
 <main>
   <div class="pane on" id="p-chat">
-    <div class="orb-wrap"><canvas id="orb"></canvas><div class="orb-hint" id="orbHint">Tipp unten auf 🎤 deiner Tastatur zum Diktieren</div></div>
+    <div class="hero"><canvas id="orb"></canvas><small id="orbHint">Tippe 🎤 auf deiner Tastatur zum Diktieren</small></div>
     <div class="chips">
-      <button data-q="Was ist heute so passiert?">📰 News</button>
-      <button data-q="Wie wird das Wetter?">🌤 Wetter</button>
-      <button data-q="Was habe ich für Hausaufgaben?">📚 Hausaufgaben</button>
-      <button data-q="Was ist gerade auf meinem PC-Bildschirm?" data-screen="1">🖥 Mein Bildschirm</button>
-      <button data-q="Erzähl mir einen Witz">😄 Witz</button>
+      <button data-q="Was ist heute so passiert?"><svg class="i" data-ic="news"></svg>News</button>
+      <button data-q="Wie wird das Wetter?"><svg class="i" data-ic="cloud"></svg>Wetter</button>
+      <button data-q="Was habe ich für Hausaufgaben?"><svg class="i" data-ic="book"></svg>Hausaufgaben</button>
+      <button data-q="Was ist gerade auf meinem PC-Bildschirm?" data-screen="1"><svg class="i" data-ic="monitor"></svg>Mein Bildschirm</button>
+      <button data-q="Erzähl mir einen Witz"><svg class="i" data-ic="smile"></svg>Witz</button>
     </div>
     <div id="log"></div>
   </div>
-  <div class="pane" id="p-today"><div id="today"></div></div>
+
+  <div class="pane" id="p-today"><div id="today"><div class="loading"><div class="spin"></div></div></div></div>
+
   <div class="pane" id="p-control">
-    <h3>PC</h3>
-    <div class="grid">
-      <button class="act" data-a="voldown"><span>🔉</span>Leiser</button>
-      <button class="act" data-a="mute"><span>🔇</span>Stumm</button>
-      <button class="act" data-a="volup"><span>🔊</span>Lauter</button>
-      <button class="act" data-a="playpause"><span>⏯</span>Play/Pause</button>
-      <button class="act" data-a="lock"><span>🔒</span>Sperren</button>
-      <button class="act" data-a="sleep"><span>🌙</span>Schlafen</button>
-      <button class="act" data-a="prev"><span>⏮</span>Zurück</button>
-      <button class="act" data-a="next"><span>⏭</span>Weiter</button>
-      <button class="act" data-a="off30"><span>⏻</span>Aus in 30 min</button>
-      <button class="act" data-a="off60"><span>⏻</span>Aus in 1 h</button>
-      <button class="act" data-a="canceloff"><span>✖</span>Ausschalten stoppen</button>
+    <h3><svg class="i" data-ic="music" style="width:15px;height:15px"></svg>Musik & Ton</h3>
+    <div class="card">
+      <div class="media">
+        <button class="sm" data-a="prev"><svg class="i" data-ic="prev"></svg></button>
+        <button class="big" data-a="playpause"><svg class="i" data-ic="play"></svg></button>
+        <button class="sm" data-a="next"><svg class="i" data-ic="next"></svg></button>
+      </div>
+      <div class="vol">
+        <button class="act c5" data-a="voldown"><span><svg class="i" data-ic="voldown"></svg></span>Leiser</button>
+        <button class="act c5" data-a="mute"><span><svg class="i" data-ic="mute"></svg></span>Stumm</button>
+        <button class="act c5" data-a="volup"><span><svg class="i" data-ic="volup"></svg></span>Lauter</button>
+      </div>
     </div>
-    <h3>Status</h3>
-    <div class="stat" id="stat"><div><b>–</b><small>CPU</small></div><div><b>–</b><small>RAM</small></div><div><b>–</b><small>Frei auf C:</small></div></div>
-    <h3>Kairo spricht am PC</h3>
-    <div class="say"><input id="sayT" placeholder="z. B. Essen ist fertig!"><button id="sayB">Sagen</button></div>
-    <h3>Programme starten</h3>
+    <h3><svg class="i" data-ic="gauge" style="width:15px;height:15px"></svg>Status</h3>
+    <div class="card stat" id="stat"></div>
+    <h3><svg class="i" data-ic="power" style="width:15px;height:15px"></svg>PC</h3>
     <div class="grid">
-      <button class="act" data-app="spotify"><span>🎵</span>Spotify</button>
-      <button class="act" data-app="discord"><span>💬</span>Discord</button>
-      <button class="act" data-app="steam"><span>🎮</span>Steam</button>
+      <button class="act c2" data-a="lock"><span><svg class="i" data-ic="lock"></svg></span>Sperren</button>
+      <button class="act c2" data-a="sleep"><span><svg class="i" data-ic="moon"></svg></span>Schlafen</button>
+      <button class="act c3" data-a="canceloff"><span><svg class="i" data-ic="x"></svg></span>Aus stoppen</button>
+      <button class="act warn" data-a="off30"><span><svg class="i" data-ic="power"></svg></span>Aus in 30 min</button>
+      <button class="act warn" data-a="off60"><span><svg class="i" data-ic="power"></svg></span>Aus in 1 h</button>
     </div>
-    <h3>Musik auf dem PC</h3>
+    <h3><svg class="i" data-ic="speaker" style="width:15px;height:15px"></svg>Kairo spricht am PC</h3>
+    <div class="card say"><input id="sayT" placeholder="z. B. Essen ist fertig!"><button id="sayB"><svg class="i" data-ic="send" style="width:16px;height:16px"></svg>Sagen</button></div>
+    <h3><svg class="i" data-ic="grid" style="width:15px;height:15px"></svg>Programme</h3>
     <div class="grid">
-      <button class="act" data-m="gaming"><span>🎮</span>Gaming</button>
-      <button class="act" data-m="study"><span>📚</span>Lernen</button>
-      <button class="act" data-m="chill"><span>🌊</span>Chillen</button>
-      <button class="act" data-m="party"><span>🎉</span>Party</button>
-      <button class="act" data-m="rap"><span>🎤</span>Deutschrap</button>
-      <button class="act" data-m="sleep"><span>🌙</span>Einschlafen</button>
+      <button class="act c3" data-app="spotify"><span><svg class="i" data-ic="music"></svg></span>Spotify</button>
+      <button class="act c2" data-app="discord"><span><svg class="i" data-ic="chat"></svg></span>Discord</button>
+      <button class="act c5" data-app="steam"><span><svg class="i" data-ic="game"></svg></span>Steam</button>
     </div>
-    <h3>Routinen</h3>
+    <h3><svg class="i" data-ic="headphones" style="width:15px;height:15px"></svg>Musik-DJ</h3>
+    <div class="grid">
+      <button class="act c1" data-m="gaming"><span><svg class="i" data-ic="game"></svg></span>Gaming</button>
+      <button class="act c5" data-m="study"><span><svg class="i" data-ic="book"></svg></span>Lernen</button>
+      <button class="act c3" data-m="chill"><span><svg class="i" data-ic="waves"></svg></span>Chillen</button>
+      <button class="act c6" data-m="party"><span><svg class="i" data-ic="party"></svg></span>Party</button>
+      <button class="act c4" data-m="rap"><span><svg class="i" data-ic="mic"></svg></span>Deutschrap</button>
+      <button class="act c2" data-m="sleep"><span><svg class="i" data-ic="moon"></svg></span>Einschlafen</button>
+    </div>
+    <h3><svg class="i" data-ic="zap" style="width:15px;height:15px"></svg>Routinen</h3>
     <div class="grid" id="routines"></div>
     <p class="note">PC einschalten, wenn er aus ist: Wake-on-LAN-App mit der MAC-Adresse aus Kairo → Handy.</p>
   </div>
-  <div class="pane" id="p-alarm">
-    <div class="card guard"><button class="big" id="guardB">👁</button><div><b>Wächter-Modus</b><div class="note" style="margin:0" id="guardT">Aus. Wenn an: Bewegt jemand Maus oder Tastatur am PC, sperrt Kairo ihn und ruft dich an.</div></div></div>
-    <h3>Letzte Meldungen</h3>
-    <div id="alerts"><p class="note">Noch keine Meldungen.</p></div>
-    <p class="note">Anrufe und Push gehen auch, wenn du nicht zu Hause bist – richte sie am PC ein: Einstellungen → Handy & Anrufe.</p>
-  </div>
+
   <div class="pane" id="p-screen">
-    <button class="btn" id="refresh">Bildschirm neu laden</button>
-    <img class="shot" id="shot" alt="">
+    <div class="screen" id="screenBox"><div class="loading"><div class="spin"></div></div></div>
+    <button class="btn" id="refresh"><svg class="i" data-ic="refresh"></svg>Bildschirm neu laden</button>
+  </div>
+
+  <div class="pane" id="p-alarm">
+    <div class="card guard"><button class="big" id="guardB"><svg class="i" data-ic="eye"></svg></button><div><b>Wächter-Modus</b><p id="guardT">Aus. Wenn an: Bewegt jemand Maus oder Tastatur am PC, sperrt Kairo ihn und ruft dich an.</p></div></div>
+    <h3><svg class="i" data-ic="bell" style="width:15px;height:15px"></svg>Letzte Meldungen</h3>
+    <div class="list" id="alerts"><p class="note">Noch keine Meldungen.</p></div>
+    <p class="note">Unterwegs meldet sich Kairo über die ntfy-App oder Telegram – einrichten am PC unter Einstellungen → Handy & Anrufe.</p>
   </div>
 </main>
+
 <form id="f">
-  <button type="button" class="round" id="speak" title="Kairo spricht">🔊</button>
+  <button type="button" class="round" id="speak" title="Kairo spricht"><svg class="i" data-ic="speaker"></svg></button>
   <input type="text" id="q" placeholder="Frag Kairo…" autocomplete="off">
-  <button class="round send">➤</button>
+  <button class="round send"><svg class="i" data-ic="send"></svg></button>
 </form>
 <nav>
-  <button class="on" data-t="chat"><span>💬</span>Chat</button>
-  <button data-t="today"><span>☀️</span>Heute</button>
-  <button data-t="control"><span>🎛</span>Steuern</button>
-  <button data-t="screen"><span>🖥</span>Bildschirm</button>
-  <button data-t="alarm"><span>🚨</span>Alarm</button>
+  <div class="ind" id="ind"></div>
+  <button class="on" data-t="chat"><svg class="i" data-ic="chat"></svg>Chat</button>
+  <button data-t="today"><svg class="i" data-ic="sun"></svg>Heute</button>
+  <button data-t="control"><svg class="i" data-ic="sliders"></svg>Steuern</button>
+  <button data-t="screen"><svg class="i" data-ic="monitor"></svg>Bildschirm</button>
+  <button data-t="alarm"><svg class="i" data-ic="bell"></svg>Alarm</button>
 </nav>
 <div class="toast" id="toast"></div>
 <div class="call" id="call"><div><small>Kairo ruft an</small><h1 id="callT">Chef!</h1><p id="callM"></p></div>
   <div class="ring"><i></i><i></i><i></i><canvas id="callOrb"></canvas></div>
-  <div class="btns"><button class="no" id="callNo">✕</button><button class="yes" id="callYes">✆</button></div></div>
+  <div class="btns"><button class="no" id="callNo"><svg class="i" data-ic="x"></svg></button><button class="yes" id="callYes"><svg class="i" data-ic="phone"></svg></button></div></div>
 <script src="/orb.js"></script>
 <script>
+  // line icons (Lucide style)
+  const IC = {
+    chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+    sliders: '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>', monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', news: '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/>',
+    cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>', smile: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>',
+    music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>', prev: '<path d="m19 20-10-8 10-8v16ZM5 19V5"/>', next: '<path d="m5 4 10 8-10 8V4ZM19 5v14"/>',
+    play: '<path d="m7 4 13 8-13 8V4Z"/>', voldown: '<path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5ZM16 9a5 5 0 0 1 0 6"/>',
+    volup: '<path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5ZM16 9a5 5 0 0 1 0 6M19.4 18.4a9 9 0 0 0 0-12.8"/>',
+    mute: '<path d="M11 4.7a.7.7 0 0 0-1.2-.5L6.4 7.6A1.4 1.4 0 0 1 5.4 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.4a1.4 1.4 0 0 1 1 .4l3.4 3.4a.7.7 0 0 0 1.2-.5ZM22 9l-6 6M16 9l6 6"/>',
+    gauge: '<path d="m12 14 4-4M3.3 19a10 10 0 1 1 17.4 0"/>', power: '<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/>', lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>', speaker: '<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/>',
+    send: '<path d="M14.5 21.7a.5.5 0 0 0 .9 0L22 2.7a.5.5 0 0 0-.6-.7L2.3 8.6a.5.5 0 0 0 0 .9l7.9 3.2a2 2 0 0 1 1.1 1.1Z"/><path d="m21.9 2.1-11 11"/>', grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+    game: '<path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/><rect x="2" y="6" width="20" height="12" rx="2"/>', headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+    waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+    party: '<path d="M5.8 11.3 2 22l10.7-3.8M4 3h.01M22 8h.01M15 2h.01M22 20h.01M22 2l-2.2.7a3 3 0 0 0-2 3.5c.2.9-.5 1.8-1.4 1.8h-.4c-1 0-1.8.7-2 1.6L13 11"/><path d="m22 13-.8-.3a3 3 0 0 0-3.4 1.6c-.3.6-1 1-1.6 1h-.4M11 2l.3.8a3 3 0 0 1-1.6 3.4c-.6.3-1 1-1 1.6v.4"/><path d="M11 13c1.9 1.9 2.8 4.2 2 5-.8.8-3.1-.1-5-2s-2.8-4.2-2-5c.8-.8 3.1.1 5 2Z"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>', zap: '<path d="M4 14a1 1 0 0 1-.8-1.6l9.9-10.2a.5.5 0 0 1 .9.5l-1.9 6a1 1 0 0 0 .9 1.3h7a1 1 0 0 1 .8 1.6l-9.9 10.2a.5.5 0 0 1-.9-.5l1.9-6a1 1 0 0 0-.9-1.3Z"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.8 9.8 0 0 1 6.7 2.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.8 9.8 0 0 1-6.7-2.7L3 16M8 16H3v5"/>', eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>', shield: '<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1Z"/>',
+    cake: '<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M2 21h20M7 8v3M12 8v3M17 8v3M7 4h.01M12 4h.01M17 4h.01"/>',
+    alarm: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3"/>', ball: '<circle cx="12" cy="12" r="10"/><path d="m12 7 4 3-1.5 4.5h-5L8 10Z"/>', hd: '<path d="M22 12H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>'
+  };
+  const icon = (n, s) => `<svg class="i"${s ? ` style="width:${s}px;height:${s}px"` : ''} viewBox="0 0 24 24">${IC[n] || ''}</svg>`;
+  const paintIcons = root => (root || document).querySelectorAll('svg[data-ic]').forEach(el => { el.setAttribute('viewBox', '0 0 24 24'); el.innerHTML = IC[el.dataset.ic] || ''; el.removeAttribute('data-ic'); });
+  paintIcons();
+
   const token = new URLSearchParams(location.search).get('t') || localStorage.getItem('kairo.t') || '';
   if (token) localStorage.setItem('kairo.t', token);
   document.getElementById('mf').href = '/manifest.json?t=' + encodeURIComponent(token);
   const $ = id => document.getElementById(id);
   const api = (path, body) => fetch(path, { method: body ? 'POST' : 'GET', headers: { 'x-kairo-token': token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-  const toast = m => { $('toast').textContent = m; $('toast').classList.add('show'); setTimeout(() => $('toast').classList.remove('show'), 1800); };
+  let toastT = 0;
+  const toast = m => { $('toast').textContent = m; $('toast').classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), 1900); };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+
+  // greeting + date
+  const h = new Date().getHours();
+  $('greet').textContent = (h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht') + ' 👋';
+  $('today-date').textContent = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // tap ripple on tiles
+  document.addEventListener('pointerdown', e => { const b = e.target.closest('.act'); if (!b) return; const r = b.getBoundingClientRect(); b.style.setProperty('--x', (e.clientX - r.left) + 'px'); b.style.setProperty('--y', (e.clientY - r.top) + 'px'); b.classList.add('flash'); setTimeout(() => b.classList.remove('flash'), 60); });
 
   // orb: idle, thinking, speaking (follows the voice)
   let orbState = 'idle', analyser = null, actx = null;
@@ -190,7 +332,7 @@
 
   let voiceOn = localStorage.getItem('kairo.voice') === '1';
   $('speak').classList.toggle('on', voiceOn);
-  $('speak').onclick = () => { voiceOn = !voiceOn; localStorage.setItem('kairo.voice', voiceOn ? '1' : '0'); $('speak').classList.toggle('on', voiceOn); toast(voiceOn ? 'Kairo spricht jetzt' : 'Kairo schreibt nur'); };
+  $('speak').onclick = () => { voiceOn = !voiceOn; localStorage.setItem('kairo.voice', voiceOn ? '1' : '0'); $('speak').classList.toggle('on', voiceOn); toast(voiceOn ? 'Kairo spricht jetzt' : 'Kairo schreibt nur'); buzz(15); };
 
   async function say(text) {
     const r = await api('/api/tts', { text });
@@ -212,17 +354,25 @@
   }
   status(); setInterval(status, 15000);
 
-  document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  // tabs with a sliding indicator
+  const tabs = [...document.querySelectorAll('nav button')];
+  tabs.forEach((b, i) => b.onclick = () => {
+    tabs.forEach(x => x.classList.toggle('on', x === b));
+    $('ind').style.transform = `translateX(${i * 100}%)`;
     document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));
-    $('f').style.display = b.dataset.t === 'chat' ? '' : 'none';
+    $('f').classList.toggle('hide', b.dataset.t !== 'chat');
+    buzz(8);
     if (b.dataset.t === 'screen') loadShot();
     if (b.dataset.t === 'today' || b.dataset.t === 'control') loadToday();
     if (b.dataset.t === 'control') loadStat();
     if (b.dataset.t === 'alarm') loadAlerts();
   });
 
-  function add(cls, text) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; $('log').appendChild(d); $('p-chat').scrollTop = 1e9; return d; }
+  function add(cls, text) {
+    const d = document.createElement('div'); d.className = 'msg ' + cls;
+    if (cls.includes('typing')) d.innerHTML = '<i></i><i></i><i></i>'; else d.textContent = text;
+    $('log').appendChild(d); $('p-chat').scrollTo({ top: 1e9, behavior: 'smooth' }); return d;
+  }
   async function ask(text, withScreen) {
     add('me', text);
     const wait = add('ai typing', '');
@@ -230,86 +380,94 @@
     try {
       const r = await api('/api/chat', { text, withScreen });
       const j = await r.json();
-      wait.className = 'msg ai';
+      wait.className = 'msg ai'; wait.innerHTML = '';
       wait.textContent = (j.reply || j.error || '?');
       orbState = 'idle';
+      $('p-chat').scrollTo({ top: 1e9, behavior: 'smooth' });
       if (voiceOn && j.reply) say(j.reply.replace(/[#*_`>|]/g, ''));
     } catch (err) { wait.className = 'msg ai'; wait.textContent = 'Fehler: ' + err.message; orbState = 'idle'; }
   }
-  $('f').onsubmit = e => { e.preventDefault(); const t = $('q').value.trim(); if (!t) return; $('q').value = ''; ask(t, /bildschirm|screen/i.test(t)); };
-  document.querySelectorAll('.chips button').forEach(b => b.onclick = () => ask(b.dataset.q, !!b.dataset.screen));
+  $('f').onsubmit = e => { e.preventDefault(); const t = $('q').value.trim(); if (!t) return; $('q').value = ''; buzz(10); ask(t, /bildschirm|screen/i.test(t)); };
+  document.querySelectorAll('.chips button').forEach(b => b.onclick = () => { buzz(10); ask(b.dataset.q, !!b.dataset.screen); });
 
   async function loadToday() {
     let d = {};
     try { d = await (await api('/api/today')).json(); } catch {}
     const fmt = at => new Date(at).toLocaleString('de-CH', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    const w = d.weather, mood = w ? (w.temp >= 20 ? 'warm' : w.temp <= 5 ? 'cold' : '') : '';
     $('today').innerHTML =
-      (d.weather ? `<div class="card weather"><span class="ic">${d.weather.icon}</span><div><b>${d.weather.temp}°</b><div class="note" style="margin:0">${esc(d.weather.place)} · ${d.weather.min}–${d.weather.max}°</div></div></div>` : '') +
-      `<h3>Erinnerungen</h3>` + ((d.reminders || []).map(r => `<div class="card row"><span>${r.kind === 'alarm' ? '⏰' : '🔔'} ${esc(r.text)}</span><small>${fmt(r.at)}</small></div>`).join('') || '<p class="note">Keine Erinnerungen.</p>') +
-      `<h3>Hausaufgaben</h3>` + ((d.homework || []).map(h => `<div class="card row"><span>${h.subject ? '<b>' + esc(h.subject) + '</b> ' : ''}${esc(h.task)}</span><small>${esc(h.due || '')}</small></div>`).join('') || '<p class="note">Keine offenen Hausaufgaben 🎉</p>');
-    $('routines').innerHTML = (d.routines || []).map(n => `<button class="act" data-r="${esc(n)}"><span>⚡</span>${esc(n)}</button>`).join('') || '<p class="note wide">Routinen erstellst du am PC unter Heute → Routinen.</p>';
-    document.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { await api('/api/routine', { name: b.dataset.r }); toast('⚡ ' + b.dataset.r); if (navigator.vibrate) navigator.vibrate(20); });
+      (w ? `<div class="wx ${mood}"><span class="ic">${w.icon}</span><small>${esc(w.place)}</small><div class="t">${w.temp}°</div><small>Heute ${w.min}° bis ${w.max}°</small></div>` : `<div class="card note" style="margin:0">Trag am PC deine Stadt ein, dann siehst du hier das Wetter.</div>`) +
+      `<h3>${icon('bell', 15)}Erinnerungen</h3><div class="list">` + ((d.reminders || []).map(r => `<div class="item"><span class="chip">${icon(r.kind === 'alarm' ? 'alarm' : 'bell')}</span><div><b>${esc(r.text)}</b><small>${fmt(r.at)}</small></div></div>`).join('') || '<p class="note">Keine Erinnerungen.</p>') + '</div>' +
+      `<h3>${icon('book', 15)}Hausaufgaben</h3><div class="list">` + ((d.homework || []).map(hw => `<div class="item"><span class="chip">${icon('book')}</span><div><b>${esc(hw.task)}</b><small>${esc(hw.subject || '')}${hw.due ? ' · bis ' + esc(hw.due) : ''}</small></div></div>`).join('') || '<p class="note">Keine offenen Hausaufgaben 🎉</p>') + '</div>';
+    $('routines').innerHTML = (d.routines || []).map((n, i) => `<button class="act c${(i % 6) + 1}" data-r="${esc(n)}"><span>${icon('zap')}</span>${esc(n)}</button>`).join('') || '<p class="note wide">Routinen erstellst du am PC unter Heute → Routinen.</p>';
+    document.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { await api('/api/routine', { name: b.dataset.r }); toast('⚡ ' + b.dataset.r); buzz(20); });
   }
 
-  async function loadShot() { const r = await api('/api/screen'); if (r.ok) $('shot').src = URL.createObjectURL(await r.blob()); }
-  $('refresh').onclick = loadShot;
+  async function loadShot() {
+    const box = $('screenBox');
+    if (!box.querySelector('img')) box.innerHTML = '<div class="loading"><div class="spin"></div></div>';
+    const r = await api('/api/screen');
+    if (r.ok) box.innerHTML = `<img alt="" src="${URL.createObjectURL(await r.blob())}"><span class="live"><i></i>LIVE</span>`;
+  }
+  $('refresh').onclick = () => { buzz(10); loadShot(); };
 
   document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
     if (b.dataset.a === 'sleep' && !confirm('PC in den Ruhezustand versetzen?')) return;
-    if (/^off/.test(b.dataset.a) && !confirm('PC wirklich ausschalten lassen? (Du kannst es mit „Ausschalten stoppen“ abbrechen)')) return;
-    await api('/api/action', { action: b.dataset.a }); toast('✓'); if (navigator.vibrate) navigator.vibrate(20);
+    if (/^off/.test(b.dataset.a) && !confirm('PC wirklich ausschalten lassen? (Du kannst es mit „Aus stoppen“ abbrechen)')) return;
+    buzz(20);
+    await api('/api/action', { action: b.dataset.a }); toast('✓ Erledigt');
   });
-  // PC status, say on PC, apps
+  // PC status as animated rings
   async function loadStat() {
+    const ring = (pct, val, label) => `<div class="gauge"><svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="32"/><circle class="fg" cx="40" cy="40" r="32" pathLength="100" data-p="${Math.max(0, Math.min(100, pct))}"/></svg><b>${val}</b><small>${label}</small></div>`;
     try {
       const s = await (await api('/api/pcinfo')).json();
-      const gb = n => (n / 1073741824).toFixed(0);
-      $('stat').innerHTML = `<div><b>${s.cpu}%</b><small>CPU</small><div class="bar"><i style="width:${s.cpu}%"></i></div></div>
-        <div><b>${Math.round(s.ramUsed / s.ramTotal * 100)}%</b><small>RAM</small><div class="bar"><i style="width:${s.ramUsed / s.ramTotal * 100}%"></i></div></div>
-        <div><b>${s.disk ? gb(s.disk.free) + ' GB' : '–'}</b><small>Frei auf C:</small><div class="bar"><i style="width:${s.disk ? (1 - s.disk.free / s.disk.total) * 100 : 0}%"></i></div></div>`;
+      const ram = Math.round(s.ramUsed / s.ramTotal * 100), disk = s.disk ? Math.round((1 - s.disk.free / s.disk.total) * 100) : 0;
+      $('stat').innerHTML = ring(s.cpu, s.cpu + '%', 'CPU') + ring(ram, ram + '%', 'RAM') + ring(disk, s.disk ? Math.round(s.disk.free / 1073741824) + ' GB' : '–', 'frei auf C:');
+      requestAnimationFrame(() => setTimeout(() => $('stat').querySelectorAll('.fg').forEach(c => { c.style.strokeDashoffset = 100 - +c.dataset.p; }), 50));
     } catch {}
   }
-  $('sayB').onclick = async () => { const t = $('sayT').value.trim(); if (!t) return; await api('/api/say', { text: t }); $('sayT').value = ''; toast('🔊 gesagt'); };
-  document.querySelectorAll('[data-app]').forEach(b => b.onclick = async () => { await api('/api/app', { name: b.dataset.app }); toast('▶ ' + b.textContent.trim()); });
+  $('sayB').onclick = async () => { const t = $('sayT').value.trim(); if (!t) return; buzz(15); await api('/api/say', { text: t }); $('sayT').value = ''; toast('🔊 Am PC gesagt'); };
+  document.querySelectorAll('[data-app]').forEach(b => b.onclick = async () => { buzz(15); await api('/api/app', { name: b.dataset.app }); toast('▶ ' + b.textContent.trim()); });
 
   // alarm tab + incoming call screen
   let seen = localStorage.getItem('kairo.lastAlert') || '', guardOn = false;
-  const EM = { security: '⚠️', guard: '🚨', mail: '✉️', update: '🔄', disk: '💾', goal: '⚽', birthday: '🎂', reminder: '🔔', test: '👋' };
+  const AIC = { security: 'shield', guard: 'eye', mail: 'mail', update: 'refresh', disk: 'hd', goal: 'ball', birthday: 'cake', reminder: 'bell', test: 'smile' };
   async function loadAlerts(first) {
     let d; try { d = await (await api('/api/alerts')).json(); } catch { return; }
     guardOn = !!d.guard;
     $('guardB').classList.toggle('on', guardOn);
     $('guardT').textContent = guardOn ? 'An. Kairo passt auf deinen PC auf.' : 'Aus. Wenn an: Bewegt jemand Maus oder Tastatur am PC, sperrt Kairo ihn und ruft dich an.';
     const list = d.history || [];
-    $('alerts').innerHTML = list.map(a => `<div class="card al"><span class="em">${EM[a.trigger] || '🔔'}</span><div><b>${esc(a.title)}</b><small>${esc(a.message)} · ${new Date(a.time).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}</small></div></div>`).join('') || '<p class="note">Noch keine Meldungen.</p>';
+    $('alerts').innerHTML = list.map(a => `<div class="item"><span class="chip">${icon(AIC[a.trigger] || 'bell')}</span><div><b>${esc(a.title)}</b><small>${esc(a.message)} · ${new Date(a.time).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}</small></div></div>`).join('') || '<p class="note">Noch keine Meldungen.</p>';
     const top = list[0];
     if (top && top.id !== seen) {
       seen = top.id; localStorage.setItem('kairo.lastAlert', seen);
       if (!first && top.level === 'call') incoming(top);
-      else if (!first) toast((EM[top.trigger] || '🔔') + ' ' + top.title);
+      else if (!first) { toast(top.title); buzz([60, 40, 60]); }
     }
   }
-  $('guardB').onclick = async () => { await api('/api/guard', { on: !guardOn }); toast(!guardOn ? '👁 Wächter an' : 'Wächter aus'); if (navigator.vibrate) navigator.vibrate(30); setTimeout(loadAlerts, 400); };
+  $('guardB').onclick = async () => { await api('/api/guard', { on: !guardOn }); toast(!guardOn ? '👁 Wächter an' : 'Wächter aus'); buzz(30); setTimeout(loadAlerts, 400); };
   let ringTimer = 0, ringCtx = null;
   function incoming(a) {
     $('callT').textContent = a.title; $('callM').textContent = a.message;
     $('call').classList.add('on');
     const o = Orb.create(); o.start($('callOrb'), () => ({ level: .25 + .2 * Math.abs(Math.sin(performance.now() / 300)), state: 'speaking' }));
-    if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 1200, 400, 200, 400]);
+    buzz([400, 200, 400, 200, 400, 1200, 400, 200, 400]);
     // ringtone (works once the page has been touched)
     try {
       ringCtx = new (window.AudioContext || window.webkitAudioContext)();
       const beep = () => { [0, .5].forEach(off => { const os = ringCtx.createOscillator(), g = ringCtx.createGain(); os.frequency.value = 440 + off * 300; g.gain.setValueAtTime(.0001, ringCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, ringCtx.currentTime + off + .05); g.gain.exponentialRampToValueAtTime(.0001, ringCtx.currentTime + off + .4); os.connect(g); g.connect(ringCtx.destination); os.start(ringCtx.currentTime + off); os.stop(ringCtx.currentTime + off + .45); }); };
       beep(); ringTimer = setInterval(beep, 2200);
     } catch {}
-    const end = () => { clearInterval(ringTimer); ringCtx?.close(); $('call').classList.remove('on'); if (navigator.vibrate) navigator.vibrate(0); };
+    const end = () => { clearInterval(ringTimer); ringCtx?.close(); $('call').classList.remove('on'); buzz(0); };
     $('callNo').onclick = end;
     $('callYes').onclick = () => { end(); say(a.speech || a.message); toast('📞 Kairo spricht'); };
     setTimeout(() => { if ($('call').classList.contains('on')) end(); }, 45000);
   }
   loadAlerts(true); setInterval(loadAlerts, 5000);
 
-  document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => { await api('/api/music', { mood: b.dataset.m }); toast('🎵 ' + b.textContent.trim()); });
+  document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => { buzz(15); await api('/api/music', { mood: b.dataset.m }); toast('🎵 ' + b.textContent.trim()); });
 </script>
 </body>
 </html>
