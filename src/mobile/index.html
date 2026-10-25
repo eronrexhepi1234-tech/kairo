@@ -489,19 +489,20 @@
     $('callT').textContent = a.title; $('callM').textContent = a.message;
     $('call').classList.add('on');
     const o = Orb.create(); o.start($('callOrb'), () => ({ level: .25 + .2 * Math.abs(Math.sin(performance.now() / 300)), state: 'speaking' }));
-    buzz([400, 200, 400, 200, 400, 1200, 400, 200, 400]);
+    buzz([400, 200, 400, 1000, 400, 200, 400, 1000, 400, 200, 400]);
     // ringtone (works once the page has been touched)
     try {
       ringCtx = new (window.AudioContext || window.webkitAudioContext)();
       const beep = () => { [0, .5].forEach(off => { const os = ringCtx.createOscillator(), g = ringCtx.createGain(); os.frequency.value = 440 + off * 300; g.gain.setValueAtTime(.0001, ringCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, ringCtx.currentTime + off + .05); g.gain.exponentialRampToValueAtTime(.0001, ringCtx.currentTime + off + .4); os.connect(g); g.connect(ringCtx.destination); os.start(ringCtx.currentTime + off); os.stop(ringCtx.currentTime + off + .45); }); };
-      beep(); ringTimer = setInterval(beep, 2200);
+      // ring 3 times, then stay quiet (the call screen stays open a little longer)
+      let rings = 1; beep(); ringTimer = setInterval(() => { if (++rings > 3) { clearInterval(ringTimer); return; } beep(); }, 2200);
     } catch {}
     const stopRing = () => { clearInterval(ringTimer); ringCtx?.close(); ringCtx = null; buzz(0); };
     const end = () => { stopRing(); clearInterval(callClock); $('call').classList.remove('on', 'talk'); };
     $('callNo').onclick = end;
     $('callEnd').onclick = end;
     $('callYes').onclick = () => { stopRing(); talk(a, end); };
-    setTimeout(() => { if ($('call').classList.contains('on') && !$('call').classList.contains('talk')) end(); }, 45000);
+    setTimeout(() => { if ($('call').classList.contains('on') && !$('call').classList.contains('talk')) end(); }, 20000);
   }
 
   // after picking up: Kairo speaks, then you can answer (type or dictate with the keyboard mic)

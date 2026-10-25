@@ -31,7 +31,7 @@ const userAtPc = () => { try { return powerMonitor.getSystemIdleTime() < 240 && 
 async function pushNtfy(c, a, withVoice) {
   if (!c.ntfyTopic) return false;
   const url = 'https://ntfy.sh/' + encodeURIComponent(c.ntfyTopic);
-  const headers = { Title: encodeHeader(a.title), Priority: a.level === 'call' ? '5' : '3', Tags: a.tag || 'robot' };
+  const headers = { Title: encodeHeader(a.title), Priority: a.level === 'call' ? (a.trigger === 'security' || a.trigger === 'guard' ? '5' : '4') : '3', Tags: a.tag || 'robot' };
   const link = getLink();
   if (link) { const u = link + (a.level === 'call' ? '?call=' + a.id : ''); headers.Click = u; if (a.level === 'call') headers.Actions = `view, Abnehmen, ${u}, clear=true`; }
   try {
