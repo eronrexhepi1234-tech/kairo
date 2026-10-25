@@ -96,7 +96,7 @@ window.LiveVoice = (function () {
   // most important ones plus "kairo_do" for everything else.
   const KEEP = new Set(['look_at_screen', 'fly_to', 'zoom_earth', 'show_weather', 'open_url', 'open_app', 'create_file', 'remember', 'set_reminder', 'pc_control', 'create_image', 'show_card', 'check_inbox', 'morning_briefing', 'chess_new_game', 'chess_move', 'use_camera', 'start_translator', 'stop_conversation']);
   const LIVE_TOOLS = [TOOLS[0], { functionDeclarations: [...TOOLS[1].functionDeclarations.filter(f => KEEP.has(f.name)), {
-    name: 'kairo_do', description: 'Do anything else in the Kairo app. Give a short German instruction, e.g. "Jarvis-Modus an", "Haustier zeigen", "Party", "Musik-Quiz starten", "Welt-TV", "Radio-Show", "Flug LX8 verfolgen", "Spiel bauen: Drache weicht Meteoriten aus", "Regenradar an", "Weltreise Japan", "Rezept Pancakes", "PC-Check", "Countdown Ferien 19.12.", "Geburtstag Lena 14.3.", "Wächter an", "Live-Untertitel an", "Kommentator an", "Stimme auf Pirat ändern". The result tells you what happened.',
+    name: 'kairo_do', description: 'Do anything else in the Kairo app. Give a short German instruction, e.g. "Jarvis-Modus an", "Haustier zeigen", "Party", "Musik-Quiz starten", "Welt-TV", "Radio-Show", "Flug LX8 verfolgen", "Spiel bauen: Drache weicht Meteoriten aus", "Regenradar an", "Weltreise Japan", "Rezept Pancakes", "PC-Check", "Countdown Ferien 19.12.", "Geburtstag Lena 14.3.", "Wächter an", "Live-Untertitel an", "Kommentator an", "Stimme auf Pirat ändern", "Sonnensystem zeigen", "Doku über die Titanic", "Was wäre wenn der Mond verschwindet", "Super-Suche öffnen". The result tells you what happened.',
     parameters: { type: 'OBJECT', properties: { command: { type: 'STRING' } }, required: ['command'] } }] }];
 
 

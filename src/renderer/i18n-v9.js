@@ -28,5 +28,7 @@ Object.assign(I18N.en, {
   'pt.goal': 'GOAL!', 'pt.sub': 'Kairo celebrates with you!'
 });
 
+Object.assign(I18N.de, { 'sh.solar': 'Sonnensystem', 'sh.doc': 'Doku', 'sh.whatif': 'Was wäre wenn', 'sh.search': 'Super-Suche', 'st.askDoc': 'Worüber soll die Doku sein? (z. B. die Titanic)', 'st.askWhatif': 'Was wäre wenn … ? (z. B. der Mond verschwindet)' });
+Object.assign(I18N.en, { 'sh.solar': 'Solar system', 'sh.doc': 'Documentary', 'sh.whatif': 'What if', 'sh.search': 'Super search', 'st.askDoc': 'What should the documentary be about?', 'st.askWhatif': 'What if …?' });
 Object.assign(I18N.de, { 'role.pick': 'Wählen', 'earth.notFound': 'Ort nicht gefunden' });
 Object.assign(I18N.en, { 'role.pick': 'Choose', 'earth.notFound': 'Place not found' });

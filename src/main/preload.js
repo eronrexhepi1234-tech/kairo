@@ -82,6 +82,11 @@ contextBridge.exposeInMainWorld('kairo', {
   discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
   orbMode: () => invoke('app:orbMode'),
+  ex: { story: (k, t) => invoke('ex:story', k, t), narrate: t => invoke('ex:narrate', t) },
+  search: {
+    query: q => invoke('search:query', q), open: r => invoke('search:open', r), reveal: p => invoke('search:reveal', p), hide: () => ipcRenderer.send('search:hide'),
+    toKairo: t => ipcRenderer.send('search:toKairo', t), toggle: () => invoke('search:toggle'), onOpen: fn => on('search:open', fn), onAsk: fn => on('search:ask', fn)
+  },
   show: {
     jarvis: () => invoke('show:jarvis'), onJarvis: fn => on('jarvis:toggle', fn),
     game: (idea, prev) => invoke('show:game', idea, prev), games: () => invoke('show:games'), gameFile: f => invoke('show:gameFile', f),

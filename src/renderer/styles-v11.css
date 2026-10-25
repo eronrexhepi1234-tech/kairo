@@ -1,0 +1,50 @@
+/* ===== shared full-screen layer ===== */
+.xo { position: fixed; inset: 0; z-index: 360; opacity: 0; transition: opacity .5s cubic-bezier(.16,1,.3,1); pointer-events: none; color: #eef2f8; }
+.xo.on { opacity: 1; pointer-events: auto; }
+
+/* ===== solar system ===== */
+.xo.ss { background: radial-gradient(ellipse at 50% 50%, #0b1226, #02030a 70%); }
+#ssCanvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; } #ssCanvas:active { cursor: grabbing; }
+#ssLabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ss-label { position: absolute; left: 0; top: 0; margin: 12px 0 0 10px; padding: 3px 9px; border-radius: 99px; font: 600 11.5px 'Inter Var', sans-serif; background: rgba(10,14,28,.6); border: 1px solid rgba(255,255,255,.14); pointer-events: auto; cursor: pointer; white-space: nowrap; transition: background .2s; }
+.ss-label:hover, .ss-label.sel { background: var(--accent); border-color: var(--accent); }
+.ss-top { position: absolute; left: 24px; right: 24px; top: 18px; display: flex; align-items: center; gap: 16px; }
+.ss-top > div:first-child { flex: 1; display: flex; flex-direction: column; } .ss-top small { color: #8fa0bf; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; } .ss-top b { font: 700 24px 'Space Grotesk Var', sans-serif; }
+.ss-info { position: absolute; right: 24px; top: 90px; width: 330px; padding: 20px; border-radius: 22px; background: rgba(12,16,30,.82); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.12); transform: translateX(120%); transition: transform .6s cubic-bezier(.16,1,.3,1); }
+.ss-info.on { transform: none; }
+.ss-info small { color: #8fa0bf; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; } .ss-info h2 { margin: 2px 0 8px; font: 700 34px 'Space Grotesk Var', sans-serif; } .ss-info p { color: #c9d2e4; line-height: 1.5; margin: 0 0 14px; }
+.ss-facts { display: grid; gap: 8px; margin-bottom: 14px; } .ss-facts div { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); animation: chipIn .5s backwards; } .ss-facts div:nth-child(2) { animation-delay: .08s; } .ss-facts div:nth-child(3) { animation-delay: .16s; }
+.ss-facts b { display: block; font: 700 18px 'Space Grotesk Var', sans-serif; } .ss-facts small { text-transform: none; letter-spacing: 0; font-size: 12px; }
+.ss-x { position: absolute; right: 14px; top: 14px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: #fff; cursor: pointer; }
+
+/* ===== documentary / what-if player ===== */
+.xo.stp { background: #000; }
+.xo.stp.earth { background: transparent; pointer-events: none; } .xo.stp.earth .stp-ctl, .xo.stp.earth .stp-scene { pointer-events: auto; }
+.xo.stp.earth .stp-bg { opacity: 0; } .xo.stp.earth .stp-shade { background: linear-gradient(transparent 50%, rgba(0,0,0,.75)); }
+.stp-bg { position: absolute; inset: 0; overflow: hidden; transition: opacity 1s; }
+.stp-bg img { width: 100%; height: 100%; object-fit: cover; animation: kenburns 14s ease-out forwards; }
+@keyframes kenburns { from { transform: scale(1.18) translate(2%, 1%); filter: brightness(.6) blur(4px); } 12% { filter: brightness(1) blur(0); } to { transform: scale(1) translate(0, 0); } }
+.stp-art { position: absolute; inset: -20%; background: radial-gradient(circle at 30% 40%, hsl(var(--h),80%,55%), transparent 45%), radial-gradient(circle at 70% 60%, hsl(calc(var(--h) + 80),80%,50%), transparent 45%), #05060c; animation: artMove 14s ease-in-out infinite alternate; filter: blur(30px); }
+@keyframes artMove { to { transform: rotate(25deg) scale(1.2); } }
+.stp-shade { position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.2), transparent 30%, rgba(0,0,0,.85)); pointer-events: none; }
+.stp-title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; transition: opacity .8s, transform .8s; }
+.stp-title.out { opacity: 0; transform: scale(1.08); pointer-events: none; }
+.stp-title small { font: 700 13px 'JetBrains Mono Var', monospace; letter-spacing: .35em; text-transform: uppercase; color: var(--accent); }
+.stp-title h1 { margin: 12px 0; font: 800 clamp(40px, 6vw, 84px)/1.05 'Space Grotesk Var', sans-serif; letter-spacing: -.02em; max-width: 1000px; }
+.stp-title h1 span { display: inline-block; animation: letterIn .7s cubic-bezier(.34,1.56,.64,1) backwards; }
+.stp-title p { color: #c9d2e4; font-size: 19px; margin: 0 0 18px; }
+.stp-load { display: flex; gap: 8px; margin: 10px 0; } .stp-load i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: drum .5s ease-in-out infinite alternate; } .stp-load i:nth-child(2) { animation-delay: .15s; } .stp-load i:nth-child(3) { animation-delay: .3s; }
+.stp-title span { color: #8fa0bf; }
+.stp-scene { position: absolute; left: 6vw; right: 6vw; bottom: 11vh; }
+.stp-scene.in .stp-stat { animation: statIn .9s cubic-bezier(.34,1.56,.64,1) backwards; } .stp-scene.in h2 { animation: capIn .8s .15s cubic-bezier(.16,1,.3,1) backwards; }
+.stp-stat { font: 800 clamp(48px, 7vw, 110px)/1 'Space Grotesk Var', sans-serif; background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; color: transparent; }
+.stp-scene h2 { margin: 6px 0 12px; font: 800 clamp(28px, 3.6vw, 54px)/1.1 'Space Grotesk Var', sans-serif; text-shadow: 0 4px 30px rgba(0,0,0,.6); max-width: 1100px; }
+.stp-scene p { margin: 0; max-width: 900px; font-size: clamp(16px, 1.5vw, 22px); line-height: 1.5; color: #eef2f8; text-shadow: 0 2px 10px #000; min-height: 3em; }
+@keyframes statIn { from { opacity: 0; transform: scale(.6) translateY(20px); } }
+@keyframes capIn { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } }
+.stp-dots { position: absolute; left: 6vw; right: 6vw; bottom: 5vh; display: flex; gap: 6px; } .stp-dots i { flex: 1; height: 4px; border-radius: 3px; background: rgba(255,255,255,.18); transition: .5s; } .stp-dots i.done { background: rgba(255,255,255,.6); } .stp-dots i.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.stp-ctl { position: absolute; right: 24px; top: 20px; display: flex; gap: 8px; }
+.stp-ctl button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0,0,0,.5); color: #fff; cursor: pointer; } .stp-ctl button:hover { background: var(--accent); }
+
+/* during a documentary on the Earth: only the globe, the title card and the story */
+body.story-earth #view-earth .earth-ui, body.story-earth #view-earth .earth-panel, body.story-earth #view-earth .zoom-ctl, body.story-earth #view-earth .lay-status, body.story-earth #view-earth .hud-data { opacity: 0 !important; pointer-events: none !important; transition: opacity .5s; }

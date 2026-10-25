@@ -180,6 +180,9 @@ function parseReply(text) {
   const show = { jarvis: sw('jarvis'), pet: sw('pet'), subs: sw('subtitles'), comment: sw('commentator'), dweather: sw('desktopweather'), radio: /\[\[radio\]\]/i.test(shown), quiz: /\[\[musicquiz\]\]/i.test(shown), tv: /\[\[worldtv\]\]/i.test(shown), party: /\[\[party\]\]/i.test(shown),
     game: (shown.match(/\[\[game:\s*([^\]]+)\]\]/i) || [])[1] || null, flight: (shown.match(/\[\[flight:\s*([^\]]+)\]\]/i) || [])[1] || null };
   shown = shown.replace(/\[\[(jarvis|pet|subtitles|commentator|desktopweather)(:[^\]]*)?\]\]/gi, '').replace(/\[\[(radio|musicquiz|worldtv|party)\]\]/gi, '').replace(/\[\[(game|flight):[^\]]*\]\]/gi, '');
+  const space = { solar: (shown.match(/\[\[solar(?::\s*([^\]]*))?\]\]/i) || [])[0] ? ((shown.match(/\[\[solar:\s*([^\]]+)\]\]/i) || [])[1] || true) : null,
+    doc: (shown.match(/\[\[doku:\s*([^\]]+)\]\]/i) || [])[1] || null, whatif: (shown.match(/\[\[whatif:\s*([^\]]+)\]\]/i) || [])[1] || null };
+  shown = shown.replace(/\[\[(solar|doku|whatif)(:[^\]]*)?\]\]/gi, '');
   const guardTag = (shown.match(/\[\[guard:\s*(on|off|an|aus)\s*\]\]/i) || [])[1];
   const flags = { guard: guardTag ? /on|an/i.test(guardTag) : null, viz: /\[\[visualizer\]\]/i.test(shown), song: /\[\[song\]\]/i.test(shown), pc: /\[\[pccheck\]\]/i.test(shown), geo: /\[\[geoguessr\]\]/i.test(shown), riddle: /\[\[riddle\]\]/i.test(shown) };
   shown = shown.replace(/\[\[(visualizer|song|pccheck|geoguessr|riddle)\]\]/gi, '').replace(/\[\[guard:[^\]]*\]\]/gi, '');
@@ -199,7 +202,7 @@ function parseReply(text) {
   shown = shown.replace(/^\s*`{1,3}\s*$/gm, '').replace(/`{2,3}(?=\s*$)/g, '').replace(/\n{3,}/g, '\n\n').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
-  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show };
+  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space };
 }
 
 // prompt for another AI: card with copy + open buttons
@@ -260,6 +263,9 @@ async function runActions(m) {
   for (const x of p.money) { await L.add('money', x); m.done.push(`💰 ${x.amount > 0 ? '+' : ''}${x.amount.toFixed(2)} ${x.note}`); }
   for (const d of p.diary) { await L.add('diary', { date: new Date().toLocaleDateString('sv'), mood: d.mood, text: d.text }); m.done.push('📔 ' + d.mood); }
   if (p.money.length || p.diary.length) { Life.renderMoney(); Life.renderDiary(); }
+  if (p.space.solar) { m.done.push('🪐 ' + t('sh.solar')); setTimeout(() => SolarSystem.open(typeof p.space.solar === 'string' ? p.space.solar : null), 300); }
+  if (p.space.doc) { m.done.push('🎬 ' + p.space.doc); setTimeout(() => StoryPlayer.doc(p.space.doc), 300); }
+  if (p.space.whatif) { m.done.push('✨ ' + p.space.whatif); setTimeout(() => StoryPlayer.whatIf(p.space.whatif), 300); }
   const sh = p.show;
   if (sh.jarvis != null) { Jarvis.set(sh.jarvis); m.done.push('🦾 Jarvis'); }
   if (sh.pet != null) { Pet.set(sh.pet); m.done.push('🐉 ' + t('sh.pet')); }
@@ -747,6 +753,8 @@ window.App = {
       [/jarvis|hud/, () => (Jarvis.set(!off), 'Jarvis-Modus ' + (off ? 'aus' : 'an'))],
       [/haustier|\bpet\b|drache(n)? zeigen/, () => (Pet.set(!off), 'Haustier ' + (off ? 'versteckt' : 'ist da'))],
       [/party|feuerwerk/, () => (Party.party(), 'Party gestartet')],
+      [/sonnensystem|planeten/, () => (SolarSystem.open(), 'Sonnensystem ist offen')],
+      [/super-?suche|suche öffnen/, () => (window.kairo.search.toggle(), 'Super-Suche ist offen')],
       [/musik-?quiz/, () => (MusicQuiz.open(), 'Musik-Quiz gestartet')],
       [/welt-?tv|webcams? der welt/, () => (WorldTV.open(), 'Welt-TV läuft')],
       [/radio/, () => (RadioShow.open(), 'Radio-Show startet')],
@@ -769,6 +777,7 @@ window.App = {
   async attachPath(p) { go('chat'); await attachFile(await window.kairo.attachPath(p)); }
 };
 window.kairo.onFocusInput(() => { go('chat'); $('input').focus(); });
+window.kairo.search.onAsk(text => window.App.askInChat(text));
 
 // ---------- Start ----------
 (async function boot() {

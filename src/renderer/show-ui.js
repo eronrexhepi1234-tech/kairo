@@ -347,7 +347,11 @@ window.Show = (function () {
     ['quiz', 'music-2', 'sh.quiz', null, () => MusicQuiz.open()],
     ['tv', 'tv', 'sh.tv', null, () => WorldTV.open()],
     ['weather', 'cloud-rain', 'sh.weather', () => DesktopWeather.isOn(), () => DesktopWeather.set(!DesktopWeather.isOn())],
-    ['party', 'party-popper', 'sh.party', null, () => Party.party()]
+    ['party', 'party-popper', 'sh.party', null, () => Party.party()],
+    ['solar', 'orbit', 'sh.solar', null, () => SolarSystem.open()],
+    ['doc', 'clapperboard', 'sh.doc', null, () => { const q = prompt(t('st.askDoc')); if (q) StoryPlayer.doc(q); }],
+    ['whatif', 'sparkles', 'sh.whatif', null, () => { const q = prompt(t('st.askWhatif')); if (q) StoryPlayer.whatIf(q); }],
+    ['search', 'scan-search', 'sh.search', null, () => window.kairo.search.toggle()]
   ];
   function mount() {
     const grid = document.querySelector('#view-today .today-grid');

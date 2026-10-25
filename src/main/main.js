@@ -136,6 +136,7 @@ function registerHotkey() {
   try { globalShortcut.register('CommandOrControl+Alt+K', () => require('./features').openClip()); } catch {}
   try { globalShortcut.register('CommandOrControl+Shift+J', () => win?.webContents.send('jarvis:toggle')); } catch {}
   require('./media').hotkeys(() => win);
+  global.kairoSearchHotkey?.();
   try {
     globalShortcut.register(store.get().voiceHotkey, () => {
       if (!win) return;
@@ -470,6 +471,8 @@ if (gotLock) app.whenReady().then(() => {
   optional('./fun', { register: () => {} }).register({ getWin: () => win, store });
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./show', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./finder', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./explore', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start
   if (process.env.KAIRO_SHOTS) {

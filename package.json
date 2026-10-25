@@ -1,7 +1,7 @@
 {
   "name": "kairo",
   "productName": "Kairo",
-  "version": "0.9.6",
+  "version": "1.0.0",
   "description": "A desktop companion for Windows: chat and talk hands-free with Claude, GPT or Gemini, let it look at your screen, explore the Earth, play chess, set reminders and control your PC from your phone.",
   "author": "Kairo contributors",
   "main": "src/main/main.js",
@@ -33,6 +33,7 @@
     "lucide-static": "^0.460.0"
   },
   "dependencies": {
+    "astronomy-engine": "^2.1.19",
     "chess.js": "^1.4.0",
     "discord.js": "^14.16.3",
     "electron-updater": "^6.3.9",
@@ -43,6 +44,7 @@
     "qrcode": "^1.5.4",
     "satellite.js": "^5.0.0",
     "stockfish": "^10.0.2",
+    "three": "^0.149.0",
     "unpdf": "^0.12.1"
   },
   "allowScripts": {
