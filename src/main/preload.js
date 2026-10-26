@@ -82,6 +82,10 @@ contextBridge.exposeInMainWorld('kairo', {
   discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
   showWindow: () => invoke('win:show'),
   orbMode: () => invoke('app:orbMode'),
+  st: {
+    logos: b => invoke('st:logos', b), saveImages: (folder, files) => invoke('st:saveImages', folder, files), minecraft: i => invoke('st:minecraft', i), invent: i => invoke('st:invent', i),
+    social: (k, x) => invoke('st:social', k, x), saveVideo: (b64, ext, title) => invoke('st:saveVideo', b64, ext, title), shot: n => invoke('st:shot', n), reveal: p => invoke('st:reveal', p)
+  },
   ex: { story: (k, t) => invoke('ex:story', k, t), narrate: t => invoke('ex:narrate', t) },
   search: {
     query: q => invoke('search:query', q), open: r => invoke('search:open', r), reveal: p => invoke('search:reveal', p), hide: () => ipcRenderer.send('search:hide'),

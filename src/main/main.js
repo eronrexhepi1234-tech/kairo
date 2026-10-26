@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, globalShortcut, screen, nativeTheme } = require('electron');
 const path = require('path');
+// separate data folder (used for clean demo screenshots): KAIRO_PROFILE=<folder>
+if (process.env.KAIRO_PROFILE) app.setPath('userData', process.env.KAIRO_PROFILE);
 const store = require('./store');
 const providers = require('./providers');
 const tools = require('./tools');
@@ -472,6 +474,7 @@ if (gotLock) app.whenReady().then(() => {
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./show', { register: () => {} }).register({ getWin: () => win, store });
   optional('./finder', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./studio', { register: () => {} }).register({ getWin: () => win, store });
   optional('./explore', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start

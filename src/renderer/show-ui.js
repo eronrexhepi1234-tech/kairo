@@ -351,7 +351,11 @@ window.Show = (function () {
     ['solar', 'orbit', 'sh.solar', null, () => SolarSystem.open()],
     ['doc', 'clapperboard', 'sh.doc', null, () => { const q = prompt(t('st.askDoc')); if (q) StoryPlayer.doc(q); }],
     ['whatif', 'sparkles', 'sh.whatif', null, () => { const q = prompt(t('st.askWhatif')); if (q) StoryPlayer.whatIf(q); }],
-    ['search', 'scan-search', 'sh.search', null, () => window.kairo.search.toggle()]
+    ['search', 'scan-search', 'sh.search', null, () => window.kairo.search.toggle()],
+    ['logo', 'palette', 'sh.logo', null, () => LogoMaker.open()],
+    ['mc', 'pickaxe', 'sh.mc', null, () => McBuilder.open()],
+    ['inv', 'lightbulb', 'sh.inv', null, () => Inventor.open()],
+    ['social', 'clapperboard', 'sh.social', null, () => SocialStudio.open()]
   ];
   function mount() {
     const grid = document.querySelector('#view-today .today-grid');
