@@ -40,7 +40,8 @@ function applyAutostart(store) {
 // While running from the source folder: reload the window when UI files change,
 // restart the app when main-process files change. So Kairo is always up to date.
 function watchForChanges(getWins) {
-  if (app.isPackaged) return;
+  // only for development (KAIRO_DEV=1). Normally Kairo never restarts by itself.
+  if (app.isPackaged || !process.env.KAIRO_DEV) return;
   const src = path.join(__dirname, '..');
   let timer = null, restart = false;
   try {
