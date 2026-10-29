@@ -4,7 +4,7 @@ const $f = id => document.getElementById(id);
 const escF = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const accentF = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff7a45';
 const gb = n => (n / 1073741824).toFixed(n > 1e11 ? 0 : 1) + ' GB';
-const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(b); });
+const blobToB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => { const u = String(fr.result); r(u.slice(u.indexOf('base64,') + 7)); }; fr.readAsDataURL(b); });
 
 // full-screen overlay helper (inside the app window)
 function overlay(id, cls = '') {

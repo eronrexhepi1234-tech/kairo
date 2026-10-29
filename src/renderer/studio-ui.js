@@ -292,8 +292,10 @@ window.SocialStudio = (function () {
       const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
       const chunks = []; rec.ondataavailable = e => chunks.push(e.data);
       rec.onstop = async () => {
-        const blob = new Blob(chunks, { type: mime });
-        const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+        // plain type for the file (the codec list contains a comma, which would break the data URL)
+        const blob = new Blob(chunks, { type: mime.split(';')[0] });
+        const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => { const u = String(fr.result); r(u.slice(u.indexOf('base64,') + 7)); }; fr.readAsDataURL(blob); });
+        if (b64.length < 1000) { ac.close(); resolve(null); window.toast('✕ Video leer – bitte nochmal'); return; }
         const sv = await window.kairo.st.saveVideo(b64, mime.includes('mp4') ? 'mp4' : 'webm', S.youtube?.title || 'Kairo');
         ac.close(); resolve(sv.path);
       };
