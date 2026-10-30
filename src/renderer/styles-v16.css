@@ -1,0 +1,81 @@
+/* ================= Aufgeräumter Modus (fewer buttons, nothing removed) ================= */
+/* hidden in tidy mode – still there, reachable through the new buttons */
+body.tidy #tcShow, body.tidy #personaSwitch, body.tidy .composer-bottom .chips { display: none !important; }
+body:not(.tidy) #tdPersona, body:not(.tidy) .td-plus-w, body:not(.tidy) #tdFav, body:not(.tidy) .td-sug { display: none !important; }
+
+/* rail: finder button */
+.td-find { width: 52px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 7px; margin-bottom: 8px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); cursor: pointer; font-size: 10px; font-weight: 700; transition: .2s; }
+.td-find .ic { width: 18px; height: 18px; } .td-find:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); transform: translateY(-1px); }
+body:not(.tidy) .td-find { display: none; }
+.td-tip { position: fixed; z-index: 500; transform: translateY(-50%) translateX(-6px); padding: 8px 12px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--line); box-shadow: 0 12px 30px -10px var(--shadow); pointer-events: none; opacity: 0; transition: opacity .15s, transform .2s; max-width: 240px; }
+.td-tip.on { opacity: 1; transform: translateY(-50%); } .td-tip b { display: block; font-size: 13px; } .td-tip small { color: var(--muted); font-size: 12px; }
+
+/* finder */
+.tf { position: fixed; inset: 0; z-index: 700; display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; background: rgba(0,0,0,.45); backdrop-filter: blur(6px); opacity: 0; transition: opacity .2s; }
+.tf.on { opacity: 1; }
+.tf-box { width: min(640px, 92vw); max-height: 70vh; display: flex; flex-direction: column; border-radius: 20px; background: var(--bg2); border: 1px solid var(--line); box-shadow: 0 40px 100px -30px rgba(0,0,0,.7); overflow: hidden; transform: translateY(-10px) scale(.98); transition: transform .3s cubic-bezier(.16,1,.3,1); }
+.tf.on .tf-box { transform: none; }
+.tf-in { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); } .tf-in .ic { width: 20px; height: 20px; color: var(--accent); }
+.tf-in input { flex: 1; border: 0; outline: 0; background: none; color: var(--text); font: 500 17px var(--font-ui); }
+kbd { display: inline-block; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg3); font: 600 10.5px 'JetBrains Mono Var', monospace; color: var(--muted); }
+.tf-list { overflow: auto; padding: 6px 8px 10px; }
+.tf-list h6 { margin: 12px 10px 4px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tf-it { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 0; border-radius: 12px; background: none; color: var(--text); text-align: left; cursor: pointer; }
+.tf-it b { flex: 1; font-weight: 600; font-size: 14px; } .tf-it small { color: var(--muted); font-size: 11.5px; }
+.tf-ic { width: 32px; height: 32px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); } .tf-ic .ic { width: 17px; height: 17px; }
+.tf-it.ask .tf-ic { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.tf-it.sel, .tf-it:hover { background: var(--bg3); } .tf-it.sel { box-shadow: inset 3px 0 0 var(--accent); }
+.tf-star { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; color: var(--muted); opacity: 0; transition: .15s; } .tf-star .ic { width: 15px; height: 15px; }
+.tf-it:hover .tf-star, .tf-it.sel .tf-star, .tf-star.on { opacity: 1; } .tf-star.on { color: #ffc84a; } .tf-star.on .ic { fill: #ffc84a; } .tf-star:hover { background: var(--bg2); }
+.tf-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; } .tf-foot kbd { margin: 0 2px; }
+.tf-sw { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); font-weight: 600; }
+.tf-sw input { display: none; } .tf-sw i { position: relative; width: 34px; height: 20px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--line); transition: .2s; }
+.tf-sw i::after { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: .25s cubic-bezier(.34,1.56,.64,1); }
+.tf-sw input:checked + i { background: var(--accent); border-color: var(--accent); } .tf-sw input:checked + i::after { left: 16px; background: #fff; }
+
+/* Today: favourites + categories */
+.td-fav { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 14px; }
+.td-fav-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .td-fav-h b { display: block; font-size: 16px; } .td-fav-h small { color: var(--muted); font-size: 12px; }
+.td-all { display: flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg3); color: var(--text); cursor: pointer; font-weight: 600; font-size: 13px; transition: .2s; } .td-all:hover { border-color: var(--accent); } .td-all .ic { width: 15px; height: 15px; color: var(--accent); }
+.td-favs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.td-favs button { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: linear-gradient(150deg, color-mix(in srgb, var(--c) 14%, var(--bg2)), var(--bg2)); color: var(--text); cursor: pointer; text-align: left; transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .2s; animation: chipIn .45s both; }
+.td-favs button:hover { transform: translateY(-3px); border-color: var(--c); box-shadow: 0 14px 30px -16px var(--c); }
+.td-favs span { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: var(--c); box-shadow: 0 8px 18px -8px var(--c); } .td-favs span .ic { width: 18px; height: 18px; }
+.td-favs b { font-size: 13.5px; }
+.td-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-items: start; }
+.td-cat { border-radius: 16px; border: 1px solid var(--line); background: var(--bg2); overflow: hidden; transition: border-color .2s, box-shadow .3s; animation: chipIn .45s both; }
+.td-cat.open { border-color: color-mix(in srgb, var(--c) 60%, var(--line)); box-shadow: 0 16px 40px -24px var(--c); grid-column: 1 / -1; }
+.td-cat-h { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 0; background: none; color: var(--text); cursor: pointer; text-align: left; }
+.td-cat-h > span { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); } .td-cat-h > span .ic { width: 19px; height: 19px; }
+.td-cat-h div { flex: 1; } .td-cat-h b { display: block; font-size: 14px; } .td-cat-h small { color: var(--muted); font-size: 12px; }
+.td-cat-h em { font-style: normal; font: 700 11px 'JetBrains Mono Var', monospace; color: var(--c); padding: 2px 7px; border-radius: 8px; background: color-mix(in srgb, var(--c) 14%, transparent); }
+.td-cat-h > .ic:last-child { width: 16px; height: 16px; color: var(--muted); transition: transform .3s; } .td-cat.open .td-cat-h > .ic:last-child { transform: rotate(90deg); color: var(--c); }
+.td-cat-b { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s cubic-bezier(.16,1,.3,1); } .td-cat.open .td-cat-b { grid-template-rows: 1fr; }
+.td-cat-b > div { overflow: hidden; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 0 12px; }
+.td-cat.open .td-cat-b > div { padding: 0 12px 12px; }
+.td-cat-b button { display: flex; align-items: center; gap: 9px; padding: 10px 11px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 13px; text-align: left; transition: .2s; }
+.td-cat-b button .ic { width: 16px; height: 16px; color: var(--c); flex: none; } .td-cat-b button:hover { border-color: var(--c); transform: translateY(-2px); }
+.td-cat.open .td-cat-b button { animation: chipIn .35s both; } .td-cat.open .td-cat-b button:nth-child(2) { animation-delay: .03s; } .td-cat.open .td-cat-b button:nth-child(3) { animation-delay: .06s; } .td-cat.open .td-cat-b button:nth-child(4) { animation-delay: .09s; } .td-cat.open .td-cat-b button:nth-child(n+5) { animation-delay: .12s; }
+
+/* composer: two small buttons instead of 13 */
+.td-pbtn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 12.5px; font-weight: 600; transition: .2s; }
+.td-pbtn .ic { width: 14px; height: 14px; color: var(--accent); } .td-pbtn .ic:last-child { width: 12px; height: 12px; color: var(--muted); transform: rotate(90deg); } .td-pbtn:hover { border-color: var(--accent); }
+body.tidy .composer-top { justify-content: space-between; }
+.td-plus-w { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.td-plus { width: 34px; height: 34px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--bg3); color: var(--text); cursor: pointer; display: grid; place-items: center; transition: .25s; } .td-plus .ic { width: 17px; height: 17px; }
+.td-plus:hover { border-color: var(--accent); color: var(--accent); transform: rotate(90deg); }
+.td-tags { display: flex; gap: 5px; overflow: hidden; } .td-tags button { padding: 4px 9px; border-radius: 99px; border: 0; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text); font-size: 11.5px; cursor: pointer; white-space: nowrap; animation: chipIn .3s; }
+.td-pop { position: fixed; z-index: 650; min-width: 220px; padding: 6px; border-radius: 16px; background: var(--bg2); border: 1px solid var(--line); box-shadow: 0 24px 60px -20px rgba(0,0,0,.6); animation: tdPop .22s cubic-bezier(.16,1,.3,1); }
+@keyframes tdPop { from { opacity: 0; transform: translateY(6px) scale(.97); } }
+.td-pop h6 { margin: 6px 10px 6px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.td-pop button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--text); cursor: pointer; text-align: left; font-size: 13.5px; }
+.td-pop button span { flex: 1; } .td-pop button .ic { width: 16px; height: 16px; color: var(--muted); } .td-pop button:hover { background: var(--bg3); }
+.td-pop button.on { color: var(--accent); font-weight: 600; } .td-pop button.on .ic { color: var(--accent); }
+
+/* smart suggestions above the composer */
+.td-sug { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 auto 8px; max-width: 760px; padding: 0 4px; height: 0; opacity: 0; overflow: hidden; transform: translateY(8px); transition: opacity .25s, transform .3s cubic-bezier(.16,1,.3,1); }
+.td-sug.on { height: auto; opacity: 1; transform: none; }
+.td-sug > span { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; } .td-sug > span .ic { width: 13px; height: 13px; color: var(--accent); }
+.td-sug button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 12%, var(--bg2)); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: .2s; }
+.td-sug button .ic { width: 14px; height: 14px; color: var(--accent); } .td-sug button:hover { transform: translateY(-2px); background: color-mix(in srgb, var(--accent) 22%, var(--bg2)); }
+.td-sug button.x { padding: 6px 9px; border-color: var(--line); background: none; color: var(--muted); }
