@@ -18,6 +18,7 @@ window.LiveVoice = (function () {
   const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=';
 
   let ws = null, cfg = null, modelIdx = 0, ready = false, active = false;
+  const plainSetup = new Set(); // models that did not accept the speed settings
   let micStream = null, micCtx = null, micNode = null, micAnalyser = null, muted = false;
   let outCtx = null, outGain = null, outAnalyser = null, nextTime = 0, playing = [];
   let screenTimer = null, sharing = false;
@@ -420,6 +421,8 @@ ${a.prompt || ''}
   }
   let userCap = null, aiCap = null;
   function finishTurn() {
+    // the voice model sometimes says an app tag instead of calling a tool: run it anyway
+    if (/\[\[[a-z]+[:\]]/i.test(aiText)) { const tags = aiText; window.App.runTags?.(tags); aiText = aiText.replace(/\[\[[^\]]*\]\]/g, '').trim(); }
     if (aiText.trim()) stageCaption('ai', aiText.trim(), true);
     if (userText.trim() || aiText.trim()) window.App.addVoiceTurn(userText.trim(), aiText.trim());
     userText = aiText = ''; userCap = aiCap = null;
@@ -434,11 +437,17 @@ ${a.prompt || ''}
     gotAudio = false;
     setState('connecting');
     ws = new WebSocket(WS_URL + encodeURIComponent(cfg.key));
+    // faster answers: no "thinking" before speaking, and Kairo notices sooner that the user stopped talking.
+    // If a model refuses these settings, the same model is tried again without them (see onclose).
+    const fast = !plainSetup.has(model);
+    const gen = { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: cfg.voice } } } };
+    if (fast && /2\.5/.test(model)) gen.thinkingConfig = { thinkingBudget: 0 };
     ws.onopen = () => send({ setup: {
       model: 'models/' + model,
-      generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: cfg.voice } } } },
+      generationConfig: gen,
       systemInstruction: { parts: [{ text: cfg.system }] },
       tools: translating ? [] : LIVE_TOOLS,
+      ...(fast ? { realtimeInputConfig: { automaticActivityDetection: { startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH', endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH', prefixPaddingMs: 40, silenceDurationMs: 450 } } } : {}),
       inputAudioTranscription: {},
       outputAudioTranscription: {}
     } });
@@ -471,8 +480,9 @@ ${a.prompt || ''}
       if (sc.outputTranscription?.text) {
         aiText += sc.outputTranscription.text;
         aiCap ||= addCaption('ai', '');
-        aiCap.textContent = aiText;
-        stageCaption('ai', aiText);
+        const clean = aiText.replace(/\[\[[^\]]*\]?\]?/g, '').replace(/\s+/g, ' ');
+        aiCap.textContent = clean;
+        stageCaption('ai', clean);
       }
       for (const p of sc.modelTurn?.parts || []) {
         if (p.inlineData?.data && /audio/.test(p.inlineData.mimeType)) {
@@ -488,6 +498,11 @@ ${a.prompt || ''}
       if (!active) return;
       // model not available or over quota for this key? try the next one
       const unusable = !wasReady || (!gotAudio && (ev.code === 1011 || /quota|not found|not supported/i.test(ev.reason)));
+      const model = cfg.models[modelIdx];
+      // the speed settings were refused: same model again with the normal settings
+      if (!wasReady && !plainSetup.has(model)) {
+        plainSetup.add(model); pendingAudio = [...turnAudio, ...pendingAudio]; turnAudio = []; connect(); return;
+      }
       if (unusable && modelIdx < cfg.models.length - 1) {
         try { localStorage.removeItem('kairo.liveModel'); } catch {}
         pendingAudio = [...turnAudio, ...pendingAudio]; turnAudio = []; // replay what the user said to the next model
@@ -646,11 +661,12 @@ ${a.prompt || ''}
     outGain = outCtx.createGain();
     outAnalyser = outCtx.createAnalyser(); outAnalyser.fftSize = 256;
     outGain.connect(outAnalyser); outAnalyser.connect(outCtx.destination);
+    // connect and open the mic at the same time (what is said meanwhile is queued and sent once ready)
+    connect();
     try { await startMic(); }
-    catch (e) { fail(t('voice.noMic')); return; }
+    catch (e) { try { ws?.close(); } catch {} fail(t('voice.noMic')); return; }
     Orb.start($('vmOrb'), level);
     window.App.syncHomeOrb();
-    connect();
   }
 
   function stop() {

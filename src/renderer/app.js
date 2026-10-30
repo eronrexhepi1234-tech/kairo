@@ -798,6 +798,14 @@ window.App = {
     setTimeout(front, 700);
     return ((m.done || []).join(', ') + ' ' + shown).trim() || 'Erledigt';
   },
+  // run app tags that came from somewhere else (e.g. said by the voice model)
+  async runTags(text) {
+    const m = { role: 'assistant', text };
+    await runActions(m);
+    const { places } = parseReply(text);
+    if (places.length) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 150); }
+    if (document.hidden || document.querySelector('.xo.on, .fx-ov.on')) window.kairo.showWindow();
+  },
   // "Erstelle eine Webseite über …", "Wie funktioniert ein Vulkan", "Mach eine Doku über …" -> opens the right feature
   async routeFeature(cmd) {
     const c = cmd.toLowerCase().trim();
@@ -824,7 +832,7 @@ window.App = {
     if (/(code|programm|projekt-?ordner|quellcode).*(analys|versteh|anschau|prüf|review|assistent)|(analys|versteh|prüf|review|schau).*(code|quellcode|programm)|code-?assistent/.test(c)) return pro('code', null, 'Der Code-Assistent ist offen. Der Nutzer wählt den Projekt-Ordner.');
     if (/dashboard/.test(c)) { const t = cmd.replace(/^.*?dashboard\s*(mit|für|:)?\s*/i, ''); return pro('dash', t.length > 3 ? t : null, 'Das Dashboard ist offen.'); }
     if (/projekt-?plan|projekt (planen|erstellen|starten|anlegen)|plane? (mir )?(mein|ein) (projekt|ziel)|meilensteine|projekt-?manager/.test(c)) { const t = after(/\b(projekt-?plan|projekt-?manager|projekt|planen|plane|plan|erstellen|starten|anlegen|meilensteine|ziel)\b/gi); return pro('projects', t, 'Der Projekt-Manager ist offen.'); }
-    if (/übungsprüfung|probeprüfung|probetest|übungstest|prüfungs-?simulator|(prüfung|\btest\b).*(simulier|üben|mach|erstell|start)|(simulier|üben|mach|erstell|start).*(prüfung|\btest\b)/.test(c)) { const t = (cmd.match(/(?:über|zum thema|zu)\s+(.+?)[?.!]*$/i) || cmd.match(/\bin\s+(.+?)[?.!]*$/i) || [])[1] || null; return pro('exam', t, 'Der Prüfungs-Simulator ist offen. Fach und Thema eintragen, dann starten.'); }
+    if (/übungsprüfung|probeprüfung|probetest|übungstest|prüfungs-?simulator|(prüfung|\btest\b).*(simulier|üben|mach|erstell|start)|(simulier|üben|mach|erstell|start).*(prüfung|\btest\b)/.test(c)) { const t = (cmd.match(/(?:über|zum thema|zu)\s+(.+?)[?.!]*$/i) || cmd.match(/\bin\s+(.+?)[?.!]*$/i) || [])[1] || null; return pro('exam', cmd, 'Der Prüfungs-Simulator ist offen, Fach und Thema sind eingetragen. Der Nutzer klickt auf Prüfung starten.'); }
     if (/sprachlehrer|(englisch|französisch|spanisch|italienisch|japanisch|albanisch|deutsch|sprache)\s*(üben|sprechen|reden|lernen|praktizieren)|(üben|sprechen|reden).*(auf )?(englisch|französisch|spanisch|italienisch)/.test(c)) return pro('lang', cmd, 'Der Sprachlehrer ist offen. Der Nutzer wählt Niveau und Situation und startet das Gespräch.');
     if (/lernpfad|lernplan|ich will .{2,40} lernen|bring mir .{2,40} bei/.test(c)) { const m2 = cmd.match(/(?:ich will|ich möchte)\s+(.+?)\s+lernen/i) || cmd.match(/bring mir\s+(.+?)\s+bei/i); const t = m2 ? m2[1] : after(/\b(lernpfad|lernplan|erstellen|lernen)\b/gi); return pro('path', t, 'Der Lernpfad ist offen' + (t ? `, das Ziel "${t}" ist eingetragen.` : '.')); }
     if (/marken-?kit|branding|corporate design|marke (erstellen|aufbauen|entwickeln|machen)/.test(c)) { const t = after(/\b(marken-?kit|branding|corporate design|marke|erstellen|aufbauen|entwickeln)\b/gi); return pro('brand', t, t ? `Kairo entwickelt die Marke für "${t}".` : 'Das Marken-Kit ist offen.'); }

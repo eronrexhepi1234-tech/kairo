@@ -403,7 +403,14 @@ window.Pro = (function () {
       if (!r.ok) { m.innerHTML = fail(r.error.message); return; }
       runExam(m, r.exam);
     };
-    if (arg) { $p('exT').value = arg; }
+    if (arg) {
+      // "Übungsprüfung Mathe über Brüche" -> Fach: Mathe, Thema: Brüche
+      const SUBJ = ['Mathe', 'Mathematik', 'Deutsch', 'Englisch', 'Französisch', 'Italienisch', 'Spanisch', 'Geschichte', 'Geografie', 'Geographie', 'Biologie', 'Chemie', 'Physik', 'NMG', 'Informatik', 'Wirtschaft', 'Musik', 'Religion', 'Ethik', 'Latein'];
+      const subj = SUBJ.find(x => new RegExp('(^|[^\\p{L}])' + x + '($|[^\\p{L}])', 'iu').test(arg));
+      let topic = (arg.match(/(?:über|zum thema|zu|thema)\s+(.+?)[?.!]*$/i) || [])[1] || arg.replace(/übungsprüfung|probeprüfung|prüfung|probetest|übungstest|\btest\b|mach(e)?|mir|eine?n?|bitte|in|simulier(en)?|starte?n?|kairo,?/gi, ' ');
+      if (subj) { $p('exS').value = subj; topic = topic.replace(new RegExp(subj, 'i'), ' '); }
+      $p('exT').value = topic.replace(/\s+/g, ' ').trim();
+    }
   }
   function runExam(m, ex) {
     const answers = {}; let left = ex.minutes * 60;
