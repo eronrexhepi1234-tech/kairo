@@ -185,7 +185,8 @@ function parseReply(text) {
   shown = shown.replace(/\[\[(logo|minecraft|invent):[^\]]*\]\]/gi, '').replace(/\[\[social\]\]/gi, '');
   const build = { app: (shown.match(/\[\[buildapp:\s*([^\]]+)\]\]/i) || [])[1] || null, site: (shown.match(/\[\[website:\s*([^\]]+)\]\]/i) || [])[1] || null,
     change: (shown.match(/\[\[appchange:\s*([^\]]+)\]\]/i) || [])[1] || null, how: (shown.match(/\[\[howitworks:\s*([^\]]+)\]\]/i) || [])[1] || null, shop: /\[\[ideashop\]\]/i.test(shown) };
-  shown = shown.replace(/\[\[(buildapp|website|appchange|howitworks):[^\]]*\]\]/gi, '').replace(/\[\[ideashop\]\]/gi, '');
+  build.pro = (shown.match(/\[\[pro:\s*([^\]]+)\]\]/i) || [])[1] || null;
+  shown = shown.replace(/\[\[(buildapp|website|appchange|howitworks|pro):[^\]]*\]\]/gi, '').replace(/\[\[ideashop\]\]/gi, '');
   const space = { solar: (shown.match(/\[\[solar(?::\s*([^\]]*))?\]\]/i) || [])[0] ? ((shown.match(/\[\[solar:\s*([^\]]+)\]\]/i) || [])[1] || true) : null,
     doc: (shown.match(/\[\[doku:\s*([^\]]+)\]\]/i) || [])[1] || null, whatif: (shown.match(/\[\[whatif:\s*([^\]]+)\]\]/i) || [])[1] || null };
   shown = shown.replace(/\[\[(solar|doku|whatif)(:[^\]]*)?\]\]/gi, '');
@@ -276,6 +277,7 @@ async function runActions(m) {
   if (p.build.site) { const [idea, min] = p.build.site.split('|').map(x => x.trim()); m.done.push('Website: ' + idea); setTimeout(() => Builder.site(idea, +min || 5), 300); }
   if (p.build.change) { m.done.push('Ändern: ' + p.build.change); setTimeout(() => { Builder.open(); Builder.change(p.build.change); }, 300); }
   if (p.build.shop) setTimeout(() => Builder.open({ tab: 'shop' }), 300);
+  if (p.build.pro) { const [tl, arg] = p.build.pro.split('|').map(x => x.trim()); const id = { present: 'present', presentation: 'present', path: 'path', learnpath: 'path' }[tl] || tl; m.done.push('Kairo Pro'); setTimeout(() => Pro.open(id, arg || undefined), 300); }
   if (p.build.how) { m.done.push('Erklärung: ' + p.build.how); setTimeout(() => HowItWorks.open(p.build.how), 300); }
   if (p.studio.social) { m.done.push('🎬 Social Studio'); setTimeout(() => SocialStudio.open(), 300); }
   if (p.space.solar) { m.done.push('🪐 ' + t('sh.solar')); setTimeout(() => SolarSystem.open(typeof p.space.solar === 'string' ? p.space.solar : null), 300); }
@@ -808,6 +810,25 @@ window.App = {
     };
     const mins = (c.match(/(\d{1,2})\s*(min|minute)/) || [])[1];
     const has = s => document.getElementById(s);
+    // Kairo Pro
+    const pro = (id, arg, msg) => { Pro.open(id, arg || undefined); return msg; };
+    const after = rx => topic(rx);
+    if (/\b(agent-?modus|agent mode)\b|^(erledige|bereite)\b|\b(bereite|erledige) (mir )?(alles|meinen|meine|mein)\b/.test(c)) return pro('agent', cmd.replace(/^(kairo,?\s*)?(starte? (den )?agent-?modus( und)?|agent-?modus:?)\s*/i, '') || null, 'Der Agent-Modus ist offen und plant die Schritte. Der Nutzer gibt den Plan dann frei.');
+    if (/gedächtnis|was weisst du (alles )?über mich|was weißt du (alles )?über mich|deine erinnerungen|was hast du dir gemerkt/.test(c)) return pro('memory', null, 'Das Gedächtnis-Center ist offen: dort sieht der Nutzer alles, was Kairo weiss, und kann es ändern oder löschen.');
+    if (/recherchier|deep research|\brecherche\b/.test(c)) { const t = after(/\b(recherchiere?n?|recherche|deep research|gründlich|genau)\b/gi); return pro('research', t, t ? `Die Recherche zu "${t}" läuft. Kairo liest viele Quellen und schreibt einen Bericht.` : 'Deep Research ist offen. Frag, was recherchiert werden soll.'); }
+    if (/\bquellen\b|literaturverzeichnis|\bzitate?\b.*(für|zu)/.test(c)) { const t = after(/\b(quellen|seriöse|finde|such|suche|literaturverzeichnis|zitate?)\b/gi); return pro('sources', t, 'Der Quellen-Finder sucht seriöse Quellen.'); }
+    if (/\b(bewerbung|lebenslauf|motivationsschreiben|protokoll|handout|kündigung|formelle[nr]? brief|geschäftsbrief|offerte|angebot schreiben)\b/.test(c)) return pro('document', cmd, 'Die Profi-Dokumente sind offen, die Angaben sind schon eingetragen. Der Nutzer ergänzt sie und klickt auf Erstellen.');
+    if (/(verbesser|korrigier).*(text|aufsatz|mail|e-mail|brief)|(text|aufsatz).*(verbesser|korrigier)|schreib-?coach/.test(c)) return pro('coach', null, 'Der Schreib-Coach ist offen. Der Nutzer fügt dort seinen Text ein.');
+    if (/übersetz.*(dokument|datei|word|powerpoint|pdf|präsentation)/.test(c)) return pro('translate', null, 'Der Dokument-Übersetzer ist offen. Der Nutzer wählt die Datei.');
+    if (/(präsentation|powerpoint|vortrag)/.test(c)) { const t = (cmd.match(/(?:über|zum thema)\s+(.+?)[?.!]*$/i) || [])[1] || null; return pro('present', t, 'Präsentation & Training ist offen' + (t ? `, das Thema "${t}" ist eingetragen.` : '.')); }
+    if (/(code|programm|projekt-?ordner|quellcode).*(analys|versteh|anschau|prüf|review|assistent)|(analys|versteh|prüf|review|schau).*(code|quellcode|programm)|code-?assistent/.test(c)) return pro('code', null, 'Der Code-Assistent ist offen. Der Nutzer wählt den Projekt-Ordner.');
+    if (/dashboard/.test(c)) { const t = cmd.replace(/^.*?dashboard\s*(mit|für|:)?\s*/i, ''); return pro('dash', t.length > 3 ? t : null, 'Das Dashboard ist offen.'); }
+    if (/projekt-?plan|projekt (planen|erstellen|starten|anlegen)|plane? (mir )?(mein|ein) (projekt|ziel)|meilensteine|projekt-?manager/.test(c)) { const t = after(/\b(projekt-?plan|projekt-?manager|projekt|planen|plane|plan|erstellen|starten|anlegen|meilensteine|ziel)\b/gi); return pro('projects', t, 'Der Projekt-Manager ist offen.'); }
+    if (/übungsprüfung|probeprüfung|probetest|übungstest|prüfungs-?simulator|(prüfung|\btest\b).*(simulier|üben|mach|erstell|start)|(simulier|üben|mach|erstell|start).*(prüfung|\btest\b)/.test(c)) { const t = (cmd.match(/(?:über|zum thema|zu)\s+(.+?)[?.!]*$/i) || cmd.match(/\bin\s+(.+?)[?.!]*$/i) || [])[1] || null; return pro('exam', t, 'Der Prüfungs-Simulator ist offen. Fach und Thema eintragen, dann starten.'); }
+    if (/sprachlehrer|(englisch|französisch|spanisch|italienisch|japanisch|albanisch|deutsch|sprache)\s*(üben|sprechen|reden|lernen|praktizieren)|(üben|sprechen|reden).*(auf )?(englisch|französisch|spanisch|italienisch)/.test(c)) return pro('lang', cmd, 'Der Sprachlehrer ist offen. Der Nutzer wählt Niveau und Situation und startet das Gespräch.');
+    if (/lernpfad|lernplan|ich will .{2,40} lernen|bring mir .{2,40} bei/.test(c)) { const m2 = cmd.match(/(?:ich will|ich möchte)\s+(.+?)\s+lernen/i) || cmd.match(/bring mir\s+(.+?)\s+bei/i); const t = m2 ? m2[1] : after(/\b(lernpfad|lernplan|erstellen|lernen)\b/gi); return pro('path', t, 'Der Lernpfad ist offen' + (t ? `, das Ziel "${t}" ist eingetragen.` : '.')); }
+    if (/marken-?kit|branding|corporate design|marke (erstellen|aufbauen|entwickeln|machen)/.test(c)) { const t = after(/\b(marken-?kit|branding|corporate design|marke|erstellen|aufbauen|entwickeln)\b/gi); return pro('brand', t, t ? `Kairo entwickelt die Marke für "${t}".` : 'Das Marken-Kit ist offen.'); }
+    if (/kairo pro|pro-?studio/.test(c)) return pro(null, null, 'Kairo Pro ist offen.');
     // Builder
     if (/ideen-?shop|idee(n)? shop|start-?ideen/.test(c)) { Builder.open({ tab: 'shop' }); return 'Der Ideen-Shop ist offen.'; }
     if (/skizze|zeichnen|sketch/.test(c) && /app|programm|bau|mach|zeichn/.test(c)) { Builder.open({ tab: 'sketch' }); setTimeout(() => document.getElementById('bdPadOpen')?.click(), 500); return 'Der Skizzenblock ist offen. Der Nutzer kann jetzt zeichnen.'; }

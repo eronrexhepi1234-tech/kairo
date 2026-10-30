@@ -476,6 +476,7 @@ if (gotLock) app.whenReady().then(() => {
   optional('./finder', { register: () => {} }).register({ getWin: () => win, store });
   optional('./studio', { register: () => {} }).register({ getWin: () => win, store });
   optional('./builder', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./pro', { register: () => {} }).register({ getWin: () => win, store });
   optional('./explore', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start

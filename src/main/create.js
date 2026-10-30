@@ -116,7 +116,7 @@ Reply ONLY with JSON: {"title":"","subtitle":"","slides":[{"title":"","bullets":
   let file = path.join(dir, safe(j.title) + '.pptx'), i = 2;
   while (fs.existsSync(file)) file = path.join(dir, `${safe(j.title)} (${i++}).pptx`);
   fs.writeFileSync(file, await pptx.write({ outputType: 'nodebuffer' }));
-  return { path: file, title: j.title, slides: (j.slides || []).length + 2 };
+  return { path: file, title: j.title, slides: (j.slides || []).length + 2, data: j };
 }
 
 function register({ ipcMain, wrap, store }) {
