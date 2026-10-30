@@ -7,7 +7,7 @@ const toWavUrl = a => (/L16|pcm/i.test(a.mime) ? Voice.pcmToWavUrl(a.audio, +(a.
 // ================= Jarvis =================
 window.Jarvis = (function () {
   let on = false;
-  function set(v = !on) { on = !!v; window.kairo.stage.show({ type: 'jarvis', on }); if (on) Voice.speak(t('jv.hello', { name: window.App.settings().userTitle || '' }), window.App.settings()); window.Show?.refresh(); return on; }
+  function set(v = !on, quiet) { on = !!v; window.kairo.stage.show({ type: 'jarvis', on }); if (on && !quiet) Voice.speak(t('jv.hello', { name: window.App.settings().userTitle || '' }), window.App.settings()); window.Show?.refresh(); return on; }
   window.kairo.show.onJarvis(() => set());
   return { set, isOn: () => on };
 })();

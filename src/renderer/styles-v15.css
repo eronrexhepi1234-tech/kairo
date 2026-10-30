@@ -1,0 +1,113 @@
+/* ================= Jarvis mode: the whole app turns into a holographic HUD ================= */
+body.jarvis {
+  --bg: #02080f; --bg2: #041321; --bg3: #07192b; --line: rgba(92,225,255,.16); --text: #d6f5ff; --muted: #6ea3b8;
+  --accent: #5ce1ff; --shadow: rgba(0,0,0,.7); --jh: #5ce1ff; --jh2: rgba(92,225,255,.35);
+  background: #02080f; color: var(--text);
+}
+body.jarvis .stage, body.jarvis main { background: radial-gradient(ellipse at 50% -10%, rgba(92,225,255,.08), transparent 55%), radial-gradient(ellipse at 100% 100%, rgba(0,120,200,.07), transparent 50%), var(--bg); }
+body.jarvis .rail { background: linear-gradient(180deg, #03101b, #02080f); border-right-color: rgba(92,225,255,.18); box-shadow: inset -1px 0 18px rgba(92,225,255,.06); }
+body.jarvis .rail-btn { color: #5f97ad; transition: color .25s, background .25s, box-shadow .25s; }
+body.jarvis .rail-btn:hover { color: #bff2ff; background: rgba(92,225,255,.08); }
+body.jarvis .rail-btn.active { color: #5ce1ff; background: rgba(92,225,255,.12); box-shadow: 0 0 0 1px rgba(92,225,255,.35), 0 0 18px -4px #5ce1ff; }
+body.jarvis h1, body.jarvis h2 { letter-spacing: .02em; }
+body.jarvis #helloLine { font-family: 'Space Grotesk Var', sans-serif; text-transform: uppercase; letter-spacing: .12em; background: linear-gradient(90deg, #bff2ff, #5ce1ff, #bff2ff); background-size: 200% 100%; -webkit-background-clip: text; color: transparent; animation: jvShine 6s linear infinite; }
+@keyframes jvShine { to { background-position: -200% 0; } }
+
+/* home orb becomes an arc reactor */
+body.jarvis .home-orb::before, body.jarvis .home-orb::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+body.jarvis .home-orb::before { inset: -14px; border: 1.5px dashed rgba(92,225,255,.45); animation: spinR 30s linear infinite; }
+body.jarvis .home-orb::after { inset: -30px; border: 1px solid rgba(92,225,255,.18); border-top-color: #5ce1ff; border-bottom-color: #5ce1ff; animation: spinR 9s linear infinite reverse; box-shadow: 0 0 40px -10px rgba(92,225,255,.5); }
+body.jarvis .sugg { background: rgba(92,225,255,.04); border-color: rgba(92,225,255,.2); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+body.jarvis .sugg:hover { background: rgba(92,225,255,.1); border-color: #5ce1ff; box-shadow: 0 0 20px -6px #5ce1ff; }
+
+/* composer = command line */
+body.jarvis .composer { background: linear-gradient(135deg, rgba(8,40,62,.6), rgba(3,16,28,.8)); border: 1px solid rgba(92,225,255,.3); box-shadow: 0 0 0 1px rgba(92,225,255,.06), 0 0 30px -10px rgba(92,225,255,.4); clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); border-radius: 0; }
+body.jarvis .composer:focus-within { border-color: #5ce1ff; box-shadow: 0 0 0 1px rgba(92,225,255,.3), 0 0 40px -6px rgba(92,225,255,.6); }
+body.jarvis #input { font-family: 'JetBrains Mono Var', monospace; color: #e6fbff; }
+body.jarvis #input::placeholder { color: #4f8aa0; }
+
+/* user command */
+body.jarvis .msg.user { background: rgba(92,225,255,.06); border: 1px solid rgba(92,225,255,.25); border-radius: 0; font-family: 'JetBrains Mono Var', monospace; font-size: 13.5px; color: #e6fbff; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation: jvUser .45s cubic-bezier(.16,1,.3,1); }
+body.jarvis .msg.user[data-jvt]::before { content: '› BEFEHL · ' attr(data-jvt); display: block; margin-bottom: 4px; font-size: 9.5px; letter-spacing: .22em; color: #5ce1ff; opacity: .8; }
+@keyframes jvUser { from { opacity: 0; transform: translateX(30px); filter: brightness(2); } }
+
+/* answer = hologram panel */
+body.jarvis .msg.ai { position: relative; padding: 30px 20px 16px 22px; background: linear-gradient(135deg, rgba(10,48,74,.45), rgba(3,18,30,.55)); border: 1px solid rgba(92,225,255,.22); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px)); box-shadow: inset 0 0 40px rgba(92,225,255,.05); }
+body.jarvis .msg.ai::before { content: 'KAIRO // ANTWORT ' attr(data-jvt); position: absolute; left: 22px; right: 20px; top: 9px; width: auto; height: auto; border-radius: 0; background: none; font: 600 9.5px 'JetBrains Mono Var', monospace; letter-spacing: .22em; color: #5ce1ff; opacity: .85; border-bottom: 1px solid rgba(92,225,255,.15); padding-bottom: 5px; animation: none; }
+body.jarvis .msg.ai::after { content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; background: linear-gradient(#5ce1ff, rgba(92,225,255,.1)); box-shadow: 0 0 12px #5ce1ff; }
+body.jarvis .msg.ai.jv-in { animation: jvHolo .8s cubic-bezier(.16,1,.3,1); transform-origin: left center; }
+@keyframes jvHolo { 0% { opacity: 0; transform: scaleY(.04) scaleX(.6); filter: brightness(3) blur(2px); } 35% { opacity: 1; transform: scaleY(.04) scaleX(1); } 60% { transform: scaleY(1.03); filter: brightness(1.6); } 70% { opacity: .7; } 80% { opacity: 1; } 100% { transform: none; filter: none; } }
+body.jarvis .msg.ai.jv-done { background-image: linear-gradient(180deg, transparent 0%, rgba(92,225,255,.14) 50%, transparent 100%), linear-gradient(135deg, rgba(10,48,74,.45), rgba(3,18,30,.55)); background-size: 100% 60px, 100% 100%; background-repeat: no-repeat; animation: jvSweep 1.2s ease-out forwards; }
+@keyframes jvSweep { from { background-position: 0 -60px, 0 0; } to { background-position: 0 120%, 0 0; } }
+body.jarvis .msg.ai.streaming { box-shadow: inset 0 0 40px rgba(92,225,255,.08), 0 0 30px -12px #5ce1ff; }
+body.jarvis .msg.ai strong { color: #a8f0ff; }
+body.jarvis .msg.ai code { background: rgba(92,225,255,.1); color: #bff2ff; }
+body.jarvis .msg.ai a { color: #5ce1ff; }
+body.jarvis .msg.ai li::marker { color: #5ce1ff; }
+body.jarvis .msg-status { display: flex; align-items: center; gap: 10px; font: 600 11px 'JetBrains Mono Var', monospace; letter-spacing: .25em; text-transform: uppercase; color: #5ce1ff; }
+body.jarvis .msg-status::before { content: ''; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(92,225,255,.2); border-top-color: #5ce1ff; border-right-color: #5ce1ff; animation: spin .7s linear infinite; box-shadow: 0 0 10px rgba(92,225,255,.5); }
+body.jarvis .msg-status::after { content: '▮'; animation: jvBlink .8s steps(1) infinite; }
+@keyframes jvBlink { 50% { opacity: 0; } }
+
+/* cards on other pages pick up the look */
+body.jarvis .tcard, body.jarvis .card, body.jarvis .panel { border-color: rgba(92,225,255,.18) !important; background-color: rgba(6,26,42,.55) !important; }
+body.jarvis .btn.primary { background: linear-gradient(135deg, #1aa9d6, #5ce1ff); color: #001018; }
+
+/* ---------- HUD frame inside the app ---------- */
+#jvApp { position: fixed; inset: 0; z-index: 300; pointer-events: none; color: #5ce1ff; font-family: 'JetBrains Mono Var', monospace; animation: jvaIn 1s ease-out; }
+@keyframes jvaIn { from { opacity: 0; } }
+#jvBg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .9; mix-blend-mode: screen; }
+.jva-scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(92,225,255,.025) 0 1px, transparent 1px 3px); }
+.jva-vig { position: absolute; inset: 0; box-shadow: inset 0 0 120px rgba(0,30,50,.55); }
+.jva-top { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 3px 14px; font-size: 9.5px; letter-spacing: .18em; background: rgba(2,12,22,.75); border: 1px solid rgba(92,225,255,.25); clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%); white-space: nowrap; text-shadow: 0 0 6px rgba(92,225,255,.6); }
+.jva-tag { display: flex; align-items: center; gap: 6px; } .jva-tag i { width: 6px; height: 6px; border-radius: 50%; background: #7dffb0; box-shadow: 0 0 8px #7dffb0; animation: jvBlink 1.6s steps(1) infinite; }
+.jva-wave { display: flex; gap: 2px; align-items: center; height: 14px; }
+.jva-wave i { width: 2px; height: 30%; background: #5ce1ff; opacity: .7; animation: jvWave 1.2s ease-in-out infinite; }
+.jva-wave i:nth-child(3n) { animation-delay: -.3s; } .jva-wave i:nth-child(4n) { animation-delay: -.6s; } .jva-wave i:nth-child(5n) { animation-delay: -.9s; } .jva-wave i:nth-child(7n) { animation-duration: .8s; }
+@keyframes jvWave { 50% { height: 100%; opacity: 1; } }
+.jva-stats { display: flex; gap: 12px; } .jva-stats b { font-weight: 600; color: #bff2ff; }
+.jva-c { position: absolute; width: 34px; height: 34px; border: 2px solid #5ce1ff; opacity: .55; filter: drop-shadow(0 0 4px #5ce1ff); }
+.jva-c.tl { left: 60px; top: 38px; border-right: 0; border-bottom: 0; } .jva-c.tr { right: 8px; top: 38px; border-left: 0; border-bottom: 0; }
+.jva-c.bl { left: 60px; bottom: 8px; border-right: 0; border-top: 0; } .jva-c.br { right: 8px; bottom: 8px; border-left: 0; border-top: 0; }
+.jva-ruler { position: absolute; top: 90px; bottom: 90px; width: 8px; display: flex; flex-direction: column; justify-content: space-between; opacity: .3; }
+.jva-ruler.l { left: 62px; } .jva-ruler.r { right: 10px; } .jva-ruler i { height: 1px; width: 6px; background: #5ce1ff; } .jva-ruler i:nth-child(5n) { width: 10px; }
+.jva-ruler.r i { align-self: flex-end; }
+.jva-bottom { position: absolute; left: 110px; right: 60px; bottom: 6px; display: flex; justify-content: space-between; font-size: 9px; letter-spacing: .2em; opacity: .55; }
+#jvaMsg { color: #bff2ff; opacity: 1; } #jvaMsg.flash { animation: jvFlash .9s; }
+@keyframes jvFlash { 0%, 40% { color: #fff; text-shadow: 0 0 12px #5ce1ff; } }
+
+/* ---------- boot sequence ---------- */
+.jvb { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, #052238, #01060c 70%); color: #5ce1ff; font-family: 'JetBrains Mono Var', monospace; text-shadow: 0 0 10px rgba(92,225,255,.7); animation: jvbIn .3s ease-out; overflow: hidden; }
+.jvb.out { animation: jvbOut .7s cubic-bezier(.7,0,.84,0) forwards; }
+@keyframes jvbIn { from { opacity: 0; } }
+@keyframes jvbOut { to { opacity: 0; transform: scale(1.15); filter: blur(8px) brightness(2); } }
+.jvb-scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(92,225,255,.05) 0 1px, transparent 1px 3px); }
+.jvb-scan::after { content: ''; position: absolute; left: 0; right: 0; height: 160px; background: linear-gradient(transparent, rgba(92,225,255,.18), transparent); animation: jvbSweep 1.4s ease-in-out infinite; }
+@keyframes jvbSweep { from { top: -160px; } to { top: 100%; } }
+.jvb-core { position: absolute; left: 50%; top: 42%; width: 260px; height: 260px; transform: translate(-50%, -50%); }
+.jvb-core svg { width: 100%; height: 100%; overflow: visible; }
+.jvb-core circle { fill: none; stroke: #5ce1ff; transform-origin: 100px 100px; filter: drop-shadow(0 0 6px #5ce1ff); }
+.jvb-core .r1 { stroke-width: 1; stroke-dasharray: 2 6; animation: spinR 8s linear infinite, jvbDraw 1s ease-out both; }
+.jvb-core .r2 { stroke-width: 3; stroke-dasharray: 90 30 10 30; animation: spinR 3s linear infinite reverse, jvbDraw 1s .15s ease-out both; }
+.jvb-core .r3 { stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .5; animation: spinR 6s linear infinite, jvbDraw 1s .3s ease-out both; }
+.jvb-core .r4 { stroke-width: 8; stroke-dasharray: 40 20; opacity: .6; animation: spinR 2s linear infinite reverse, jvbDraw 1s .45s ease-out both; }
+.jvb-core .r5 { stroke-width: 2; fill: rgba(92,225,255,.25); animation: jvbPulse 1s ease-in-out infinite, jvbDraw .6s .6s ease-out both; }
+@keyframes jvbDraw { from { opacity: 0; transform: scale(.4) rotate(-90deg); } }
+@keyframes jvbPulse { 50% { fill: rgba(92,225,255,.6); } }
+.jvb-core b { position: absolute; inset: 0; margin: auto; width: 26px; height: 26px; border-radius: 50%; background: #e9fbff; box-shadow: 0 0 30px 10px #5ce1ff; animation: jvbPulse 1s infinite; }
+.jvb-title { position: absolute; left: 50%; top: calc(42% + 160px); transform: translateX(-50%); text-align: center; font: 800 46px 'Space Grotesk Var', sans-serif; letter-spacing: .55em; padding-left: .55em; animation: jvbGlitch 2.3s steps(1) both; }
+.jvb-title small { display: block; font: 600 12px 'JetBrains Mono Var', monospace; letter-spacing: .5em; opacity: .8; margin-top: 4px; }
+@keyframes jvbGlitch { 0% { opacity: 0; } 8% { opacity: 1; transform: translateX(-52%); } 10% { transform: translateX(-48%) skewX(10deg); } 12% { transform: translateX(-50%); } 60% { text-shadow: -3px 0 #ff2bd6, 3px 0 #5ce1ff; } 62% { text-shadow: 0 0 10px rgba(92,225,255,.7); } }
+.jvb-log { position: absolute; left: 50px; bottom: 60px; font-size: 12px; letter-spacing: .12em; }
+.jvb-log p { margin: 4px 0; opacity: 0; animation: jvbLine .3s ease-out forwards; }
+@keyframes jvbLine { from { opacity: 0; transform: translateX(-12px); } to { opacity: .9; transform: none; } }
+.jvb-bar { position: absolute; right: 50px; bottom: 66px; width: 260px; height: 4px; background: rgba(92,225,255,.15); }
+.jvb-bar i { display: block; height: 100%; width: 0; background: #5ce1ff; box-shadow: 0 0 10px #5ce1ff; animation: jvbBar 2s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes jvbBar { to { width: 100%; } }
+
+/* ---------- shutdown: like an old screen turning off ---------- */
+.jvoff { position: fixed; inset: 0; z-index: 10000; pointer-events: none; display: grid; place-items: center; }
+.jvoff i { width: 100%; height: 100%; background: #bff2ff; animation: jvOffA .9s cubic-bezier(.7,0,.3,1) forwards; box-shadow: 0 0 40px #5ce1ff; }
+@keyframes jvOffA { 0% { opacity: 0; } 25% { opacity: .9; height: 100%; } 55% { height: 3px; width: 100%; opacity: 1; } 80% { height: 3px; width: 0; } 100% { width: 0; height: 0; opacity: 0; } }
+@keyframes spinR { to { transform: rotate(360deg); } }
+#jvaMsg { min-width: 150px; padding-left: 10px; border-left: 1px solid rgba(92,225,255,.3); color: #ffd27a; text-shadow: 0 0 6px rgba(255,210,122,.6); }

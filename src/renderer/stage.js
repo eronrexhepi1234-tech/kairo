@@ -120,5 +120,5 @@
     if (p.done) capTimer = setTimeout(() => { el.classList.remove('on'); setTimeout(() => { el.hidden = true; captionOn = false; if (!live.length) (!window.stageBusy?.() && window.kairo.stage.idle()); }, 450); }, 5000);
   }
 
-  window.kairo.stage.onShow(p => (['jarvis', 'subtitle', 'weatherfx', 'fireworks'].includes(p.type) ? Stage2.handle(p) : p.type === 'caption' ? caption(p) : show(p)));
+  window.kairo.stage.onShow(p => (['jarvis', 'jvlog', 'subtitle', 'weatherfx', 'fireworks'].includes(p.type) ? Stage2.handle(p) : p.type === 'caption' ? caption(p) : show(p)));
 })();

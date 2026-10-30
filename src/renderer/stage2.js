@@ -25,6 +25,9 @@ window.Stage2 = (function () {
         <div class="jv-time"><b id="jvTime">--:--</b><small id="jvDate"></small><span id="jvSec"></span></div></div>
       <div class="jv-left" id="jvLeft"></div><div class="jv-right" id="jvRight"></div>
       <div class="jv-ticker"><span>KAIRO NEWS</span><div><p id="jvNews">…</p></div></div>
+      <div class="jv-log"><h4>KOMMUNIKATION</h4><div id="jvLogBody"><p class="sys">› WARTE AUF BEFEHL<i>▮</i></p></div></div>
+      <div class="jv-globe"><canvas id="jvGlobe" width="520" height="520"></canvas><span>GLOBALES NETZ</span></div>
+      <div class="jv-radar"><i></i><b></b><b></b><b></b></div>
       <div class="jv-corner tl"></div><div class="jv-corner tr"></div><div class="jv-corner bl"></div><div class="jv-corner br"></div>`;
     setTimeout(() => el.classList.remove('boot'), 2200);
     const tick = () => {
@@ -46,7 +49,43 @@ window.Stage2 = (function () {
         ${d.next ? `<div class="jv-box"><h4>NÄCHSTE ERINNERUNG</h4><p class="jv-big">${esc(d.next.text)}</p><p>${new Date(d.next.at).toLocaleString('de-CH', { weekday: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase()}</p></div>` : ''}`;
       if (d.news?.length) { const p = document.getElementById('jvNews'); p.textContent = d.news.join('   ◆   '); p.style.animationDuration = Math.max(30, d.news.join('').length / 6) + 's'; }
     };
+    globe();
     await load(); clearInterval(jTimer); jTimer = setInterval(load, 20000);
+  }
+  // rotating wireframe globe drawn with lines of latitude and longitude
+  function globe() {
+    const cv = document.getElementById('jvGlobe'); if (!cv) return;
+    const g = cv.getContext('2d'), R = 230, C = 260;
+    const pts = Array.from({ length: 70 }, () => ({ la: (Math.random() - .5) * Math.PI, lo: Math.random() * Math.PI * 2 }));
+    let rot = 0;
+    const proj = (la, lo) => { const x = Math.cos(la) * Math.sin(lo + rot), y = Math.sin(la), z = Math.cos(la) * Math.cos(lo + rot); const tilt = .35; return { x: C + R * x, y: C - R * (y * Math.cos(tilt) - z * Math.sin(tilt)), z: z * Math.cos(tilt) + y * Math.sin(tilt) }; };
+    const frame = () => {
+      if (!on.jarvis || !document.getElementById('jvGlobe')) return;
+      rot += 0.004; g.clearRect(0, 0, 520, 520);
+      g.lineWidth = 1;
+      const line = (fn, steps) => { let prev = null; for (let i = 0; i <= steps; i++) { const p = fn(i / steps); if (prev) { g.strokeStyle = `rgba(92,225,255,${p.z > 0 ? .45 : .08})`; g.beginPath(); g.moveTo(prev.x, prev.y); g.lineTo(p.x, p.y); g.stroke(); } prev = p; } };
+      for (let k = 1; k < 8; k++) { const la = -Math.PI / 2 + k * Math.PI / 8; line(t => proj(la, t * Math.PI * 2), 60); }
+      for (let k = 0; k < 12; k++) { const lo = k * Math.PI / 6; line(t => proj(-Math.PI / 2 + t * Math.PI, lo), 40); }
+      for (const p of pts) { const q = proj(p.la, p.lo); if (q.z > 0) { g.fillStyle = `rgba(190,245,255,${.4 + q.z * .6})`; g.beginPath(); g.arc(q.x, q.y, 2.2, 0, 7); g.fill(); } }
+      g.strokeStyle = 'rgba(92,225,255,.6)'; g.lineWidth = 2; g.beginPath(); g.arc(C, C, R, 0, 7); g.stroke();
+      requestAnimationFrame(frame);
+    };
+    frame();
+  }
+  // the conversation scrolls by on the desktop like a terminal
+  function jvlog(p) {
+    if (!on.jarvis) return;
+    const body = document.getElementById('jvLogBody'); if (!body) return;
+    body.querySelector('.sys')?.remove();
+    const el = document.createElement('p'); el.className = p.who === 'user' ? 'u' : 'a';
+    const label = p.who === 'user' ? '› BEFEHL' : '‹ KAIRO';
+    el.innerHTML = `<b>${label}</b><span></span>`;
+    body.appendChild(el);
+    while (body.children.length > 6) body.firstElementChild.remove();
+    const span = el.querySelector('span'), text = String(p.text || '');
+    let i = 0; const type = () => { if (i > text.length) return; span.textContent = text.slice(0, i); i += Math.max(1, Math.round(text.length / 60)); setTimeout(type, 16); };
+    type();
+    const core = document.querySelector('.jv-core'); if (core) { core.classList.remove('ping'); void core.offsetWidth; core.classList.add('ping'); }
   }
   function jarvisOff() {
     on.jarvis = false; clearInterval(jTimer); clearInterval(jClock);
@@ -118,6 +157,7 @@ window.Stage2 = (function () {
 
   function handle(p) {
     if (p.type === 'jarvis') return p.on === false || (p.on == null && on.jarvis) ? jarvisOff() : jarvisOn();
+    if (p.type === 'jvlog') return jvlog(p);
     if (p.type === 'subtitle') return subtitle(p);
     if (p.type === 'weatherfx') return weather(p);
     if (p.type === 'fireworks') return fireworks(p);
