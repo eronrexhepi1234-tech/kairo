@@ -86,6 +86,11 @@ contextBridge.exposeInMainWorld('kairo', {
     logos: b => invoke('st:logos', b), saveImages: (folder, files) => invoke('st:saveImages', folder, files), minecraft: i => invoke('st:minecraft', i), invent: i => invoke('st:invent', i),
     social: (k, x) => invoke('st:social', k, x), saveVideo: (b64, ext, title) => invoke('st:saveVideo', b64, ext, title), shot: n => invoke('st:shot', n), reveal: p => invoke('st:reveal', p)
   },
+  bd: {
+    app: o => invoke('bd:app', o), edit: o => invoke('bd:edit', o), site: o => invoke('bd:site', o), improve: o => invoke('bd:improve', o),
+    save: o => invoke('bd:save', o), list: () => invoke('bd:list'), load: f => invoke('bd:load', f), explain: o => invoke('bd:explain', o),
+    saveVideo: (b64, ext, title) => invoke('bd:saveVideo', b64, ext, title), reveal: p => invoke('bd:reveal', p), openExternal: f => invoke('bd:openExternal', f)
+  },
   ex: { story: (k, t) => invoke('ex:story', k, t), narrate: t => invoke('ex:narrate', t) },
   search: {
     query: q => invoke('search:query', q), open: r => invoke('search:open', r), reveal: p => invoke('search:reveal', p), hide: () => ipcRenderer.send('search:hide'),

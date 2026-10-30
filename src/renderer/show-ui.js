@@ -355,7 +355,11 @@ window.Show = (function () {
     ['logo', 'palette', 'sh.logo', null, () => LogoMaker.open()],
     ['mc', 'pickaxe', 'sh.mc', null, () => McBuilder.open()],
     ['inv', 'lightbulb', 'sh.inv', null, () => Inventor.open()],
-    ['social', 'clapperboard', 'sh.social', null, () => SocialStudio.open()]
+    ['social', 'clapperboard', 'sh.social', null, () => SocialStudio.open()],
+    ['builder', 'hammer', 'sh.builder', null, () => Builder.open({ tab: 'sketch' })],
+    ['bsite', 'globe', 'sh.bsite', null, () => Builder.open({ tab: 'site' })],
+    ['bshop', 'store', 'sh.bshop', null, () => Builder.open({ tab: 'shop' })],
+    ['how', 'atom', 'sh.how', null, () => HowItWorks.open()]
   ];
   function mount() {
     const grid = document.querySelector('#view-today .today-grid');

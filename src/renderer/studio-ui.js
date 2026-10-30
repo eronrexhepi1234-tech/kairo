@@ -51,11 +51,12 @@ window.LogoMaker = (function () {
     el.innerHTML = `<div class="lg-wrap"><div class="lg-head"><div><small>Logo-Studio</small><h2>${escQ(R.name)}</h2><p>${escQ(R.tagline || '')}</p></div><button class="fx-x" data-x>✕</button></div>
       <div class="lg-cards">${R.logos.map((l, i) => `<button class="lg-card ${i === 0 ? 'on' : ''}" data-i="${i}" style="--bg:${escQ(l.bg || '#111')};animation-delay:${i * 120}ms"><div class="lg-svg">${l.svg}</div><span>${escQ(l.style || 'Entwurf ' + (i + 1))}</span><div class="lg-cols">${(l.colors || []).map(c => `<i style="background:${escQ(c)}"></i>`).join('')}</div></button>`).join('')}</div>
       <h3>Vorschau</h3><div class="lg-prev" id="lgPrev"></div>
-      <div class="lg-act"><button class="btn primary" id="lgSave">${ic('download')} Alle Grössen speichern</button><button class="btn" id="lgAgain">${ic('refresh-cw')} Neue Entwürfe</button></div></div>`;
+      <div class="lg-act"><button class="btn primary" id="lgSave">${ic('download')} Alle Grössen speichern</button><button class="btn lg-web" id="lgWeb">${ic('globe')} Website daraus bauen</button><button class="btn" id="lgAgain">${ic('refresh-cw')} Neue Entwürfe</button></div></div>`;
     el.querySelector('[data-x]').onclick = () => qClose('lgOverlay');
     el.querySelectorAll('.lg-card').forEach(b => b.onclick = () => { pick = +b.dataset.i; el.querySelectorAll('.lg-card').forEach(x => x.classList.toggle('on', x === b)); preview(); });
     $q('lgAgain').onclick = () => open(brief);
     $q('lgSave').onclick = save;
+    $q('lgWeb').onclick = () => { const l = R.logos[pick]; qClose('lgOverlay'); setTimeout(() => Builder.fromLogo(R, l), 350); };
     preview();
     return R;
   }

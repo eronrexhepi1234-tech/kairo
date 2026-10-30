@@ -183,6 +183,9 @@ function parseReply(text) {
   const studio = { logo: (shown.match(/\[\[logo:\s*([^\]]+)\]\]/i) || [])[1] || null, mc: (shown.match(/\[\[minecraft:\s*([^\]]+)\]\]/i) || [])[1] || null,
     inv: (shown.match(/\[\[invent:\s*([^\]]+)\]\]/i) || [])[1] || null, social: /\[\[social\]\]/i.test(shown) };
   shown = shown.replace(/\[\[(logo|minecraft|invent):[^\]]*\]\]/gi, '').replace(/\[\[social\]\]/gi, '');
+  const build = { app: (shown.match(/\[\[buildapp:\s*([^\]]+)\]\]/i) || [])[1] || null, site: (shown.match(/\[\[website:\s*([^\]]+)\]\]/i) || [])[1] || null,
+    change: (shown.match(/\[\[appchange:\s*([^\]]+)\]\]/i) || [])[1] || null, how: (shown.match(/\[\[howitworks:\s*([^\]]+)\]\]/i) || [])[1] || null, shop: /\[\[ideashop\]\]/i.test(shown) };
+  shown = shown.replace(/\[\[(buildapp|website|appchange|howitworks):[^\]]*\]\]/gi, '').replace(/\[\[ideashop\]\]/gi, '');
   const space = { solar: (shown.match(/\[\[solar(?::\s*([^\]]*))?\]\]/i) || [])[0] ? ((shown.match(/\[\[solar:\s*([^\]]+)\]\]/i) || [])[1] || true) : null,
     doc: (shown.match(/\[\[doku:\s*([^\]]+)\]\]/i) || [])[1] || null, whatif: (shown.match(/\[\[whatif:\s*([^\]]+)\]\]/i) || [])[1] || null };
   shown = shown.replace(/\[\[(solar|doku|whatif)(:[^\]]*)?\]\]/gi, '');
@@ -205,7 +208,7 @@ function parseReply(text) {
   shown = shown.replace(/^\s*`{1,3}\s*$/gm, '').replace(/`{2,3}(?=\s*$)/g, '').replace(/\n{3,}/g, '\n\n').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
-  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio };
+  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio, build };
 }
 
 // prompt for another AI: card with copy + open buttons
@@ -269,6 +272,11 @@ async function runActions(m) {
   if (p.studio.logo) { m.done.push('🎨 ' + p.studio.logo); setTimeout(() => LogoMaker.open(p.studio.logo), 300); }
   if (p.studio.mc) { m.done.push('⛏ ' + p.studio.mc); setTimeout(() => McBuilder.open(p.studio.mc), 300); }
   if (p.studio.inv) { m.done.push('💡 ' + p.studio.inv); setTimeout(() => Inventor.open(p.studio.inv), 300); }
+  if (p.build.app) { m.done.push('Builder: ' + p.build.app); setTimeout(() => Builder.open({ tab: 'sketch', idea: p.build.app }), 300); }
+  if (p.build.site) { const [idea, min] = p.build.site.split('|').map(x => x.trim()); m.done.push('Website: ' + idea); setTimeout(() => Builder.site(idea, +min || 5), 300); }
+  if (p.build.change) { m.done.push('Ändern: ' + p.build.change); setTimeout(() => { Builder.open(); Builder.change(p.build.change); }, 300); }
+  if (p.build.shop) setTimeout(() => Builder.open({ tab: 'shop' }), 300);
+  if (p.build.how) { m.done.push('Erklärung: ' + p.build.how); setTimeout(() => HowItWorks.open(p.build.how), 300); }
   if (p.studio.social) { m.done.push('🎬 Social Studio'); setTimeout(() => SocialStudio.open(), 300); }
   if (p.space.solar) { m.done.push('🪐 ' + t('sh.solar')); setTimeout(() => SolarSystem.open(typeof p.space.solar === 'string' ? p.space.solar : null), 300); }
   if (p.space.doc) { m.done.push('🎬 ' + p.space.doc); setTimeout(() => StoryPlayer.doc(p.space.doc), 300); }

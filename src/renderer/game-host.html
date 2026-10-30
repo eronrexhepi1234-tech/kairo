@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- Runs games Kairo wrote, inside a sandboxed frame: no access to Kairo, files or the internet. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; form-action 'none'">
 <style>html, body { margin: 0; height: 100%; background: #05070c; color: #9aa6ba; font: 14px 'Segoe UI', sans-serif; display: grid; place-items: center; }</style>
 </head>
 <body>
@@ -13,7 +13,7 @@
     if (!e.data || typeof e.data.html !== 'string') return;
     // keep this frame's strict rules when the game replaces the page
     const html = e.data.html.replace(/<meta[^>]+Content-Security-Policy[^>]*>/gi, '');
-    const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'; img-src data: blob:; media-src data: blob:; font-src data:">';
+    const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'; img-src data: blob:; media-src data: blob:; font-src data:; form-action \'none\'">';
     document.open();
     document.write(/<head[^>]*>/i.test(html) ? html.replace(/<head([^>]*)>/i, '<head$1>' + csp) : csp + html);
     document.close();

@@ -30,7 +30,7 @@ Object.assign(I18N.en, {
 
 Object.assign(I18N.de, { 'sh.solar': 'Sonnensystem', 'sh.doc': 'Doku', 'sh.whatif': 'Was wäre wenn', 'sh.search': 'Super-Suche', 'st.askDoc': 'Worüber soll die Doku sein? (z. B. die Titanic)', 'st.askWhatif': 'Was wäre wenn … ? (z. B. der Mond verschwindet)' });
 Object.assign(I18N.en, { 'sh.solar': 'Solar system', 'sh.doc': 'Documentary', 'sh.whatif': 'What if', 'sh.search': 'Super search', 'st.askDoc': 'What should the documentary be about?', 'st.askWhatif': 'What if …?' });
-Object.assign(I18N.de, { 'sh.logo': 'Logo-Macher', 'sh.mc': 'Minecraft-Bau', 'sh.inv': 'Erfinder', 'sh.social': 'Social Studio' });
-Object.assign(I18N.en, { 'sh.logo': 'Logo maker', 'sh.mc': 'Minecraft build', 'sh.inv': 'Inventor', 'sh.social': 'Social studio' });
+Object.assign(I18N.de, { 'sh.logo': 'Logo-Macher', 'sh.mc': 'Minecraft-Bau', 'sh.inv': 'Erfinder', 'sh.social': 'Social Studio', 'sh.builder': 'Skizze → App', 'sh.bsite': 'Website-Bauer', 'sh.bshop': 'Ideen-Shop', 'sh.how': 'Wie funktioniert…?' });
+Object.assign(I18N.en, { 'sh.logo': 'Logo maker', 'sh.mc': 'Minecraft build', 'sh.inv': 'Inventor', 'sh.social': 'Social studio', 'sh.builder': 'Sketch → app', 'sh.bsite': 'Website builder', 'sh.bshop': 'Idea shop', 'sh.how': 'How does it work?' });
 Object.assign(I18N.de, { 'role.pick': 'Wählen', 'earth.notFound': 'Ort nicht gefunden' });
 Object.assign(I18N.en, { 'role.pick': 'Choose', 'earth.notFound': 'Place not found' });
