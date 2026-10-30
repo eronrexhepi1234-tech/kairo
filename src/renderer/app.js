@@ -778,7 +778,12 @@ window.App = {
       [/kommentator|kommentier/, () => (Commentator.set(!off), 'Kommentator ' + (off ? 'aus' : 'an'))],
       [/wetter auf (dem )?(desktop|bildschirm)/, () => (DesktopWeather.set(!off), 'Wetter auf dem Desktop ' + (off ? 'aus' : 'an'))]
     ];
-    for (const [rx, fn] of quick) if (rx.test(c)) return fn();
+    // features that open a window or overlay: a fast local check, so they open right away and Kairo comes to the front
+    const shown0 = document.querySelectorAll('.xo.on, .fx-ov.on').length, view0 = document.querySelector('.view.active')?.id;
+    const front = () => { if (document.hidden || document.querySelectorAll('.xo.on, .fx-ov.on').length > shown0 || document.querySelector('.view.active')?.id !== view0) window.kairo.showWindow(); };
+    const routed = await this.routeFeature(cmd);
+    if (routed) { setTimeout(front, 400); return routed; }
+    for (const [rx, fn] of quick) if (rx.test(c)) { const r = fn(); setTimeout(front, 400); return r; }
     const fl = cmd.match(/\b([a-z]{2,3}\s?\d{1,4}[a-z]?)\b/i);
     if (/flug|flight/.test(c) && fl) { const f = await Flight.track(fl[1]); return f ? 'Flug wird verfolgt' : 'Flug nicht gefunden'; }
     // everything else: the AI picks the app action tags, the app runs them
@@ -788,7 +793,49 @@ window.App = {
     await runActions(m);
     const { places, shown } = parseReply(r.text);
     if (places.length) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 150); m.done.push('🌍 ' + places[0]); }
+    setTimeout(front, 700);
     return ((m.done || []).join(', ') + ' ' + shown).trim() || 'Erledigt';
+  },
+  // "Erstelle eine Webseite über …", "Wie funktioniert ein Vulkan", "Mach eine Doku über …" -> opens the right feature
+  async routeFeature(cmd) {
+    const c = cmd.toLowerCase().trim();
+    // the subject: everything after "über/zu/für/von", or the sentence without the command words
+    const topic = rx => {
+      const s = cmd.replace(/[?!.]+$/, '').trim();
+      const m = s.match(/(?:^|\s)(?:über|ueber|zum thema|zu|für|fuer|about|von)\s+(.+)$/i);
+      if (m) return m[1].trim();
+      return s.replace(rx, ' ').replace(/(?<![\p{L}\d])(kairo|bitte|mal|kannst du|könntest du|kann(st)? man|mir|mich|uns|eine?n?|einem|der|die|das|den|ein|neue?n?|coole?n?|schnell|jetzt|bau|baue|baust|mach|mache|machst|erstell|erstelle|erstellst|programmier|programmiere|zeig|zeige|öffne|starte?|ich will|ich möchte|for me|make|build|create|open|a|an|the)(?![\p{L}\d])/giu, ' ').replace(/\s+/g, ' ').trim();
+    };
+    const mins = (c.match(/(\d{1,2})\s*(min|minute)/) || [])[1];
+    const has = s => document.getElementById(s);
+    // Builder
+    if (/ideen-?shop|idee(n)? shop|start-?ideen/.test(c)) { Builder.open({ tab: 'shop' }); return 'Der Ideen-Shop ist offen.'; }
+    if (/skizze|zeichnen|sketch/.test(c) && /app|programm|bau|mach|zeichn/.test(c)) { Builder.open({ tab: 'sketch' }); setTimeout(() => document.getElementById('bdPadOpen')?.click(), 500); return 'Der Skizzenblock ist offen. Der Nutzer kann jetzt zeichnen.'; }
+    if (/\b(web-?seite|website|homepage|landing-?page|webpage)\b/.test(c) && !/öffne die website|geh auf|go to/.test(c)) {
+      const t = topic(/\b(web-?seite|website|homepage|landing-?page|webpage|\d+\s*min(uten?)?|lang|minuten)\b/gi).replace(/[,;]?\s*(in\s+)?\d{1,2}\s*min(uten?)?\b.*$/i, '').trim();
+      if (!t || t.length < 3) { Builder.open({ tab: 'site' }); return 'Der Website-Bauer ist offen. Frag den Nutzer, worum es gehen soll.'; }
+      Builder.site(t, +mins || 5);
+      return `Die Website über "${t}" wird jetzt gebaut, Kairo verbessert sie ${+mins || 5} Minuten lang. Sie ist auf dem Bildschirm zu sehen.`;
+    }
+    if (has('bdOverlay') && /\b(mach|mache|änder|ändere|füg|füge|tausch|entfern|setz|größer|kleiner|farbe|knopf|button|hintergrund|schrift)\b/.test(c) && !/\b(doku|wie funktioniert|logo|minecraft|website|webseite)\b/.test(c)) {
+      await Builder.change(cmd); return 'Geändert. Die neue Version ist zu sehen.';
+    }
+    if (/\b(app|tool)\b/.test(c) && /\b(bau|baue|mach|mache|erstell|erstelle|programmier|programmiere|build|make|create)\b/.test(c) && !/\bspiel|game\b/.test(c)) {
+      const t = cmd.replace(/^kairo,?\s*/i, '').trim();
+      Builder.open({ tab: 'sketch', idea: t }); return `Die App "${t}" wird gebaut und erscheint gleich im Kairo Builder.`;
+    }
+    // explainers, documentaries, what-if
+    let m = cmd.match(/wie funktionier(?:t|en)\s+(.+?)[?.!]*$/i) || cmd.match(/how (?:does|do)\s+(.+?)\s+work/i) || cmd.match(/erklär(?:e|ung)?(?:\s+mir)?\s+(?:wie\s+)?(.+?)\s+funktionier/i);
+    if (m || /erklärvideo/.test(c)) { const t = m ? m[1].trim() : topic(/\b(erklärvideo|erkläre?|video)\b/gi); HowItWorks.open(t); setTimeout(() => window.LiveVoice?.isActive() && window.LiveVoice.stop(), 4000); return `Die Erklärung "Wie funktioniert ${t}" startet und spricht selbst. Sag nur einen kurzen Satz.`; }
+    if (/\bdoku|dokumentation|documentary\b/.test(c)) { const t = topic(/\b(doku|dokumentation|documentary|video|film)\b/gi); if (t) { StoryPlayer.doc(t); return `Die Doku über "${t}" startet.`; } }
+    m = cmd.match(/was wäre,? wenn\s+(.+?)[?.!]*$/i) || cmd.match(/what if\s+(.+?)[?.!]*$/i);
+    if (m) { StoryPlayer.whatIf('Was wäre, wenn ' + m[1]); return 'Die Was-wäre-wenn-Geschichte startet.'; }
+    // creative studio
+    if (/\blogo|banner\b/.test(c)) { const t = topic(/\b(logo|logos|banner)\b/gi); LogoMaker.open(t || undefined); return t ? `Kairo entwirft Logos für "${t}".` : 'Der Logo-Macher ist offen.'; }
+    if (/minecraft/.test(c) && /\b(bau|baue|bauen|plan|mach|mache|zeig)\b/.test(c)) { const t = cmd.trim(); McBuilder.open(t); return t ? `Der Minecraft-Bauplan für "${t}" entsteht.` : 'Der Minecraft-Planer ist offen.'; }
+    if (/erfinder|erfindung|geschäftsidee|business-?plan/.test(c)) { const t = topic(/\b(erfinder-?modus|erfinder|erfindung|geschäftsidee|business-?plan)\b/gi); Inventor.open(t || undefined); return 'Der Erfinder-Modus ist offen.'; }
+    if (/\b(spiel|game)\b/.test(c) && /\b(bau|baue|mach|mache|programmier|programmiere|erstell|erstelle)\b/.test(c)) { const t = cmd.trim(); GameMaker.open(t); return `Das Spiel "${t}" wird programmiert.`; }
+    return null;
   },
   async attachPath(p) { go('chat'); await attachFile(await window.kairo.attachPath(p)); }
 };
