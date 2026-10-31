@@ -122,6 +122,9 @@ async function start({ port, token }, hooks) {
       if (url.pathname === '/api/guard' && req.method === 'POST') { const { on } = await readJson(req); hooks.notify({ type: 'remote-action', action: on ? 'guard on' : 'guard off' }); return reply(200, { on: hooks.guard(!!on) }); }
       if (url.pathname === '/api/pcinfo') return reply(200, await hooks.pcinfo());
       if (url.pathname === '/api/say' && req.method === 'POST') { const { text } = await readJson(req); hooks.sayOnPc(String(text || '')); return reply(200, { ok: true }); }
+      if (url.pathname === '/api/deck' && req.method === 'GET') return reply(200, { ...hooks.deck.load(), catalog: hooks.deck.CATALOG });
+      if (url.pathname === '/api/deck' && req.method === 'POST') { const { buttons } = await readJson(req); return reply(200, hooks.deck.save(buttons)); }
+      if (url.pathname === '/api/deck/run' && req.method === 'POST') { const { id } = await readJson(req); await hooks.deck.run(String(id)); return reply(200, { ok: true }); }
       if (url.pathname === '/api/app' && req.method === 'POST') {
         const { name } = await readJson(req);
         if (!PHONE_APPS.includes(String(name))) return reply(400, { error: 'not allowed' });

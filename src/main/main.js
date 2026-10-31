@@ -351,6 +351,7 @@ async function startRemote() {
     guard: on => require('./alerts').setGuard(!!on),
     sayOnPc: text => win?.webContents.send('remote:say', String(text).slice(0, 400)),
     app: name => require('./actions').openApp(name),
+    deck: require('./deck'),
     pcinfo: async () => {
       const os = require('os');
       const snap = () => os.cpus().map(c => c.times);
@@ -478,6 +479,16 @@ if (gotLock) app.whenReady().then(() => {
   optional('./studio', { register: () => {} }).register({ getWin: () => win, store });
   optional('./builder', { register: () => {} }).register({ getWin: () => win, store });
   optional('./pro', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./roblox', { register: () => {} }).register({ store });
+  optional('./deck', { register: () => {} }).register({
+    notify: ev => win?.webContents.send('remote:event', ev),
+    pc: action => require('./pc').run(action, 3),
+    app: name => require('./actions').openApp(name),
+    music: mood => askRenderer('remote:music', mood),
+    say: text => win?.webContents.send('remote:say', String(text).slice(0, 400)),
+    screenshot: () => tools.captureScreen(2560),
+    kairo: cmd => askRenderer('remote:deck', cmd)
+  });
   optional('./explore', { register: () => {} }).register({ getWin: () => win, store });
   optional('./updater', { start: () => {} }).start(() => win);
   // Screenshot mode for the README / testing:  KAIRO_SHOTS=<folder> npm start

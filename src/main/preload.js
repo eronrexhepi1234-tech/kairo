@@ -138,6 +138,8 @@ contextBridge.exposeInMainWorld('kairo', {
     openPath: (...a) => invoke('pro:openPath', ...a),
     onProgress: cb => on('pro:progress', cb)
   },
+  roblox: { status: () => invoke('rbx:status'), install: () => invoke('rbx:install'), plan: o => invoke('rbx:plan', o), build: p => invoke('rbx:build', p), reveal: () => invoke('rbx:reveal') },
+  deck: { get: () => invoke('deck:get'), save: b => invoke('deck:save', b), run: id => invoke('deck:run', id) },
   ex: { story: (k, t) => invoke('ex:story', k, t), narrate: t => invoke('ex:narrate', t) },
   search: {
     query: q => invoke('search:query', q), open: r => invoke('search:open', r), reveal: p => invoke('search:reveal', p), hide: () => ipcRenderer.send('search:hide'),

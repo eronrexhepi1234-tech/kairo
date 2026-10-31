@@ -277,7 +277,7 @@ async function runActions(m) {
   if (p.build.site) { const [idea, min] = p.build.site.split('|').map(x => x.trim()); m.done.push('Website: ' + idea); setTimeout(() => Builder.site(idea, +min || 5), 300); }
   if (p.build.change) { m.done.push('Ändern: ' + p.build.change); setTimeout(() => { Builder.open(); Builder.change(p.build.change); }, 300); }
   if (p.build.shop) setTimeout(() => Builder.open({ tab: 'shop' }), 300);
-  if (p.build.pro) { const [tl, arg] = p.build.pro.split('|').map(x => x.trim()); const id = { present: 'present', presentation: 'present', path: 'path', learnpath: 'path' }[tl] || tl; m.done.push('Kairo Pro'); setTimeout(() => Pro.open(id, arg || undefined), 300); }
+  if (p.build.pro) { const [tl, arg] = p.build.pro.split('|').map(x => x.trim()); const id = { present: 'present', presentation: 'present', path: 'path', learnpath: 'path' }[tl] || tl; m.done.push('Kairo Pro'); setTimeout(() => id === 'roblox' ? RobloxUI.open(arg || undefined) : id === 'deck' ? DeckUI.open() : Pro.open(id, arg || undefined), 300); }
   if (p.build.how) { m.done.push('Erklärung: ' + p.build.how); setTimeout(() => HowItWorks.open(p.build.how), 300); }
   if (p.studio.social) { m.done.push('🎬 Social Studio'); setTimeout(() => SocialStudio.open(), 300); }
   if (p.space.solar) { m.done.push('🪐 ' + t('sh.solar')); setTimeout(() => SolarSystem.open(typeof p.space.solar === 'string' ? p.space.solar : null), 300); }
@@ -698,6 +698,7 @@ window.kairo.remote.onRequest('remote:today', async () => {
 });
 window.kairo.remote.onRequest('remote:routine', name => Life.runRoutine(name));
 window.kairo.remote.onRequest('remote:music', mood => { Today.playMood(mood); return true; });
+window.kairo.remote.onRequest('remote:deck', async cmd => { try { return await window.App.runCommand(String(cmd)); } catch (e) { return e.message; } });
 
 window.kairo.remote.onEvent(ev => {
   // a chat from the phone can open things on the PC ("open YouTube")
@@ -818,6 +819,9 @@ window.App = {
     };
     const mins = (c.match(/(\d{1,2})\s*(min|minute)/) || [])[1];
     const has = s => document.getElementById(s);
+    // Roblox Studio + Stream Deck
+    if (/roblox/.test(c) && !/^(kairo,?\s*)?(öffne|starte?|open)\s+roblox\s*$/.test(c)) { const t = cmd.replace(/^(kairo,?\s*)?/i, '').replace(/(in |im |für )?roblox(-?\s*studio)?:?/i, ' ').replace(/\s+/g, ' ').trim(); RobloxUI.open(t.length > 8 ? t : undefined); return t.length > 8 ? `Kairo plant "${t}" für Roblox Studio. Die 3D-Vorschau erscheint gleich, dann ein Klick auf Bauen.` : 'Der Roblox-Studio-Assistent ist offen.'; }
+    if (/stream[- ]?deck/.test(c)) { DeckUI.open(); return 'Das Stream Deck ist offen. Auf dem Handy ist es im Tab Deck.'; }
     // Kairo Pro
     const pro = (id, arg, msg) => { Pro.open(id, arg || undefined); return msg; };
     const after = rx => topic(rx);

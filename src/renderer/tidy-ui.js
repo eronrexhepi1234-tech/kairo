@@ -25,6 +25,7 @@ window.Tidy = (function () {
     ['logo', 'Logo-Macher', 'palette', 'create', 'logo banner profilbild kanal', () => LogoMaker.open(), 'LogoMaker'],
     ['brand', 'Marken-Kit', 'palette', 'create', 'marke branding farben schrift visitenkarte', () => Pro.open('brand'), 'Pro'],
     ['social', 'Social Studio', 'clapperboard', 'create', 'tiktok youtube video shorts reels', () => SocialStudio.open(), 'SocialStudio'],
+    ['roblox', 'Roblox Studio', 'gamepad-2', 'create', 'roblox studio obby spiel luau skript', () => RobloxUI.open(), 'RobloxUI'],
     ['mc', 'Minecraft-Bau', 'pickaxe', 'create', 'minecraft bauen burg haus', () => McBuilder.open(), 'McBuilder'],
     ['inv', 'Erfinder-Modus', 'lightbulb', 'create', 'erfinder idee erfindung geschäftsidee startup', () => Inventor.open(), 'Inventor'],
     ['image', 'Bild erstellen', 'image', 'create', 'bild foto zeichnung generieren', () => window.App.askInChat('Erstelle ein Bild von '), 'App'],
@@ -65,6 +66,7 @@ window.Tidy = (function () {
     ['song', 'Song erkennen', 'music', 'tools', 'song erkennen welches lied', () => SongFinder.open(), 'SongFinder'],
     ['pccheck', 'PC-Check', 'cpu', 'tools', 'pc langsam check leistung computer', () => PcCheck.open(), 'PcCheck'],
     ['today', 'Heute', 'sun', 'tools', 'heute wetter erinnerung wecker countdown geburtstag', () => window.App.go('today'), 'App'],
+    ['deck', 'Stream Deck', 'layout-dashboard', 'tools', 'stream deck knöpfe handy fernbedienung', () => DeckUI.open(), 'DeckUI'],
     ['phone', 'Handy-App', 'smartphone', 'tools', 'handy app telefon anruf qr', () => window.App.go('phone'), 'App'],
     ['settings', 'Einstellungen', 'settings', 'tools', 'einstellungen stimme ki schlüssel sprache', () => window.App.go('settings'), 'App']
   ];
