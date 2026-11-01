@@ -59,9 +59,9 @@ function openPrompt(target, prompt) {
   const key = targetOf(target) || 'chatgpt', t = TARGETS[key];
   clipboard.writeText(prompt);
   // long prompts don't fit into a link: then it's only on the clipboard
-  const url = t.prefill && prompt.length < 6000 ? t.url(prompt) : t.url('');
+  const url = t.prefill && prompt.length < 7000 ? t.url(prompt) : t.url('');
   shell.openExternal(url);
-  return { target: t.name, prefilled: t.prefill && prompt.length < 6000 };
+  return { target: t.name, prefilled: t.prefill && prompt.length < 7000 };
 }
 
 function register({ getWin }) {

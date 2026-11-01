@@ -819,6 +819,14 @@ window.App = {
     };
     const mins = (c.match(/(\d{1,2})\s*(min|minute)/) || [])[1];
     const has = s => document.getElementById(s);
+    // big game prompt for another AI: research the game, write the prompt, open Claude/ChatGPT/Gemini with it
+    const gp = cmd.match(/prompt\s+(?:für|zu|über|fuer|for)\s+(?:das\s+spiel\s+|ein\s+spiel\s+wie\s+|das\s+roblox-?spiel\s+)?(.+?)(?:\s+(?:und\s+)?(?:in|an|bei|für|mit)\s+(claude|chatgpt|chat\s*gpt|gemini|perplexity|copilot)\b.*)?[?.!]*$/i);
+    if (gp && !/\b(bewerbung|lebenslauf|bild|foto|logo|aufsatz|text|mail|e-mail|brief|präsentation|referat)\b/i.test(gp[1])) {
+      const game = gp[1].replace(/\s+(und\s+)?(schick|send|gib|öffne|füg|tu|mach)\w*(\s+(ihn|es|den|das|mir|ihm))*\s*$/i, '').replace(/\s+(schreiben|machen|erstellen|senden|schicken|geben)$/i, '').trim();
+      const ai = (gp[2] || (c.match(/claude|chatgpt|chat gpt|gemini|perplexity|copilot/) || [])[0] || 'claude').replace(/\s/g, '').toLowerCase();
+      RobloxUI.voicePrompt(game, ai);
+      return `Kairo recherchiert "${game}" und schreibt einen sehr detaillierten Prompt. In etwa einer Minute öffnet sich ${ai === 'chatgpt' ? 'ChatGPT' : ai === 'gemini' ? 'Gemini' : 'Claude'} mit dem Prompt. Sag das dem Nutzer kurz.`;
+    }
     // Roblox Studio + Stream Deck
     if (/roblox/.test(c) && !/^(kairo,?\s*)?(öffne|starte?|open)\s+roblox\s*$/.test(c)) { const t = cmd.replace(/^(kairo,?\s*)?/i, '').replace(/(in |im |für )?roblox(-?\s*studio)?:?/i, ' ').replace(/\s+/g, ' ').trim(); RobloxUI.open(t.length > 8 ? t : undefined); return t.length > 8 ? `Kairo plant "${t}" für Roblox Studio. Die 3D-Vorschau erscheint gleich, dann ein Klick auf Bauen.` : 'Der Roblox-Studio-Assistent ist offen.'; }
     if (/stream[- ]?deck/.test(c)) { DeckUI.open(); return 'Das Stream Deck ist offen. Auf dem Handy ist es im Tab Deck.'; }

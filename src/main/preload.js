@@ -138,7 +138,7 @@ contextBridge.exposeInMainWorld('kairo', {
     openPath: (...a) => invoke('pro:openPath', ...a),
     onProgress: cb => on('pro:progress', cb)
   },
-  roblox: { status: () => invoke('rbx:status'), install: () => invoke('rbx:install'), plan: o => invoke('rbx:plan', o), build: p => invoke('rbx:build', p), reveal: () => invoke('rbx:reveal') },
+  roblox: { status: () => invoke('rbx:status'), install: () => invoke('rbx:install'), plan: o => invoke('rbx:plan', o), build: p => invoke('rbx:build', p), reveal: () => invoke('rbx:reveal'), prompt: o => invoke('rbx:prompt', o), onPromptStep: fn => on('rbx:promptStep', fn) },
   deck: { get: () => invoke('deck:get'), save: b => invoke('deck:save', b), run: id => invoke('deck:run', id) },
   ex: { story: (k, t) => invoke('ex:story', k, t), narrate: t => invoke('ex:narrate', t) },
   search: {

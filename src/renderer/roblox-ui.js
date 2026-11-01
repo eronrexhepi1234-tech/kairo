@@ -16,12 +16,14 @@ window.RobloxUI = (function () {
         <textarea class="field" id="rbQ" rows="3" placeholder="z. B. Ein Obby mit 10 Levels, Checkpoints und Lava, die tötet"></textarea>
         <div class="rb-modes" id="rbModes"><button data-m="build" class="on">${ic('pickaxe')} Bauen + Skripte</button><button data-m="script">${ic('terminal')} Nur Skript</button></div>
         <button class="btn primary rb-go" id="rbGo">${ic('wand-sparkles')} Bauplan erstellen</button>
+        <button class="btn rb-pbtn" id="rbPrompt" title="Schreib den Namen eines Spiels oder deine Idee – Kairo macht einen sehr detaillierten Prompt für Claude, ChatGPT oder Gemini">${ic('message-circle')} Als KI-Prompt (für Claude, ChatGPT …)</button>
         <div class="rb-ideas">${IDEAS.map(i => `<button>${esc(i)}</button>`).join('')}</div></aside>
       <section class="rb-main" id="rbMain"><div class="rb-empty"><div class="rb-cubes">${'<i></i>'.repeat(9)}</div><b>Hier erscheint die 3D-Vorschau</b><small>Erst ansehen, dann mit einem Klick in Roblox Studio bauen. Alles geht mit Ctrl+Z rückgängig.</small></div></section></div>`;
     $r('rbX').onclick = close;
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; el.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); });
     el.querySelectorAll('.rb-ideas button').forEach(b => b.onclick = () => { $r('rbQ').value = b.textContent; make(); });
     $r('rbGo').onclick = make;
+    $r('rbPrompt').onclick = promptOnPage;
     poll(); clearInterval(timer); timer = setInterval(poll, 2000);
     if (prompt) { $r('rbQ').value = prompt; make(); }
   }
@@ -105,5 +107,39 @@ window.RobloxUI = (function () {
     three = { renderer, stop: () => cancelAnimationFrame(raf) };
   }
   function stop3d() { if (three) { three.stop(); three.renderer.dispose(); three = null; } }
-  return { open };
+
+  // ---------- big prompt for another AI ----------
+  const AIS = [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['gemini', 'Gemini']];
+  async function promptOnPage() {
+    const q = $r('rbQ').value.trim(); if (!q) return window.toast('Schreib den Namen des Spiels oder deine Idee');
+    stop3d();
+    $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b id="rbPStep">Recherchiere das Spiel…</b><small>${esc(q)}</small></div>`;
+    const off = window.kairo.roblox.onPromptStep(s => { const el = $r('rbPStep'); if (el) el.textContent = s === 'write' ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
+    const r = await window.kairo.roblox.prompt({ game: q });
+    off?.();
+    if (!$r('rbMain')) return;
+    if (!r.ok) { $r('rbMain').innerHTML = `<div class="rb-wait"><b>✕ ${esc(r.error.message)}</b></div>`; return; }
+    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Prompt · ${esc(r.platform)}</small><h2>${esc(r.name || 'Prompt für ' + q)}</h2><p>Inspiriert von „${esc(q)}“ – als eigenes Spiel. ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
+      <div class="rb-act"><button class="btn primary" id="rbPCopy">${ic('copy')} Prompt kopieren</button>${AIS.map(([k, n]) => `<button class="btn" data-ai="${k}">${ic('external-link')} In ${n} öffnen</button>`).join('')}</div>
+      ${r.research ? `<details class="rb-research"><summary>${ic('search')} Was Kairo über das Spiel herausgefunden hat</summary><div class="md">${window.renderMarkdown ? window.renderMarkdown(r.research) : esc(r.research)}</div></details>` : ''}
+      <div class="rb-prompt md">${window.renderMarkdown ? window.renderMarkdown(r.prompt) : `<pre>${esc(r.prompt)}</pre>`}</div>`;
+    $r('rbPCopy').onclick = () => { navigator.clipboard.writeText(r.prompt); window.toast('Prompt kopiert – jetzt in eine KI einfügen (Ctrl+V)'); };
+    $r('rbMain').querySelectorAll('[data-ai]').forEach(b => b.onclick = async () => { const x = await window.kairo.prompt.open(b.dataset.ai, r.prompt); window.toast(x.ok && x.prefilled ? `${x.target} ist offen – Prompt ist drin` : `${(x.ok && x.target) || 'KI'} ist offen – Prompt ist kopiert: Ctrl+V und Enter`); });
+  }
+  // voice: "Mach einen Prompt für Steal an Egg (in ChatGPT)" -> research, write, open the AI with it
+  async function voicePrompt(game, target = 'claude') {
+    document.getElementById('gpCard')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `<div class="gp-card" id="gpCard"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><div><small>KI-Prompt für ${esc(AIS.find(a => a[0] === target)?.[1] || 'KI')}</small><b>${esc(game)}</b><span id="gpStep">Recherchiere das Spiel…</span></div></div>`);
+    const off = window.kairo.roblox.onPromptStep(s => { const el = $r('gpStep'); if (el) el.textContent = s === 'write' ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
+    const r = await window.kairo.roblox.prompt({ game });
+    off?.();
+    const card = $r('gpCard');
+    if (!r.ok) { if (card) card.innerHTML = `<div><b>✕ Prompt fehlgeschlagen</b><span>${esc(r.error.message)}</span></div>`; setTimeout(() => card?.remove(), 6000); return null; }
+    const x = await window.kairo.prompt.open(target, r.prompt);
+    const filled = x.ok && x.prefilled;
+    if (card) card.innerHTML = `<span class="gp-ok">${ic('circle-check')}</span><div><small>${esc(x.target || 'KI')} ist offen</small><b>${esc(r.name || game)}</b><span>${filled ? 'Der Prompt ist schon drin – nur noch Enter drücken.' : `Prompt (${Math.round(r.chars / 1000)}k Zeichen) ist kopiert: im Chatfeld <kbd>Ctrl</kbd>+<kbd>V</kbd> und Enter.`}</span></div><button class="gp-x" onclick="this.parentElement.remove()">✕</button>`;
+    setTimeout(() => card?.remove(), 20000);
+    return { ...r, opened: x.target, prefilled: filled };
+  }
+  return { open, promptOnPage, voicePrompt };
 })();

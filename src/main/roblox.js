@@ -71,6 +71,47 @@ Return ONLY JSON: {"title":"short name","summary":"2 sentences what was built","
   throw new Error('Kein gültiger Bauplan bekommen – nochmal versuchen');
 }
 
+// ---------- big prompt for another AI ("Mach einen Prompt für Steal an Egg") ----------
+// 1) research the game on the web, 2) write one very detailed build prompt for an ORIGINAL game in that style
+async function gamePrompt({ game, extra }, onStep = () => {}) {
+  const s = store.get(), lang = { de: 'German', en: 'English' }[s.language] || 'German';
+  const platform = /unity/i.test(game + extra) ? 'Unity (C#)' : /godot/i.test(game + extra) ? 'Godot (GDScript)' : /(web|browser|html)/i.test(game + extra) ? 'a browser game (HTML5 + JavaScript)' : 'Roblox (Luau, Roblox Studio)';
+  onStep('research');
+  let research = '';
+  try {
+    research = await P().complete(s, { webSearch: s.provider === 'gemini', system: `You are a game researcher. Search the web and describe the game precisely and completely: genre, core gameplay loop, every mechanic and system, items/pets/units and their rarities, economy (currencies, prices, income rates), progression and rebirths, maps and areas, UI screens, social/multiplayer features (trading, stealing, PvP, teams), events and updates, monetization (game passes, developer products), what makes it fun and addictive, common player complaints. Use concrete numbers where known. Max 700 words. Language: ${lang}.`, messages: [{ role: 'user', text: `Game: ${game}${platform.startsWith('Roblox') ? ' (Roblox game)' : ''}` }] });
+  } catch { research = ''; }
+  onStep('write');
+  const sys = `You are a senior ${platform} game designer, lead programmer and expert prompt engineer.
+Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a complete, polished, original game for ${platform} in the style of "${game}".
+The new game must be ORIGINAL: its own name, own theme/setting, own item names and visuals, plus 2-3 fresh twists — it uses the same kind of mechanics and game feel, but is not a copy (no copied names, logos, assets or text).
+Write the prompt in ${lang}, in Markdown, addressed to the AI ("Du bist …"). Be very concrete: exact numbers, tables, names, file paths. Structure it with these sections:
+1. Rolle & Ziel (who the AI is, what to build, quality bar)
+2. Spielidee & neuer Name, Setting, Zielgruppe, was es süchtig macht
+3. Core Gameplay Loop (Schritt für Schritt, was der Spieler jede Minute tut)
+4. Alle Systeme im Detail (each with rules, numbers, edge cases): e.g. Sammeln/Kaufen, Ausbrüten/Seltenheiten (table with chances), Stehlen/Verteidigen, Basis/Plot, Geld & Einkommen pro Sekunde, Upgrades, Rebirth, Leaderboards, Handel, Events — only what fits the game
+5. Economy-Tabelle (prices, income, rarity multipliers, balancing curve)
+6. Welt & Map (areas, layout, sizes in studs, lighting/mood)
+7. UI/UX (every screen and button, animations, sounds, mobile + PC controls)
+8. Multiplayer, Server-Autorität & Anti-Exploit (all logic on the server, validate every RemoteEvent, rate limits, sanity checks)
+9. Speichern (DataStore/ProfileService-style session locking, auto-save, data schema as a table)
+10. Technische Architektur: exact folder/file structure (e.g. ServerScriptService/Services/…, ReplicatedStorage/Shared/…, StarterGui/…), every ModuleScript with its responsibility and public functions, RemoteEvents/RemoteFunctions list with parameters
+11. Bau-Reihenfolge in Phasen (Phase 1 MVP … Phase 5 Polish), each phase with a clear "fertig wenn …"
+12. Monetarisierung (fair, optional game passes / dev products with prices in Robux)
+13. Qualitätsregeln für die AI: complete code for every file (no placeholders, no "…"), comments, modern ${platform.startsWith('Roblox') ? 'Luau (task.wait, typed where useful, no deprecated APIs)' : 'code'}, ask before guessing assets, output file by file with full paths, start with Phase 1 and wait for "weiter"
+14. Test-Checkliste (what to test after each phase)
+Use the research below for the mechanics. Return ONLY the prompt text, no explanation before or after.`;
+  let prompt = await P().complete(s, { system: sys, messages: [{ role: 'user', text: `Game to take inspiration from: ${game}\n${extra ? 'Extra wishes: ' + extra + '\n' : ''}\nResearch about the game:\n${research || '(no research available – use your knowledge of the genre)'}` }] });
+  prompt = String(prompt || '').replace(/^```(?:markdown)?\s*/i, '').replace(/```\s*$/, '').trim();
+  if (prompt.length < 800) throw new Error('Der Prompt ist zu kurz geworden – nochmal versuchen');
+  const name = (prompt.match(/(?:neuer name|spielname|name des spiels)[^\n:]*[:：]\s*\**([^\n*]{2,40})/i) || [])[1]?.trim() || '';
+  // keep a copy as a file
+  const dir = path.join(app.getPath('documents'), 'Kairo', 'Prompts'); fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `Prompt ${String(game).replace(/[<>:"/\\|?*]/g, '').slice(0, 40)} ${new Date().toLocaleDateString('sv')}.md`);
+  fs.writeFileSync(file, prompt);
+  return { prompt, research, name, file, platform, chars: prompt.length };
+}
+
 function build(planObj) {
   if (!status().connected) throw new Error('Roblox Studio ist nicht verbunden. Öffne Studio und aktiviere oben den Kairo-Knopf.');
   const id = crypto.randomBytes(6).toString('hex');
@@ -89,7 +130,8 @@ function register(ctx) {
   ipcMain.handle('rbx:install', wrap(async () => install()));
   ipcMain.handle('rbx:plan', wrap(o => plan(o)));
   ipcMain.handle('rbx:build', wrap(p => build(p)));
+  ipcMain.handle('rbx:prompt', wrap(o => gamePrompt(o, step => { try { require('electron').BrowserWindow.getAllWindows().forEach(w => w.webContents.send('rbx:promptStep', step)); } catch {} })));
   ipcMain.handle('rbx:reveal', () => shell.showItemInFolder(pluginFile()));
 }
 
-module.exports = { register, plan, build, status, install };
+module.exports = { register, plan, build, status, install, gamePrompt };
