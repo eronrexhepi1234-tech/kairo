@@ -98,12 +98,37 @@ local function build(job)
 		end
 		for _, s in ipairs(job.scripts or {}) do
 			local class = (s.type == "LocalScript" or s.type == "ModuleScript") and s.type or "Script"
-			local script = Instance.new(class)
-			script.Name = tostring(s.name or "KairoSkript")
-			script.Source = tostring(s.source or "")
-			script.Parent = parentFor(tostring(s.parent or "ServerScriptService"), model)
+			local name = tostring(s.name or "KairoSkript")
+			-- "path" = {"ReplicatedStorage", "Shared", "Config"}: missing folders are created on the way
+			local parent
+			if type(s.path) == "table" and #s.path > 0 then
+				parent = parentFor(tostring(s.path[1]), model)
+				for i = 2, #s.path do
+					local folderName = tostring(s.path[i])
+					local child = parent:FindFirstChild(folderName)
+					if not child then
+						child = Instance.new("Folder")
+						child.Name = folderName
+						child.Parent = parent
+					end
+					parent = child
+				end
+			else
+				parent = parentFor(tostring(s.parent or "ServerScriptService"), model)
+			end
+			-- same script already there: update its code instead of making a copy
+			local existing = parent:FindFirstChild(name)
+			if existing and existing.ClassName == class then
+				existing.Source = tostring(s.source or "")
+				table.insert(log, class .. " " .. name .. " aktualisiert")
+			else
+				local script = Instance.new(class)
+				script.Name = name
+				script.Source = tostring(s.source or "")
+				script.Parent = parent
+				table.insert(log, class .. " " .. name .. " in " .. parent:GetFullName())
+			end
 			created += 1
-			table.insert(log, class .. " " .. script.Name .. " in " .. script.Parent.Name)
 		end
 		if model then Selection:Set({ model }) end
 	end)

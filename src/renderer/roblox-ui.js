@@ -18,6 +18,7 @@ window.RobloxUI = (function () {
         <button class="btn primary rb-go" id="rbGo">${ic('wand-sparkles')} Bauplan erstellen</button>
         <button class="btn rb-pbtn" id="rbPrompt" title="Schreib den Namen eines Spiels oder deine Idee – Kairo macht einen sehr detaillierten Prompt für Claude, ChatGPT oder Gemini">${ic('message-circle')} Als KI-Prompt (für Claude, ChatGPT …)</button>
         <button class="btn rb-pbtn rb-ibtn" id="rbIdeas" title="Kairo erfindet 3 komplett neue Roblox-Spiele (optional mit deinem Wunsch im Feld oben)">${ic('lightbulb')} Eigene Spielidee erfinden</button>
+        <button class="btn rb-pbtn" id="rbPaste" title="Antwort von ChatGPT oder Claude einfügen – Kairo legt alle Dateien in Studio an">${ic('clipboard-list')} KI-Antwort einfügen</button>
         <div class="rb-ideas">${IDEAS.map(i => `<button>${esc(i)}</button>`).join('')}</div></aside>
       <section class="rb-main" id="rbMain"><div class="rb-empty"><div class="rb-cubes">${'<i></i>'.repeat(9)}</div><b>Hier erscheint die 3D-Vorschau</b><small>Erst ansehen, dann mit einem Klick in Roblox Studio bauen. Alles geht mit Ctrl+Z rückgängig.</small></div></section></div>`;
     $r('rbX').onclick = close;
@@ -26,6 +27,7 @@ window.RobloxUI = (function () {
     $r('rbGo').onclick = make;
     $r('rbPrompt').onclick = () => promptOnPage();
     $r('rbIdeas').onclick = () => ideasOnPage($r('rbQ').value.trim());
+    $r('rbPaste').onclick = pasteOnly;
     poll(); clearInterval(timer); timer = setInterval(poll, 2000);
     if (opts.ideas) { if (prompt) $r('rbQ').value = prompt; ideasOnPage(prompt || ''); }
     else if (prompt) { $r('rbQ').value = prompt; make(); }
@@ -146,10 +148,112 @@ window.RobloxUI = (function () {
     $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Prompt · ${esc(r.platform)}</small><h2>${esc(r.name || (idea ? q : 'Prompt für ' + q))}</h2><p>${idea ? 'Kairos eigene Spielidee.' : `Inspiriert von „${esc(q)}“ – als eigenes Spiel.`} ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
       <div class="rb-act"><button class="btn primary" id="rbPCopy">${ic('copy')} Prompt kopieren</button>${AIS.map(([k, n]) => `<button class="btn" data-ai="${k}">${ic('external-link')} In ${n} öffnen</button>`).join('')}</div>
       ${r.research ? `<details class="rb-research"><summary>${ic('search')} Was Kairo über das Spiel herausgefunden hat</summary><div class="md">${window.renderMarkdown ? window.renderMarkdown(r.research) : esc(r.research)}</div></details>` : ''}
-      <div class="rb-prompt md">${window.renderMarkdown ? window.renderMarkdown(r.prompt) : `<pre>${esc(r.prompt)}</pre>`}</div>`;
+      ${howToBuild(r.prompt)}
+      <h3>Der Prompt</h3><div class="rb-prompt md">${window.renderMarkdown ? window.renderMarkdown(r.prompt) : `<pre>${esc(r.prompt)}</pre>`}</div>`;
+    bindHow(r.prompt);
     $r('rbPCopy').onclick = () => { navigator.clipboard.writeText(r.prompt); window.toast('Prompt kopiert – jetzt in eine KI einfügen (Ctrl+V)'); };
     $r('rbMain').querySelectorAll('[data-ai]').forEach(b => b.onclick = async () => { const x = await window.kairo.prompt.open(b.dataset.ai, r.prompt); window.toast(x.ok && x.prefilled ? `${x.target} ist offen – Prompt ist drin` : `${(x.ok && x.target) || 'KI'} ist offen – Prompt ist kopiert: Ctrl+V und Enter`); });
   }
+  // ---------- "Wie willst du bauen?" ----------
+  const ADD_CONNECTED = `\n\n## Arbeitsweise: Du bist direkt mit Roblox Studio verbunden\nDu hast über MCP (Roblox Studio MCP) direkten Zugriff auf mein geöffnetes Roblox Studio. Schreib den Code nicht nur in den Chat – lege alles selbst in Studio an:\n1. Lege zuerst die komplette Ordnerstruktur an (Folders in den richtigen Services).\n2. Erstelle jedes Skript als richtiges Objekt (Script, LocalScript oder ModuleScript) am richtigen Ort und setze den kompletten Code.\n3. Baue die Map und die nötigen Teile direkt im Workspace.\n4. Starte nach jeder Phase einen Playtest, lies die Output-Konsole und behebe alle Fehler, bevor du weitermachst.\n5. Fasse nach jeder Phase kurz zusammen, was du gebaut hast, und warte auf mein „weiter“.\nLösche oder ändere nichts, was schon vorher in meinem Spiel war, ohne mich zu fragen.`;
+  const ADD_FORMAT = `\n\n## Ausgabeformat (sehr wichtig – meine App fügt deine Antwort automatisch in Roblox Studio ein)\nGib JEDE Datei einzeln so aus: zuerst eine Zeile \`-- Datei: <Pfad>\`, direkt danach genau ein \`\`\`lua Codeblock mit dem KOMPLETTEN Code der Datei.\nDer Pfad beginnt mit dem Roblox-Service und endet mit Skriptname + Endung: \`.server.lua\` = Script, \`.client.lua\` = LocalScript, \`.lua\` = ModuleScript.\nBeispiele: \`-- Datei: ServerScriptService/Services/DataService.lua\`, \`-- Datei: ServerScriptService/Main.server.lua\`, \`-- Datei: StarterPlayer/StarterPlayerScripts/UIController.client.lua\`.\nOrdner im Pfad werden automatisch angelegt. Teile und Map beschreibst du nicht als Code, sondern baust sie per Skript (z. B. ein MapBuilder.server.lua, das die Map beim Start erzeugt).`;
+  const ADD_ASSISTANT = `\n\n## Arbeitsweise\nArbeite in kleinen Schritten: erledige immer nur EINE Phase, erstelle die Skripte direkt in Studio und warte dann auf „weiter“.`;
+  function howToBuild(prompt) {
+    return `<h3>Wie willst du bauen?</h3><div class="rb-how">
+      <button data-how="connected"><span>${ic('zap')}</span><b>Meine KI ist mit Studio verbunden</b><small>Die KI legt alles selbst an, testet und repariert Fehler. Am stärksten.</small></button>
+      <button data-how="paste"><span>${ic('wand-sparkles')}</span><b>KI-Antwort einfügen – Kairo baut es</b><small>Antwort von ChatGPT/Claude reinkopieren, Kairo legt alle Dateien in Studio an.</small></button>
+      <button data-how="assistant"><span>${ic('sparkles')}</span><b>Roblox Assistant in Studio</b><small>Der eingebaute KI-Assistent von Roblox, Schritt für Schritt.</small></button>
+      <button data-how="manual"><span>${ic('list-checks')}</span><b>Von Hand</b><small>Liste: welche Datei wohin, mit Kopieren-Knopf pro Datei.</small></button></div><div id="rbHow"></div>`;
+  }
+  function bindHow(prompt) {
+    const root = $r('rbMain'); if (!root) return;
+    const copyOpen = (text, note) => `<div class="rb-howbox">${note}<div class="rb-act"><button class="btn primary" data-cp>${ic('copy')} Prompt kopieren</button>${AIS.map(([k, n]) => `<button class="btn" data-op="${k}">${ic('external-link')} In ${n} öffnen</button>`).join('')}</div></div>`;
+    const bindCO = text => { const box = $r('rbHow'); box.querySelector('[data-cp]').onclick = () => { navigator.clipboard.writeText(text); window.toast('Prompt kopiert'); }; box.querySelectorAll('[data-op]').forEach(b => b.onclick = async () => { const x = await window.kairo.prompt.open(b.dataset.op, text); window.toast(x.ok && x.prefilled ? `${x.target} ist offen – Prompt ist drin` : `${(x.ok && x.target) || 'KI'} ist offen – Ctrl+V und Enter`); }); };
+    root.querySelectorAll('[data-how]').forEach(b => b.onclick = () => {
+      root.querySelectorAll('[data-how]').forEach(x => x.classList.toggle('on', x === b));
+      const how = b.dataset.how, box = $r('rbHow');
+      if (how === 'connected') {
+        const text = prompt + ADD_CONNECTED;
+        box.innerHTML = copyOpen(text, `<p><b>So geht's:</b> Die KI muss über <b>Roblox Studio MCP</b> mit Studio verbunden sein, zum Beispiel <b>Claude Desktop</b>, <b>Claude Code</b> oder <b>Cursor</b> mit dem offiziellen Roblox-Studio-MCP (Anleitung: create.roblox.com → „Studio MCP“). Dann Studio mit deinem Spiel öffnen und den Prompt unten in diese KI geben. Der Prompt sagt ihr schon, dass sie alles selbst anlegen, testen und reparieren soll.</p><p class="rb-tipline">${ic('lightbulb')} Bei dir ist das in Claude Code schon eingerichtet – du kannst den Prompt auch einfach dort reinkopieren, während Studio offen ist.</p>`);
+        bindCO(text);
+      }
+      if (how === 'assistant') {
+        const text = prompt + ADD_ASSISTANT;
+        box.innerHTML = copyOpen(text, `<p><b>So geht's:</b> In Roblox Studio oben auf <b>Assistant</b> klicken, Prompt einfügen, und nach jeder Phase „weiter“ schreiben. Der Assistant schafft kleine Schritte am besten – bei einem grossen Spiel ist Weg 1 oder 2 stärker.</p>`);
+        bindCO(text);
+      }
+      if (how === 'paste' || how === 'manual') {
+        const text = prompt + ADD_FORMAT;
+        box.innerHTML = copyOpen(text, `<p><b>Schritt 1:</b> Diesen Prompt (mit Spezial-Format, damit Kairo die Dateien erkennt) in ChatGPT oder Claude geben.<br><b>Schritt 2:</b> Die <b>ganze Antwort</b> kopieren und unten einfügen.${how === 'paste' ? ' Kairo legt dann alle Dateien in Studio an.' : ' Kairo zeigt dir dann, welche Datei wohin gehört.'}</p>`) + pasteBox(how);
+        bindCO(text); bindPaste(how);
+      }
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  const pasteBox = how => `<div class="rb-paste"><label>${ic('clipboard-list')} Antwort der KI hier einfügen</label><textarea class="field" id="rbAns" rows="7" placeholder="Hier die komplette Antwort von ChatGPT / Claude einfügen (Ctrl+V) …"></textarea><button class="btn primary" id="rbParse">${ic('scan-search')} Dateien erkennen</button><div id="rbFiles"></div></div>`;
+  function bindPaste(how) {
+    $r('rbParse').onclick = () => {
+      const files = parseFiles($r('rbAns').value);
+      const out = $r('rbFiles');
+      if (!files.length) { out.innerHTML = `<p class="rb-warn">${ic('triangle-alert')} Keine Dateien erkannt. Die Antwort braucht Zeilen wie <code>-- Datei: ServerScriptService/Main.server.lua</code> vor jedem Code-Block – nimm den Prompt von oben, der sagt der KI das Format.</p>`; return; }
+      const conn = $r('rbStatus')?.classList.contains('on');
+      out.innerHTML = `<div class="rb-flist-h"><b>${files.length} Dateien erkannt</b>${how === 'paste' ? `<button class="btn primary" id="rbInsertAll" ${conn ? '' : 'disabled'}>${ic('pickaxe')} Alle in Roblox Studio einfügen</button>` : ''}</div>
+        ${how === 'paste' && !conn ? `<p class="rb-warn">${ic('triangle-alert')} Zuerst Roblox Studio verbinden (links oben siehst du den Status).</p>` : ''}
+        <div class="rb-flist">${files.map((f, i) => `<div class="rb-file"><span class="rb-ft ${f.type}">${f.type === 'Script' ? 'S' : f.type === 'LocalScript' ? 'L' : 'M'}</span><div><b>${esc(f.name)}</b><small>${esc(f.path.join(' › '))} · ${esc(f.type)} · ${f.source.split('\n').length} ${f.source.split('\n').length === 1 ? 'Zeile' : 'Zeilen'}</small></div><button class="btn" data-cf="${i}" title="Code kopieren">${ic('copy')}</button></div>`).join('')}</div>
+        ${how === 'manual' ? `<p class="rb-tipline">${ic('lightbulb')} In Studio im Explorer: Rechtsklick auf den Ordner → <b>Insert Object</b> → Script / LocalScript / ModuleScript, umbenennen, Code einfügen. Fehlende Ordner mit <b>Insert Object → Folder</b> anlegen.</p>` : ''}`;
+      out.querySelectorAll('[data-cf]').forEach(b => b.onclick = () => { navigator.clipboard.writeText(files[+b.dataset.cf].source); window.toast(files[+b.dataset.cf].name + ' kopiert'); });
+      $r('rbInsertAll') && ($r('rbInsertAll').onclick = async () => {
+        const b = $r('rbInsertAll'); b.disabled = true; b.innerHTML = `<span class="pro-spin"></span> Füge ein…`;
+        const r = await window.kairo.roblox.build({ title: 'KI-Antwort', parts: [], scripts: files.map(f => ({ name: f.name, type: f.type, path: f.path, source: f.source })) });
+        b.disabled = false; b.innerHTML = `${ic('pickaxe')} Nochmal einfügen`;
+        const res = r.ok ? r.result : null;
+        out.insertAdjacentHTML('beforeend', r.ok && res.ok ? `<div class="rb-ok">${ic('circle-check')}<div><b>${files.length} Dateien in Studio eingefügt!</b><small>Mit Ctrl+Z in Studio rückgängig. Jetzt oben auf Play drücken und testen.</small></div></div>` : `<div class="rb-err">${ic('triangle-alert')}<div><b>Hat nicht geklappt</b><small>${esc(r.ok ? (res.log || []).join(' ') : r.error.message)}</small></div></div>`);
+      });
+    };
+  }
+  // reads "-- Datei: ServerScriptService/Services/DataService.lua" + ```lua … ``` from an AI answer
+  const SERVICES = /(ServerScriptService|ServerStorage|ReplicatedStorage|ReplicatedFirst|StarterPlayer|StarterPlayerScripts|StarterCharacterScripts|StarterGui|StarterPack|Workspace|Lighting|SoundService)/;
+  function parseFiles(text) {
+    const files = [], rx = /```(?:lua|luau)?[^\n]*\n([\s\S]*?)```/gi;
+    let m, last = 0;
+    while ((m = rx.exec(text))) {
+      const before = text.slice(Math.max(last, m.index - 400), m.index);
+      let code = m[1].replace(/\s+$/, '');
+      last = m.index + m[0].length;
+      // path: in the lines before the block, or a "-- Datei:/File:" comment in the first line of the code
+      const first = code.split('\n')[0];
+      const cands = [...before.split('\n').reverse(), first].map(l => l.replace(/[*`#>]/g, ' ').trim());
+      let raw = null;
+      for (const l of cands) { const mm = l.match(/(?:game[./])?((?:ServerScriptService|ServerStorage|ReplicatedStorage|ReplicatedFirst|StarterPlayer|StarterGui|StarterPack|Workspace|Lighting|SoundService)[\w./\\ >-]*)/); if (mm) { raw = mm[1].trim(); break; } }
+      if (!raw) continue;
+      if (/^--\s*(datei|file)\s*:/i.test(first)) code = code.split('\n').slice(1).join('\n');
+      let type = /\.server\.(lua|luau)$/i.test(raw) ? 'Script' : /\.client\.(lua|luau)$/i.test(raw) ? 'LocalScript' : null;
+      raw = raw.replace(/\s*\((Script|LocalScript|ModuleScript)\)\s*$/i, (x, t) => { type = type || t; return ''; }).replace(/\.(server|client)?\.?(lua|luau)$/i, '').replace(/\.(lua|luau)$/i, '');
+      let parts = /[\/\\>]/.test(raw) ? raw.split(/\s*[\/\\>]\s*/) : raw.split('.');
+      parts = parts.map(x => x.trim()).filter(Boolean);
+      if (parts.length < 2) continue;
+      const name = parts.pop();
+      if (!type) {
+        const near = before.slice(-160), where = parts.join('/'), returnsModule = /\breturn\s+[\w.{}]+\s*$/.test(code);
+        if (/LocalScript/.test(near)) type = 'LocalScript';
+        else if (/ModuleScript/.test(near)) type = 'ModuleScript';
+        else if (/StarterPlayerScripts|StarterCharacterScripts|StarterGui|ReplicatedFirst/.test(where)) type = returnsModule ? 'ModuleScript' : 'LocalScript';
+        else if (/^ServerScriptService/.test(where)) type = returnsModule ? 'ModuleScript' : 'Script';
+        else type = 'ModuleScript'; // ReplicatedStorage, ServerStorage …
+      }
+      const i = files.findIndex(f => f.path.join('/') === parts.join('/') && f.name === name);
+      const f = { name, path: parts, type, source: code };
+      if (i >= 0) files[i] = f; else files.push(f); // the later version of a file wins
+    }
+    return files;
+  }
+  // also reachable from the side: paste an answer without making a prompt first
+  function pasteOnly() {
+    stop3d();
+    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Antwort einfügen</small><h2>Von ChatGPT / Claude nach Studio</h2><p>Füge die komplette Antwort der KI ein. Kairo erkennt alle Dateien und legt sie in Roblox Studio an.</p></div></div>${pasteBox('paste')}`;
+    bindPaste('paste');
+  }
+
   // voice: "Mach einen Prompt für Steal an Egg (in ChatGPT)" -> research, write, open the AI with it
   async function voicePrompt(game, target = 'claude') {
     document.getElementById('gpCard')?.remove();
@@ -165,5 +269,5 @@ window.RobloxUI = (function () {
     setTimeout(() => card?.remove(), 20000);
     return { ...r, opened: x.target, prefilled: filled };
   }
-  return { open, promptOnPage, voicePrompt };
+  return { open, promptOnPage, voicePrompt, parseFiles };
 })();

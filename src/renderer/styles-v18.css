@@ -30,3 +30,26 @@
 .rb-why { display: flex; gap: 6px; margin: 0; color: #9aa4b8; font-size: 12.5px; } .rb-why .ic { width: 15px; height: 15px; color: #3ddc97; flex: none; margin-top: 2px; }
 .rb-iact { display: grid; gap: 6px; margin-top: auto; } .rb-iact .btn { display: flex; gap: 6px; align-items: center; justify-content: center; } .rb-iact .btn.primary { background: linear-gradient(135deg, var(--c), #ff7a45) !important; }
 @media (max-width: 1200px) { .rb-ideas3 { grid-template-columns: 1fr; } }
+
+/* "Wie willst du bauen?" */
+.rb-how { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.rb-how button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); color: #eef2f8; text-align: left; cursor: pointer; transition: .25s; }
+.rb-how button span { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(255,122,69,.15); color: #ff7a45; } .rb-how button span .ic { width: 17px; height: 17px; }
+.rb-how button b { font-size: 13.5px; } .rb-how button small { color: #8d96aa; font-size: 12px; line-height: 1.45; }
+.rb-how button:hover { transform: translateY(-3px); border-color: rgba(255,122,69,.5); }
+.rb-how button.on { border-color: #ff7a45; background: rgba(255,122,69,.1); box-shadow: 0 14px 30px -18px #ff7a45; }
+.rb-howbox { margin-top: 12px; padding: 16px; border-radius: 16px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); animation: chipIn .4s; }
+.rb-howbox p { margin: 0 0 10px; color: #c5cdda; font-size: 13.5px; line-height: 1.6; }
+.rb-tipline { display: flex; gap: 6px; align-items: flex-start; color: #ffd27a !important; } .rb-tipline .ic { width: 15px; height: 15px; flex: none; margin-top: 3px; }
+.rb-paste { margin-top: 12px; padding: 16px; border-radius: 16px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); display: grid; gap: 10px; }
+.rb-paste label { display: flex; gap: 6px; align-items: center; font-weight: 700; font-size: 13px; } .rb-paste label .ic { width: 15px; height: 15px; color: #ff7a45; }
+.rb-paste textarea { font: 12.5px/1.5 'JetBrains Mono Var', monospace; resize: vertical; }
+.rb-paste > .btn { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.rb-flist-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 6px; } .rb-flist-h .btn { display: inline-flex; gap: 6px; align-items: center; } .rb-flist-h .btn.primary { background: linear-gradient(135deg, #e2231a, #ff7a45) !important; }
+.rb-flist { display: flex; flex-direction: column; gap: 5px; max-height: 360px; overflow: auto; margin-top: 8px; }
+.rb-file { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(0,0,0,.25); animation: chipIn .35s both; }
+.rb-file > div { flex: 1; min-width: 0; } .rb-file b { font-size: 13px; } .rb-file small { display: block; color: #7d879b; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-ft { width: 26px; height: 26px; flex: none; border-radius: 8px; display: grid; place-items: center; font: 800 11px 'JetBrains Mono Var'; }
+.rb-ft.Script { background: rgba(110,168,255,.18); color: #8fbaff; } .rb-ft.LocalScript { background: rgba(61,220,151,.16); color: #5ff0b0; } .rb-ft.ModuleScript { background: rgba(255,210,122,.16); color: #ffd27a; }
+.rb-warn { display: flex; gap: 6px; align-items: flex-start; color: #ffb347; font-size: 13px; } .rb-warn .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; }
+@media (max-width: 1200px) { .rb-how { grid-template-columns: 1fr 1fr; } }

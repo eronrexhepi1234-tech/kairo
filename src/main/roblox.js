@@ -146,6 +146,8 @@ function build(planObj) {
 function register(ctx) {
   ({ store } = ctx);
   startServer();
+  // keep an installed plugin up to date with this Kairo version (Studio loads it on its next start)
+  try { if (fs.existsSync(pluginFile())) { const want = fs.readFileSync(path.join(__dirname, 'roblox-plugin.lua'), 'utf8').replace('%KEY%', key()).replace('%PORT%', String(PORT)); if (fs.readFileSync(pluginFile(), 'utf8') !== want) fs.writeFileSync(pluginFile(), want); } } catch {}
   const wrap = fn => async (_e, ...a) => { try { return { ok: true, ...((await fn(...a)) || {}) }; } catch (e) { return { ok: false, error: { message: e.message } }; } };
   ipcMain.handle('rbx:status', wrap(async () => status()));
   ipcMain.handle('rbx:install', wrap(async () => install()));
