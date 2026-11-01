@@ -139,6 +139,7 @@ window.SettingsUI = (function () {
         <div class="set-row"><label>${t('set.tray')}</label><label class="tog"><input type="checkbox" id="sTray" ${S.closeToTray ? 'checked' : ''}><span></span></label></div>
         <div class="set-row"><label>${t('set.briefing')}</label><label class="tog"><input type="checkbox" id="sBrief" ${S.briefing.enabled ? 'checked' : ''}><span>${t('set.briefingSpeak')}</span></label></div>
         <div class="set-row"><label>${t('set.hide')}</label><label class="tog"><input type="checkbox" id="sHide" ${S.hideFromCapture ? 'checked' : ''}><span></span></label></div>
+        <div class="set-row"><label>Entwickler-Modus</label><label class="tog"><input type="checkbox" id="sDev" ${S.devMode ? 'checked' : ''}><span>Zeigt Werkzeuge nur für den Entwickler von Kairo (Social Studio)</span></label></div>
         <div class="set-row"><label>${t('set.hotkey')}</label><input class="field" id="sHotkey" value="${escAttr(S.hotkey)}"></div>
         <div class="set-row"><span></span><span class="hint">API keys are encrypted with Windows (DPAPI) and only sent to the provider you picked.</span></div>
       </section>
@@ -238,6 +239,7 @@ window.SettingsUI = (function () {
     $('sAuto').onchange = e => save({ voice: { autoSpeak: e.target.checked } });
     $('sTest').onclick = () => Voice.speak(t('chat.hello', { name: S.name }) + ' ' + t('chat.sub'), S);
     $('sHide').onchange = e => save({ hideFromCapture: e.target.checked });
+    $('sDev').onchange = e => save({ devMode: e.target.checked });
     $('sHotkey').onchange = e => save({ hotkey: e.target.value.trim() });
   }
 

@@ -71,7 +71,7 @@ window.Tidy = (function () {
     ['welcome', 'Einrichtung (Willkommen)', 'sparkles', 'tools', 'einrichtung setup start willkommen schlüssel key', () => Welcome.open(), 'Welcome'],
     ['settings', 'Einstellungen', 'settings', 'tools', 'einstellungen stimme ki schlüssel sprache', () => window.App.go('settings'), 'App']
   ];
-  const feats = () => F.filter(f => !f[6] || has(f[6])).map(([id, name, icon, cat, kw, run]) => ({ id, name, icon, cat, kw, run }));
+  const feats = () => F.filter(f => (!f[6] || has(f[6])) && (f[0] !== 'social' || window.SocialStudio?.dev?.())).map(([id, name, icon, cat, kw, run]) => ({ id, name, icon, cat, kw, run }));
   const DEF_FAV = ['research', 'bsite', 'document', 'how', 'jarvis', 'exam'];
   const favs = () => ls.get('kairo.favs', DEF_FAV);
   const recent = () => ls.get('kairo.recent', []);

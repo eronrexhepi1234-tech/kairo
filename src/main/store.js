@@ -29,6 +29,7 @@ const DEFAULTS = {
   },
   schema: 4,
   miniOrb: true,
+  devMode: false,
   userTitle: '',
   pet: false,
   desktopWeather: false,

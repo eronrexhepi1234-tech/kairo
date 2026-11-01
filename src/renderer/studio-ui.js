@@ -231,9 +231,12 @@ window.Inventor = (function () {
 
 // ================= Social Studio =================
 window.SocialStudio = (function () {
+  // only for the developer of Kairo (videos about Kairo itself)
+  const dev = () => !!window.App?.settings?.()?.devMode;
   let busy = false;
   const KINDS = [['why', 'Warum Kairo?', 'rocket'], ['update', 'Update-Video', 'sparkles'], ['feature', 'Feature-Spotlight', 'scan-search'], ['tutorial', 'Kurz-Tutorial', 'graduation-cap']];
   function open() {
+    if (!dev()) return window.toast('Das Social Studio gibt es nur im Entwickler-Modus (Einstellungen).');
     const el = qOverlay('soOverlay', 'so');
     el.innerHTML = `<div class="so-wrap"><button class="fx-x so-x" data-x>✕</button>
       <aside class="so-side"><small>Kairo Social Studio</small><h2>Videos für TikTok & YouTube</h2><p>Kairo macht ein fertiges Hochformat-Video über sich selbst – mit Stimme, Animationen und Untertiteln. Hochladen machst du selbst.</p>
@@ -477,5 +480,5 @@ window.SocialStudio = (function () {
       frame();
     });
   }
-  return { open };
+  return { open, dev };
 })();

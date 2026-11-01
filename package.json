@@ -1,7 +1,7 @@
 {
   "name": "kairo",
   "productName": "Kairo",
-  "version": "1.7.6",
+  "version": "1.7.7",
   "description": "A desktop companion for Windows: chat and talk hands-free with Claude, GPT or Gemini, let it look at your screen, explore the Earth, play chess, set reminders and control your PC from your phone.",
   "author": "Kairo contributors",
   "main": "src/main/main.js",

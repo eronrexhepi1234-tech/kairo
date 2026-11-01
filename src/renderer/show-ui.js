@@ -371,7 +371,7 @@ window.Show = (function () {
   }
   function refresh() {
     const g = $s('shGrid'); if (!g) return;
-    g.innerHTML = TILES.map(([k, icon, label, isOn], i) => `<button class="sh-tile ${isOn?.() ? 'on' : ''}" data-k="${k}" style="animation-delay:${i * 40}ms"><span>${ic(icon)}</span><b>${t(label)}</b>${isOn ? `<i class="sh-dot"></i>` : ''}</button>`).join('');
+    g.innerHTML = TILES.filter(x => x[0] !== 'social' || window.SocialStudio?.dev?.()).map(([k, icon, label, isOn], i) => `<button class="sh-tile ${isOn?.() ? 'on' : ''}" data-k="${k}" style="animation-delay:${i * 40}ms"><span>${ic(icon)}</span><b>${t(label)}</b>${isOn ? `<i class="sh-dot"></i>` : ''}</button>`).join('');
     g.querySelectorAll('[data-k]').forEach(b => b.onclick = async () => { await TILES.find(x => x[0] === b.dataset.k)[4](); setTimeout(refresh, 300); });
   }
   return { mount, refresh };
