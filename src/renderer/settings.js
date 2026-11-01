@@ -170,6 +170,8 @@ window.SettingsUI = (function () {
     if (go) go.onclick = async () => { go.disabled = true; go.textContent = '…'; const r = await window.kairo.discord.start(); if (!r.ok) toast(r.error.message); else await save({ discord: { enabled: true } }); renderDiscord(); };
     if (stop) stop.onclick = async () => { await window.kairo.discord.stop(); await save({ discord: { enabled: false } }); renderDiscord(); };
   }
+  // the bot also goes online by itself at launch: show it as soon as it is ready
+  window.kairo.discord.onStatus?.(() => renderDiscord());
 
   function wire(p) {
     const $ = id => document.getElementById(id);

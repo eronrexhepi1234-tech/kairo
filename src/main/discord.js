@@ -87,23 +87,36 @@ async function onMessage(msg) {
   } catch (e) { msg.reply('😵 ' + e.message.slice(0, 200)).catch(() => {}); }
 }
 
-async function start() {
-  if (client) return publicStatus();
+// one start at a time: a second click (or the auto start at launch) waits for the running one
+let starting = null;
+function start() {
+  if (client && status.running) return Promise.resolve(publicStatus());
+  if (starting) return starting;
+  starting = doStart().finally(() => { starting = null; });
+  return starting;
+}
+async function doStart() {
   const token = ctx.store.get().keys.discord;
   if (!token) throw new Error('Kein Discord-Bot-Token gespeichert');
   const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
   client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMessageReactions], partials: [Partials.Channel] });
   client.on(Events.MessageCreate, m => onMessage(m).catch(() => {}));
   client.on(Events.GuildCreate, () => { status.guilds = client.guilds.cache.size; ctx.send('discord:status', publicStatus()); });
+  client.on(Events.GuildDelete, () => { status.guilds = client.guilds.cache.size; ctx.send('discord:status', publicStatus()); });
   try {
+    // listen for "ready" BEFORE logging in, otherwise a fast login can be missed and the start hangs
+    const ready = new Promise((res, rej) => { client.once(Events.ClientReady, res); setTimeout(() => rej(new Error('Discord antwortet nicht (Zeitüberschreitung). Internet prüfen und nochmal versuchen.')), 30000); });
     await client.login(token);
-    await new Promise(r => client.once(Events.ClientReady, r));
+    await ready;
   } catch (e) {
     client?.destroy(); client = null;
-    status = { running: false, error: /disallowed intents/i.test(e.message) ? 'INTENTS' : e.message };
-    throw Object.assign(new Error(status.error === 'INTENTS' ? 'Im Discord Developer Portal "Message Content Intent" einschalten.' : e.message), { code: status.error });
+    const msg = /disallowed intents/i.test(e.message) ? 'INTENTS' : /invalid token|TokenInvalid|An invalid token/i.test(e.message + e.code) ? 'Der Bot-Token ist ungültig. Im Developer Portal unter „Bot“ → „Reset Token“ einen neuen holen und hier eintragen.' : e.message;
+    status = { running: false, error: msg };
+    ctx.send('discord:status', publicStatus());
+    throw Object.assign(new Error(msg === 'INTENTS' ? 'Im Discord Developer Portal "Message Content Intent" einschalten.' : msg), { code: msg === 'INTENTS' ? 'INTENTS' : null });
   }
   status = { running: true, name: client.user.username, id: client.user.id, guilds: client.guilds.cache.size, error: null };
+  ctx.send('discord:status', publicStatus());
   return publicStatus();
 }
 

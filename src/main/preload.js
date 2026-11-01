@@ -89,7 +89,7 @@ contextBridge.exposeInMainWorld('kairo', {
     leagues: () => invoke('foot:leagues'), teams: l => invoke('foot:teams', l), matches: (l, t) => invoke('foot:matches', l, t),
     onGoal: fn => on('football:goal', fn)
   },
-  discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status') },
+  discord: { start: () => invoke('discord:start'), stop: () => invoke('discord:stop'), status: () => invoke('discord:status'), onStatus: fn => on('discord:status', fn) },
   showWindow: () => invoke('win:show'),
   orbMode: () => invoke('app:orbMode'),
   st: {
