@@ -383,7 +383,7 @@ async function widgetData(w) {
   }
   if (w.type === 'projects') return { projects: readData('projects', []).map(p => ({ name: p.name, done: p.milestones.flatMap(m => m.tasks).filter(t => t.done).length, total: p.milestones.flatMap(m => m.tasks).length })) };
   if (w.type === 'learn') return { paths: readData('paths', []).map(p => ({ title: p.title, done: (p.done || []).length, total: p.days.length })) };
-  if (w.type === 'wiki') { const d = new Date(); const j = await getJson(`https://de.wikipedia.org/api/rest_v1/feed/onthisday/events/${d.getMonth() + 1}/${d.getDate()}`); return { items: (j.events || []).slice(0, 4).map(e => ({ year: e.year, text: e.text })) }; }
+  if (w.type === 'wiki') { const d = new Date(); const L = String(store.get().language || 'de').slice(0, 2), wl = ['de', 'fr', 'it', 'es', 'pt', 'tr'].includes(L) ? L : 'en'; const j = await getJson(`https://${wl}.wikipedia.org/api/rest_v1/feed/onthisday/events/${d.getMonth() + 1}/${d.getDate()}`); return { items: (j.events || []).slice(0, 4).map(e => ({ year: e.year, text: e.text })) }; }
   return {};
 }
 async function dashFromText(text) {

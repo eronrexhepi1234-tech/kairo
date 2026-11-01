@@ -2,6 +2,8 @@
 // presentation trainer, code assistant, dashboard, projects, exam simulator, language teacher, learning paths,
 // brand kit, agent mode, memory center).
 window.Pro = (function () {
+  // dates and numbers in the app's language (Swiss German format for German)
+  const LOC = () => { const l = window.App?.settings?.()?.language || window.APP_LANG || 'de'; return l === 'de' ? 'de-CH' : l === 'en' ? 'en-GB' : l; };
   const $p = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const md = s => (window.renderMarkdown ? window.renderMarkdown(String(s || '')) : esc(s));
@@ -74,7 +76,7 @@ window.Pro = (function () {
       return b.text ? `<p>${md(b.text)}</p>` : '';
     }).join('');
   }
-  const bars = (items, unit) => { const max = Math.max(...items.map(i => +i.value || 0), 1); return `<div class="pro-bars">${items.map((i, n) => `<div class="pro-bar" style="--w:${(+i.value || 0) / max * 100}%;--d:${n * 90}ms"><span>${esc(i.label)}</span><i></i><b>${esc(Number(i.value).toLocaleString('de-CH'))} ${esc(unit || '')}</b></div>`).join('')}</div>`; };
+  const bars = (items, unit) => { const max = Math.max(...items.map(i => +i.value || 0), 1); return `<div class="pro-bars">${items.map((i, n) => `<div class="pro-bar" style="--w:${(+i.value || 0) / max * 100}%;--d:${n * 90}ms"><span>${esc(i.label)}</span><i></i><b>${esc(Number(i.value).toLocaleString(LOC()))} ${esc(unit || '')}</b></div>`).join('')}</div>`; };
   const spark = (series, w = 220, h = 56) => { if (!series?.length) return ''; const mn = Math.min(...series), mx = Math.max(...series), r = mx - mn || 1; const pts = series.map((v, i) => `${(i / (series.length - 1)) * w},${h - 4 - (v - mn) / r * (h - 8)}`).join(' '); const up = series[series.length - 1] >= series[0]; return `<svg class="pro-spark ${up ? 'up' : 'down'}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}"/><polygon points="0,${h} ${pts} ${w},${h}"/></svg>`; };
   const ring = (v, label) => `<div class="pro-ring" style="--v:${Math.max(0, Math.min(100, v))}"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9"/><circle cx="18" cy="18" r="15.9" pathLength="100"/></svg><b>${Math.round(v)}</b><small>${esc(label)}</small></div>`;
   async function recordVoice(btn) {
@@ -92,7 +94,7 @@ window.Pro = (function () {
       <form class="pro-ask" id="rsForm"><textarea class="field" id="rsQ" rows="2" placeholder="z. B. Wie wird KI die Arbeitswelt bis 2035 verändern?"></textarea>
         <div class="pro-row">${chips('rsDepth', [['quick', 'Schnell · 4 Teilfragen'], ['deep', 'Gründlich · 7 Teilfragen']], 'deep')}<button class="btn primary pro-go">${ic('telescope')} Recherchieren</button></div></form>
       <div class="pro-sugg">${['Wie funktioniert die Energiewende in der Schweiz?', 'Welche Smartphone-Marke ist 2026 am besten?', 'Warum ist Japan so sicher?', 'Lohnt sich ein Elektroauto?'].map(s => `<button>${esc(s)}</button>`).join('')}</div>
-      ${hist.items?.length ? `<h4 class="pro-h4">Frühere Recherchen</h4><div class="pro-list">${hist.items.slice(0, 8).map(h => `<button data-rid="${h.id}">${ic('file-text')}<div><b>${esc(h.title)}</b><small>${new Date(h.date).toLocaleDateString('de-CH')} · ${esc(h.question)}</small></div></button>`).join('')}</div>` : ''}`;
+      ${hist.items?.length ? `<h4 class="pro-h4">Frühere Recherchen</h4><div class="pro-list">${hist.items.slice(0, 8).map(h => `<button data-rid="${h.id}">${ic('file-text')}<div><b>${esc(h.title)}</b><small>${new Date(h.date).toLocaleDateString(LOC())} · ${esc(h.question)}</small></div></button>`).join('')}</div>` : ''}`;
     bindChips(m);
     $p('rsForm').onsubmit = e => { e.preventDefault(); const q = $p('rsQ').value.trim(); if (q) runResearch(m, q, chipVal('rsDepth')); };
     m.querySelectorAll('.pro-sugg button').forEach(b => b.onclick = () => runResearch(m, b.textContent, chipVal('rsDepth')));
@@ -118,7 +120,7 @@ window.Pro = (function () {
   function showReport(m, r) {
     const cite = s => md(s).replace(/\[(\d+)\]/g, (x, n) => r.sources?.[n - 1] ? `<sup><a href="${esc(r.sources[n - 1].url)}" data-ext title="${esc(r.sources[n - 1].title)}">${n}</a></sup>` : x);
     m.innerHTML = `<article class="rs-report">
-      <div class="rs-top"><small class="pro-kick">Recherche-Bericht · ${new Date(r.date || Date.now()).toLocaleDateString('de-CH')}</small><h1>${esc(r.title)}</h1><p class="rs-q">${esc(r.question)}</p>
+      <div class="rs-top"><small class="pro-kick">Recherche-Bericht · ${new Date(r.date || Date.now()).toLocaleDateString(LOC())}</small><h1>${esc(r.title)}</h1><p class="rs-q">${esc(r.question)}</p>
         <div class="pro-actions"><button class="btn primary" data-x="pdf">${ic('file-down')} PDF</button><button class="btn" data-x="docx">${ic('file-text')} Word</button><button class="btn" id="rsNew">${ic('search')} Neue Recherche</button></div><div id="rsOut"></div></div>
       <div class="rs-summary">${ic('sparkles')}<p>${cite(r.summary)}</p></div>
       <div class="rs-keys">${(r.keyPoints || []).map((k, i) => `<div style="animation-delay:${i * 70}ms"><b>${String(i + 1).padStart(2, '0')}</b><p>${cite(k)}</p></div>`).join('')}</div>
@@ -339,14 +341,14 @@ window.Pro = (function () {
     };
     const fill = async (w, i) => {
       const box = $p('dbw' + i); if (!box) return;
-      if (w.type === 'clock') { const d = new Date(); const tz = w.tz; const time = d.toLocaleTimeString('de-CH', { timeZone: tz || undefined, hour: '2-digit', minute: '2-digit', second: '2-digit' }); box.innerHTML = `<div class="db-big mono">${time}</div><small>${esc(w.city || d.toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' }))}</small>`; return; }
-      if (w.type === 'countdown') { const ms = new Date(w.date) - Date.now(); const dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5), mm = Math.floor(ms % 36e5 / 6e4); box.innerHTML = ms > 0 ? `<div class="db-big">${dd}<small>T</small> ${hh}<small>h</small> ${mm}<small>m</small></div><small>bis ${esc(new Date(w.date).toLocaleDateString('de-CH'))}</small>` : '<div class="db-big">Heute!</div>'; return; }
+      if (w.type === 'clock') { const d = new Date(); const tz = w.tz; const time = d.toLocaleTimeString(LOC(), { timeZone: tz || undefined, hour: '2-digit', minute: '2-digit', second: '2-digit' }); box.innerHTML = `<div class="db-big mono">${time}</div><small>${esc(w.city || d.toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'long' }))}</small>`; return; }
+      if (w.type === 'countdown') { const ms = new Date(w.date) - Date.now(); const dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5), mm = Math.floor(ms % 36e5 / 6e4); box.innerHTML = ms > 0 ? `<div class="db-big">${dd}<small>T</small> ${hh}<small>h</small> ${mm}<small>m</small></div><small>bis ${esc(new Date(w.date).toLocaleDateString(LOC()))}</small>` : '<div class="db-big">Heute!</div>'; return; }
       if (w.type === 'note') { box.innerHTML = `<p>${esc(w.text)}</p>`; return; }
       const r = await K().dashData(w);
       if (!r.ok) { box.innerHTML = `<small class="db-err">${esc(r.error.message)}</small>`; return; }
       const d = r.data;
-      if (w.type === 'weather') { const [icn, txt] = WMO(d.now.weather_code); box.innerHTML = `<div class="db-wx">${ic(icn)}<div class="db-big">${Math.round(d.now.temperature_2m)}°</div><div><b>${esc(d.place)}</b><small>${txt} · Wind ${Math.round(d.now.wind_speed_10m)} km/h</small></div></div>${spark(d.hourly)}<div class="db-days">${d.daily.time.slice(1, 6).map((x, k) => `<span><small>${new Date(x).toLocaleDateString('de-CH', { weekday: 'short' })}</small>${ic(WMO(d.daily.weather_code[k + 1])[0])}<b>${Math.round(d.daily.temperature_2m_max[k + 1])}°</b></span>`).join('')}</div>`; }
-      if (w.type === 'crypto') box.innerHTML = `<div class="db-big">${Number(d.price).toLocaleString('de-CH', { maximumFractionDigits: 2 })} <small>${d.currency}</small></div><span class="db-ch ${d.change >= 0 ? 'up' : 'down'}">${d.change >= 0 ? '▲' : '▼'} ${Math.abs(d.change || 0).toFixed(2)} % · 24 h</span>${spark(d.series)}<small>7 Tage</small>`;
+      if (w.type === 'weather') { const [icn, txt] = WMO(d.now.weather_code); box.innerHTML = `<div class="db-wx">${ic(icn)}<div class="db-big">${Math.round(d.now.temperature_2m)}°</div><div><b>${esc(d.place)}</b><small>${txt} · Wind ${Math.round(d.now.wind_speed_10m)} km/h</small></div></div>${spark(d.hourly)}<div class="db-days">${d.daily.time.slice(1, 6).map((x, k) => `<span><small>${new Date(x).toLocaleDateString(LOC(), { weekday: 'short' })}</small>${ic(WMO(d.daily.weather_code[k + 1])[0])}<b>${Math.round(d.daily.temperature_2m_max[k + 1])}°</b></span>`).join('')}</div>`; }
+      if (w.type === 'crypto') box.innerHTML = `<div class="db-big">${Number(d.price).toLocaleString(LOC(), { maximumFractionDigits: 2 })} <small>${d.currency}</small></div><span class="db-ch ${d.change >= 0 ? 'up' : 'down'}">${d.change >= 0 ? '▲' : '▼'} ${Math.abs(d.change || 0).toFixed(2)} % · 24 h</span>${spark(d.series)}<small>7 Tage</small>`;
       if (w.type === 'fx') box.innerHTML = `<div class="db-big">${Number(d.rate).toFixed(4)}</div><small>1 ${d.from} = ${Number(d.rate).toFixed(4)} ${d.to}</small>${spark(d.series)}<small>30 Tage</small>`;
       if (w.type === 'projects') box.innerHTML = d.projects.length ? d.projects.slice(0, 4).map(p => `<div class="db-prog"><span>${esc(p.name)}</span><div><i style="width:${p.total ? p.done / p.total * 100 : 0}%"></i></div><b>${p.done}/${p.total}</b></div>`).join('') : '<small>Noch keine Projekte – starte eins im Projekt-Manager.</small>';
       if (w.type === 'learn') box.innerHTML = d.paths.length ? d.paths.slice(0, 4).map(p => `<div class="db-prog"><span>${esc(p.title)}</span><div><i style="width:${p.total ? p.done / p.total * 100 : 0}%"></i></div><b>Tag ${p.done}/${p.total}</b></div>`).join('') : '<small>Noch kein Lernpfad.</small>';
@@ -365,7 +367,7 @@ window.Pro = (function () {
     const r = await K().projects(); const list = r.items || [];
     m.innerHTML = `${head(t, 'Grosses Ziel → Meilensteine, Aufgaben, Fortschritt. Kairo coacht dich bis zum Ziel.')}
       <form class="pro-ask" id="pjForm"><input class="field" id="pjG" placeholder="Dein Ziel, z. B. Einen YouTube-Kanal mit 1000 Abos aufbauen"><div class="pro-row"><label class="pro-date">Bis wann? <input type="date" id="pjD" class="field"></label><button class="btn primary pro-go">${ic('kanban')} Plan erstellen</button></div></form>
-      <div id="pjRes">${list.length ? `<div class="pj-cards">${list.map(p => { const all = p.milestones.flatMap(x => x.tasks), d = all.filter(x => x.done).length; return `<button class="pj-card" data-p="${p.id}">${ring(all.length ? d / all.length * 100 : 0, '%')}<div><b>${esc(p.name)}</b><small>${d}/${all.length} Aufgaben${p.deadline ? ' · bis ' + new Date(p.deadline).toLocaleDateString('de-CH') : ''}</small></div></button>`; }).join('')}</div>` : ''}</div>`;
+      <div id="pjRes">${list.length ? `<div class="pj-cards">${list.map(p => { const all = p.milestones.flatMap(x => x.tasks), d = all.filter(x => x.done).length; return `<button class="pj-card" data-p="${p.id}">${ring(all.length ? d / all.length * 100 : 0, '%')}<div><b>${esc(p.name)}</b><small>${d}/${all.length} Aufgaben${p.deadline ? ' · bis ' + new Date(p.deadline).toLocaleDateString(LOC()) : ''}</small></div></button>`; }).join('')}</div>` : ''}</div>`;
     $p('pjForm').onsubmit = async e => { e.preventDefault(); const g = $p('pjG').value.trim(); if (!g) return; $p('pjRes').innerHTML = wait('Kairo plant dein Projekt…'); const x = await K().projectNew({ goal: g, deadline: $p('pjD').value }); if (!x.ok) { $p('pjRes').innerHTML = fail(x.error.message); return; } board(m, x.project); };
     m.querySelectorAll('[data-p]').forEach(b => b.onclick = () => board(m, list.find(p => p.id === b.dataset.p)));
     if (arg) { $p('pjG').value = arg; $p('pjForm').requestSubmit(); }
@@ -375,7 +377,7 @@ window.Pro = (function () {
     const pct = () => { const a = all(); return a.length ? a.filter(x => x.done).length / a.length * 100 : 0; };
     m.innerHTML = `<div class="pj-top"><button class="btn" id="pjBack">${ic('chevron-left')} Alle Projekte</button><div class="pro-actions"><button class="btn" id="pjCoach">${ic('sparkles')} Coach fragen</button><button class="btn" id="pjDel">${ic('trash-2')}</button></div></div>
       <div class="pj-hero"><div id="pjRing">${ring(pct(), '%')}</div><div><h1>${esc(p.name)}</h1><p>${esc(p.why || p.goal)}</p>${p.firstStep ? `<div class="pj-first">${ic('zap')}<span><b>Heute in 15 Min:</b> ${esc(p.firstStep)}</span></div>` : ''}</div></div><div id="pjCoachBox"></div>
-      <div class="pj-road">${p.milestones.map((ms, mi) => `<div class="pj-ms" style="animation-delay:${mi * 80}ms"><div class="pj-dot"></div><div class="pj-mh"><b>${esc(ms.title)}</b><small>${ms.due ? new Date(ms.due).toLocaleDateString('de-CH') : ''}</small></div>
+      <div class="pj-road">${p.milestones.map((ms, mi) => `<div class="pj-ms" style="animation-delay:${mi * 80}ms"><div class="pj-dot"></div><div class="pj-mh"><b>${esc(ms.title)}</b><small>${ms.due ? new Date(ms.due).toLocaleDateString(LOC()) : ''}</small></div>
         ${ms.tasks.map(tk => `<label class="pj-task ${tk.done ? 'done' : ''}"><input type="checkbox" data-t="${tk.id}" ${tk.done ? 'checked' : ''}><span>${esc(tk.title)}</span><small>${tk.min ? tk.min + ' Min' : ''}</small></label>`).join('')}</div>`).join('')}</div>
       ${p.risks?.length ? `<div class="pj-risk"><h4>${ic('triangle-alert')} Risiken</h4><ul>${p.risks.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}`;
     $p('pjBack').onclick = () => show('projects');
@@ -394,7 +396,7 @@ window.Pro = (function () {
     m.innerHTML = `${head(t, 'Eine echte Prüfung mit Zeitlimit. Kairo korrigiert, gibt dir eine Note (1–6) und sagt dir genau, was du üben musst.')}
       <form class="pro-ask" id="exForm"><div class="ex-row"><input class="field" id="exS" placeholder="Fach, z. B. Mathe"><input class="field" id="exT" placeholder="Thema, z. B. Lineare Funktionen"></div>
         <div class="pro-row">${chips('exL', [['Primarschule', 'Primar'], ['Sekundarstufe 1', 'Sek'], ['Gymnasium', 'Gymi'], ['Berufsschule', 'Berufsschule']], 'Sekundarstufe 1')}${chips('exN', [['6', '6 Fragen'], ['10', '10 Fragen'], ['15', '15 Fragen']], '10')}<button class="btn primary pro-go">${ic('graduation-cap')} Prüfung starten</button></div></form>
-      ${h.items?.length ? `<h4 class="pro-h4">Deine Prüfungen</h4><div class="ex-hist">${h.items.slice(0, 8).map(x => `<div><b class="g${Math.floor(x.grade)}">${x.grade.toFixed(2).replace(/0$/, '')}</b><span>${esc(x.title)}</span><small>${new Date(x.date).toLocaleDateString('de-CH')} · ${x.got}/${x.max} P.</small></div>`).join('')}</div>` : ''}`;
+      ${h.items?.length ? `<h4 class="pro-h4">Deine Prüfungen</h4><div class="ex-hist">${h.items.slice(0, 8).map(x => `<div><b class="g${Math.floor(x.grade)}">${x.grade.toFixed(2).replace(/0$/, '')}</b><span>${esc(x.title)}</span><small>${new Date(x.date).toLocaleDateString(LOC())} · ${x.got}/${x.max} P.</small></div>`).join('')}</div>` : ''}`;
     bindChips(m);
     $p('exForm').onsubmit = async e => {
       e.preventDefault(); const s = $p('exS').value.trim(), tp = $p('exT').value.trim(); if (!s || !tp) return toast('Fach und Thema eingeben');
@@ -616,7 +618,7 @@ window.Pro = (function () {
     const draw = q => {
       const f = items.filter(x => !q || x.text.toLowerCase().includes(q));
       const groups = {}; f.forEach(x => { (groups[x.cat || 'Unsortiert'] = groups[x.cat || 'Unsortiert'] || []).push(x); });
-      $p('mmList').innerHTML = f.length ? Object.entries(groups).map(([g, l]) => `<div class="mm-group"><h4>${esc(g)} <small>${l.length}</small></h4>${l.map(x => `<div class="mm-item" data-id="${x.id}"><p contenteditable="true" spellcheck="false">${esc(x.text)}</p><small>${new Date(x.date).toLocaleDateString('de-CH')}</small><button data-del="${x.id}" title="Vergessen">${ic('trash-2')}</button></div>`).join('')}</div>`).join('') : '<div class="pro-note">Kairo hat sich noch nichts gemerkt.</div>';
+      $p('mmList').innerHTML = f.length ? Object.entries(groups).map(([g, l]) => `<div class="mm-group"><h4>${esc(g)} <small>${l.length}</small></h4>${l.map(x => `<div class="mm-item" data-id="${x.id}"><p contenteditable="true" spellcheck="false">${esc(x.text)}</p><small>${new Date(x.date).toLocaleDateString(LOC())}</small><button data-del="${x.id}" title="Vergessen">${ic('trash-2')}</button></div>`).join('')}</div>`).join('') : '<div class="pro-note">Kairo hat sich noch nichts gemerkt.</div>';
       $p('mmList').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { await window.kairo.memory.remove(b.dataset.del); items = items.filter(x => x.id !== b.dataset.del); b.closest('.mm-item').classList.add('gone'); setTimeout(() => draw($p('mmQ').value.toLowerCase()), 300); upd(); });
       $p('mmList').querySelectorAll('.mm-item p').forEach(p => p.onblur = async () => { const id = p.closest('.mm-item').dataset.id, v = p.textContent.trim(), it = items.find(x => x.id === id); if (!it || v === it.text) return; if (!v) return; const x = await K().memUpdate({ id, text: v }); if (x.ok) { it.text = v; toast('Gespeichert'); } });
     };

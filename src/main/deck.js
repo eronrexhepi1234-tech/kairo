@@ -48,6 +48,19 @@ function sanitize(buttons) {
 }
 function save(buttons) { const d = { buttons: sanitize(buttons) }; fs.writeFileSync(file(), JSON.stringify(d, null, 1)); return d; }
 
+// English names for the built-in labels (buttons the user renamed keep their own name)
+const EN = { 'Jarvis an': 'Jarvis on', 'Jarvis aus': 'Jarvis off', 'Haustier': 'Pet', 'Musik-Quiz': 'Music quiz', 'Wetter-Show': 'Weather show', 'Planeten': 'Planets', 'Kommentator': 'Commentator', 'Untertitel': 'Subtitles',
+  'Weiter': 'Next', 'Zurück': 'Back', 'Lauter': 'Louder', 'Leiser': 'Quieter', 'Stumm': 'Mute', 'Chill-Musik': 'Chill music', 'Fokus-Musik': 'Focus music', 'Gaming-Musik': 'Gaming music', 'Party-Musik': 'Party music',
+  'PC sperren': 'Lock PC', 'Kairo spricht': 'Kairo speaks', 'Musik & Ton': 'Music & sound' };
+// what the editors and the phone get: in English when Kairo is not set to German
+function view() {
+  const d = load();
+  let de = true; try { de = (require('./store').get().language || 'de') === 'de'; } catch {}
+  if (de) return { ...d, catalog: CATALOG };
+  const t = x => EN[x] || x;
+  return { buttons: d.buttons.map(b => ({ ...b, label: t(b.label) })), catalog: CATALOG.map(([cat, items]) => [t(cat), items.map(([ty, v, l, ...r]) => [ty, v, t(l), ...r])]) };
+}
+
 let hooks = null;
 async function run(id) {
   const b = load().buttons.find(x => x.id === id);
@@ -70,9 +83,9 @@ async function run(id) {
 function register(ctx) {
   hooks = ctx;
   const wrap = fn => async (_e, ...a) => { try { return { ok: true, ...((await fn(...a)) || {}) }; } catch (e) { return { ok: false, error: { message: e.message } }; } };
-  ipcMain.handle('deck:get', wrap(async () => ({ ...load(), catalog: CATALOG })));
+  ipcMain.handle('deck:get', wrap(async () => view()));
   ipcMain.handle('deck:save', wrap(async b => save(b)));
   ipcMain.handle('deck:run', wrap(async id => ({ result: await run(id) })));
 }
 
-module.exports = { register, load, save, run, CATALOG };
+module.exports = { register, load, save, run, view, CATALOG };
