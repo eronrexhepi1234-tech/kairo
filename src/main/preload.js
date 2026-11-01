@@ -40,6 +40,13 @@ contextBridge.exposeInMainWorld('kairo', {
   memory: { list: () => invoke('mem:list'), add: t => invoke('mem:add', t), remove: id => invoke('mem:remove', id), learn: texts => invoke('mem:learn', texts), upcoming: () => invoke('mem:upcoming') },
   marks: { show: d => invoke('marks:show', d), hide: () => invoke('marks:hide') },
   geoAiGuess: b64 => invoke('geo:aiGuess', b64),
+  power: {
+    missed: () => invoke('power:missed'), oral: o => invoke('power:oral', o),
+    pickVideo: () => invoke('power:pickVideo'), analyzeVideo: o => invoke('power:analyzeVideo', o), save: o => invoke('power:save', o), reveal: f => invoke('power:reveal', f),
+    dsGuilds: () => invoke('power:dsGuilds'), dsPlan: o => invoke('power:dsPlan', o), dsBuild: o => invoke('power:dsBuild', o), dsChannels: id => invoke('power:dsChannels', id), dsPost: o => invoke('power:dsPost', o),
+    trends: force => invoke('power:trends', force), thumbs: o => invoke('power:thumbs', o),
+    onProgress: fn => on('power:progress', fn), onOpen: fn => on('power:open', fn), onTrendAlert: fn => on('power:trendAlert', fn)
+  },
   onMarks: fn => on('marks:data', fn),
   reminders: {
     list: () => invoke('rem:list'), add: r => invoke('rem:add', r), remove: id => invoke('rem:remove', id),

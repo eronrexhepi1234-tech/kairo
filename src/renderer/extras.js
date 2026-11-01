@@ -237,6 +237,7 @@ window.Extras = (function () {
     rec.start(1000); clip.recs[slot] = nr;
     const buf = new Uint8Array(await blob.arrayBuffer());
     const res = await window.kairo.clips.save(buf);
+    if (res.ok) setTimeout(() => window.Power?.clipSaved?.(res.file), 400);
     toast(res.ok ? '🎬 ' + t('clip.saved') + ' (' + Math.round((Date.now() - r.start) / 1000) + ' s)' : res.error.message);
     return res;
   }

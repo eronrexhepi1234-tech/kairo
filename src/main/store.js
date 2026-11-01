@@ -31,6 +31,7 @@ const DEFAULTS = {
   miniOrb: true,
   devMode: false,
   autoMemory: true,
+  robloxTrendAlarm: false,
   userTitle: '',
   pet: false,
   desktopWeather: false,

@@ -118,4 +118,4 @@ function register({ ipcMain, wrap, store, send }) {
   if (store.get().discord?.enabled && store.get().keys.discord) setTimeout(() => start().catch(() => {}), 5000);
 }
 
-module.exports = { register };
+module.exports = { register, getClient: () => client };

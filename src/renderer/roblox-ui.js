@@ -24,10 +24,12 @@ window.RobloxUI = (function () {
         <button class="btn rb-pbtn" id="rbPrompt" title="Ein eigenes Spiel im Stil dieses Spiels – gleiche Art von Mechaniken, aber neue Idee">${ic('sparkles')}<span><b>Im Stil von</b><small>eigenes Spiel</small></span></button></div>
         <div class="rb-langs" id="rbLangs" title="Sprache des Prompts"><span>Prompt-Sprache</span>${PLANGS.map(([k, n]) => `<button data-l="${k}" class="${k === pLang() ? 'on' : ''}">${n}</button>`).join('')}</div>
         <button class="btn rb-pbtn rb-ibtn" id="rbIdeas" title="Kairo erfindet 3 komplett neue Roblox-Spiele (optional mit deinem Wunsch im Feld oben)">${ic('lightbulb')} Eigene Spielidee erfinden</button>
+        <button class="btn rb-pbtn rb-ibtn" id="rbTrends" title="Welche Roblox-Spiele gerade explodieren – echte Spielerzahlen">${ic('trending-up')} Trend-Radar</button>
         <button class="btn rb-pbtn" id="rbPaste" title="Antwort von ChatGPT oder Claude einfügen – Kairo legt alle Dateien in Studio an">${ic('clipboard-list')} KI-Antwort einfügen</button>
         <div class="rb-ideas">${IDEAS.map(i => `<button>${esc(i)}</button>`).join('')}</div></aside>
       <section class="rb-main" id="rbMain"><div class="rb-empty"><div class="rb-cubes">${'<i></i>'.repeat(9)}</div><b>Hier erscheint die 3D-Vorschau</b><small>Erst ansehen, dann mit einem Klick in Roblox Studio bauen. Alles geht mit Ctrl+Z rückgängig.</small></div></section></div>`;
     $r('rbX').onclick = close;
+    $r('rbTrends').onclick = () => Power.trends();
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; el.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); });
     el.querySelectorAll('.rb-ideas button').forEach(b => b.onclick = () => { $r('rbQ').value = b.textContent; make(); });
     $r('rbGo').onclick = make;

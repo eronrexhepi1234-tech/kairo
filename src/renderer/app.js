@@ -208,14 +208,15 @@ function parseReply(text) {
   let guess = null;
   const gt = grab(/\[\[guess:\s*([^\]]+)\]\]/gi)[0];
   if (gt) { const [ll, place, conf] = gt.split('|').map(x => x.trim()); const n = (ll.match(/-?\d+(\.\d+)?/g) || []).map(Number); if (n.length >= 2) guess = { lat: n[0], lng: n[1], place: place || '', confidence: parseFloat(conf) || 0 }; }
-  shown = shown.replace(/\[\[(mark|guess):[^\]]*\]\]/gi, '');
+  const power = grab(/\[\[power:\s*([^\]]+)\]\]/gi).map(s => { const [k, ...rest] = s.split('|'); return { kind: k.trim().toLowerCase(), arg: rest.join('|').trim() }; });
+  shown = shown.replace(/\[\[(mark|guess|power):[^\]]*\]\]/gi, '');
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
   // leftovers like empty ``` fences around removed tags
   shown = shown.replace(/^\s*`{1,3}\s*$/gm, '').replace(/`{2,3}(?=\s*$)/g, '').replace(/\n{3,}/g, '\n\n').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
-  return { marks, guess, prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio, build };
+  return { power, marks, guess, prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio, build };
 }
 
 // prompt for another AI: card with copy + open buttons
@@ -285,6 +286,7 @@ async function runActions(m) {
   if (p.build.shop) setTimeout(() => Builder.open({ tab: 'shop' }), 300);
   if (p.build.pro) { const [tl, arg] = p.build.pro.split('|').map(x => x.trim()); const id = { present: 'present', presentation: 'present', path: 'path', learnpath: 'path' }[tl] || tl; m.done.push('Kairo Pro'); setTimeout(() => id === 'roblox' ? RobloxUI.open(arg || undefined) : id === 'deck' ? DeckUI.open() : Pro.open(id, arg || undefined), 300); }
   if (p.build.how) { m.done.push('Erklärung: ' + p.build.how); setTimeout(() => HowItWorks.open(p.build.how), 300); }
+  for (const x of p.power) { m.done.push('Kairo: ' + x.kind); setTimeout(() => Power.open(x.kind, x.arg || undefined), 300); }
   if (p.studio.social) { m.done.push('🎬 Social Studio'); setTimeout(() => SocialStudio.open(), 300); }
   if (p.space.solar) { m.done.push('🪐 ' + t('sh.solar')); setTimeout(() => SolarSystem.open(typeof p.space.solar === 'string' ? p.space.solar : null), 300); }
   if (p.space.doc) { m.done.push('🎬 ' + p.space.doc); setTimeout(() => StoryPlayer.doc(p.space.doc), 300); }
@@ -444,6 +446,16 @@ async function send(text, opts = {}) {
     const r = await Life.runRoutine(routine.name);
     am.done.push(r.ok ? '✓ ' + (routine.steps || []).length + ' ' + t('rt.steps') : '✕');
     fillAI(el, am); saveHistory();
+    return;
+  }
+
+  // handled locally: the power tools ("Was habe ich verpasst?", "Clip das!", "Mündliche Prüfung über …")
+  const pw = powerRoute(text);
+  if (pw) {
+    addMsg({ role: 'user', text });
+    const am = { role: 'assistant', text: pw.say, actionsDone: true, done: [] };
+    fillAI(addMsg(am), am); saveHistory();
+    pw.run();
     return;
   }
 
@@ -798,6 +810,7 @@ window.App = {
     const front = () => { if (document.hidden || document.querySelectorAll('.xo.on, .fx-ov.on').length > shown0 || document.querySelector('.view.active')?.id !== view0) window.kairo.showWindow(); };
     const routed = await this.routeFeature(cmd);
     if (routed) { setTimeout(front, 400); return routed; }
+    const pr = powerRoute(cmd); if (pr) { pr.run(); setTimeout(front, 400); return pr.say; }
     for (const [rx, fn] of quick) if (rx.test(c)) { const r = fn(); setTimeout(front, 400); return r; }
     const fl = cmd.match(/\b([a-z]{2,3}\s?\d{1,4}[a-z]?)\b/i);
     if (/flug|flight/.test(c) && fl) { const f = await Flight.track(fl[1]); return f ? 'Flug wird verfolgt' : 'Flug nicht gefunden'; }
@@ -981,3 +994,20 @@ async function memNudge() {
   document.getElementById('mnYes').onclick = () => { box.remove(); go('chat'); send(de ? `Hilf mir, mich auf „${ev.text}“ (${when.toLowerCase()}) vorzubereiten.` : `Help me get ready for "${ev.text}" (${when.toLowerCase()}).`); };
 }
 setTimeout(() => { if (S) memNudge().catch(() => {}); }, 6000);
+
+// ---------- power tools: typed or spoken without asking the AI first ----------
+function powerRoute(text) {
+  const x = String(text || '').trim();
+  if (!x || x.length > 90) return null;
+  const de = (S?.language || 'de') === 'de', m = re => x.match(re);
+  let r;
+  if (/(was (habe|hab) ich (alles )?verpasst|what did i miss|was ist passiert,? (als|während) ich weg war)/i.test(x)) return { say: de ? 'Ich schaue nach, was du verpasst hast.' : 'Checking what you missed.', run: () => Power.missed() };
+  if (/^(clip (das|that|it|dies)|clip!?|speicher(e)? (den |einen )?clip|save (a |the )?clip)[.!]*$/i.test(x)) return { say: de ? 'Clip wird gespeichert.' : 'Saving the clip.', run: () => Extras.saveClip() };
+  if ((r = m(/(mündliche prüfung|frag mich (mündlich )?ab|prüf(e)? mich mündlich|oral exam|quiz me out loud)(?:\s+(?:über|zu|in|im|about|on)\s+(.+))?/i))) return { say: de ? 'Okay, ich frage dich ab.' : "Okay, let's do an oral exam.", run: () => Power.oralExam((r[4] || '').replace(/[?.!]+$/, '')) };
+  if (/(trend-?radar|roblox[- ]?trends?|was ist (gerade )?(im )?trend (auf|bei) roblox|welche roblox-?spiele (sind )?(gerade )?(im )?trend)/i.test(x)) return { say: 'Trend-Radar', run: () => Power.trends() };
+  if ((r = m(/thumbnails?(?:\s+(?:für|for|zu)\s+(.+))?/i))) return { say: 'Thumbnail-Maker', run: () => Power.thumbMaker((r[1] || '').replace(/[?.!]+$/, '')) };
+  if (/(turnier-?(organisator|baum)|^(ein )?turnier[.!]*$|(mach|erstell|start|organisier|plan|bau)\w*\s+(mir\s+|uns\s+)?(ein(en)?\s+)?(\S+\s+)?(turnier|tournament|bracket)|(make|create|start) (a |an )?(\S+ )?(tournament|bracket))/i.test(x)) return { say: de ? 'Turnier-Organisator ist offen.' : 'Tournament organizer is open.', run: () => Power.tourney() };
+  if (/(discord-?server (bauen|erstellen|machen|einrichten|aufbauen)|(bau|erstell|mach|richte?)\w*\s+(mir\s+)?(einen\s+|meinen\s+|den\s+)?discord-?server|build (me )?a discord server)/i.test(x)) return { say: 'Discord-Server-Bauer', run: () => Power.discordBuild() };
+  if (/(tiktoks? aus (meinem|einem|dem) video|video (in|zu) tiktoks?|(beste|besten) (momente|stellen) (aus|in|von) (meinem|dem) video|turn (my|a) video into tiktoks?)/i.test(x)) return { say: de ? 'TikTok-Macher ist offen.' : 'TikTok maker is open.', run: () => Power.clips() };
+  return null;
+}
