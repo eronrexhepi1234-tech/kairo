@@ -59,3 +59,21 @@
 .rb-langs span { font-size: 11px; color: #8d96aa; margin-right: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 .rb-langs button { padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #aab3c5; font: 700 11px 'JetBrains Mono Var', monospace; cursor: pointer; }
 .rb-langs button.on { border-color: #ff7a45; color: #fff; background: rgba(255,122,69,.16); }
+
+/* Remake / style prompt buttons and the remake name picker */
+.rb-plbl { margin-top: 4px; }
+.rb-pmodes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.rb-pmodes .rb-pbtn { justify-content: flex-start; text-align: left; padding: 9px 10px; }
+.rb-pmodes .rb-pbtn span { display: flex; flex-direction: column; line-height: 1.2; }
+.rb-pmodes .rb-pbtn b { font-size: 13px; }
+.rb-pmodes .rb-pbtn small { font-size: 10.5px; color: #8d96aa; font-weight: 500; }
+#rbRemake .ic { color: #5ce1ff; }
+#rbPrompt .ic { color: #ffd27a; }
+.rb-names { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding-top: 30px; animation: rbNIn .45s cubic-bezier(.2,.8,.2,1); }
+.rb-nopts { display: flex; flex-wrap: wrap; gap: 8px; }
+.rb-nopts button { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: #dfe5f0; font: 600 14px inherit; font-family: inherit; cursor: pointer; transition: transform .15s, border-color .15s, background .15s; animation: rbNIn .4s both; }
+.rb-nopts button:hover { transform: translateY(-2px); border-color: rgba(92,225,255,.45); }
+.rb-nopts button.on { border-color: #5ce1ff; background: rgba(92,225,255,.12); color: #fff; box-shadow: 0 0 18px rgba(92,225,255,.18); }
+.rb-names .field { font-size: 15px; padding: 12px 14px; }
+.rb-nhint { color: #8d96aa; font-size: 12px; }
+@keyframes rbNIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

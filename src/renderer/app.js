@@ -820,6 +820,14 @@ window.App = {
     const mins = (c.match(/(\d{1,2})\s*(min|minute)/) || [])[1];
     const has = s => document.getElementById(s);
     // big game prompt for another AI: research the game, write the prompt, open Claude/ChatGPT/Gemini with it
+    // "Mach ein Remake von Steal an Egg (in ChatGPT)" -> same game, new name "<game> 2"
+    const rmk = cmd.match(/remake\s+(?:von|vom|of|für|fuer|zu)\s+(.+?)(?:\s+(?:und\s+)?(?:in|an|bei|mit)\s+(claude|chatgpt|chat\s*gpt|gemini|perplexity|copilot)\b.*)?[?.!]*$/i);
+    if (rmk) {
+      const game = rmk[1].replace(/\s+(schreiben|machen|erstellen)$/i, '').trim();
+      const ai = (rmk[2] || 'claude').replace(/\s/g, '').toLowerCase();
+      RobloxUI.voicePrompt(game, ai, undefined, { mode: 'remake', newName: game + ' 2' });
+      return `Kairo recherchiert "${game}" und schreibt einen Remake-Prompt (gleiches Spiel, Name "${game} 2"). In etwa einer Minute öffnet sich ${ai === 'chatgpt' ? 'ChatGPT' : ai === 'gemini' ? 'Gemini' : 'Claude'} mit dem Prompt. Sag das dem Nutzer kurz.`;
+    }
     const gp = cmd.match(/prompt\s+(?:für|zu|über|fuer|for)\s+(?:das\s+spiel\s+|ein\s+spiel\s+wie\s+|das\s+roblox-?spiel\s+)?(.+?)(?:\s+(?:und\s+)?(?:in|an|bei|für|mit)\s+(claude|chatgpt|chat\s*gpt|gemini|perplexity|copilot)\b.*)?[?.!]*$/i);
     if (gp && !/\b(bewerbung|lebenslauf|bild|foto|logo|aufsatz|text|mail|e-mail|brief|präsentation|referat)\b/i.test(gp[1])) {
       const game = gp[1].replace(/\s+(und\s+)?(schick|send|gib|öffne|füg|tu|mach)\w*(\s+(ihn|es|den|das|mir|ihm))*\s*$/i, '').replace(/\s+(schreiben|machen|erstellen|senden|schicken|geben)$/i, '').trim();

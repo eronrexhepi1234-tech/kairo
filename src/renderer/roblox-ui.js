@@ -19,7 +19,9 @@ window.RobloxUI = (function () {
         <textarea class="field" id="rbQ" rows="3" placeholder="z. B. Ein Obby mit 10 Levels, Checkpoints und Lava, die tötet"></textarea>
         <div class="rb-modes" id="rbModes"><button data-m="build" class="on">${ic('pickaxe')} Bauen + Skripte</button><button data-m="script">${ic('terminal')} Nur Skript</button></div>
         <button class="btn primary rb-go" id="rbGo">${ic('wand-sparkles')} Bauplan erstellen</button>
-        <button class="btn rb-pbtn" id="rbPrompt" title="Schreib den Namen eines Spiels oder deine Idee – Kairo macht einen sehr detaillierten Prompt für Claude, ChatGPT oder Gemini">${ic('message-circle')} Als KI-Prompt (für Claude, ChatGPT …)</button>
+        <label class="rb-lbl rb-plbl">Als KI-Prompt (für Claude, ChatGPT …)</label>
+        <div class="rb-pmodes"><button class="btn rb-pbtn" id="rbRemake" title="Das gleiche Spiel nochmal bauen – gleiches Gameplay, gleiches Aussehen, neuer Name">${ic('copy')}<span><b>Remake</b><small>sieht gleich aus</small></span></button>
+        <button class="btn rb-pbtn" id="rbPrompt" title="Ein eigenes Spiel im Stil dieses Spiels – gleiche Art von Mechaniken, aber neue Idee">${ic('sparkles')}<span><b>Im Stil von</b><small>eigenes Spiel</small></span></button></div>
         <div class="rb-langs" id="rbLangs" title="Sprache des Prompts"><span>Prompt-Sprache</span>${PLANGS.map(([k, n]) => `<button data-l="${k}" class="${k === pLang() ? 'on' : ''}">${n}</button>`).join('')}</div>
         <button class="btn rb-pbtn rb-ibtn" id="rbIdeas" title="Kairo erfindet 3 komplett neue Roblox-Spiele (optional mit deinem Wunsch im Feld oben)">${ic('lightbulb')} Eigene Spielidee erfinden</button>
         <button class="btn rb-pbtn" id="rbPaste" title="Antwort von ChatGPT oder Claude einfügen – Kairo legt alle Dateien in Studio an">${ic('clipboard-list')} KI-Antwort einfügen</button>
@@ -30,6 +32,7 @@ window.RobloxUI = (function () {
     el.querySelectorAll('.rb-ideas button').forEach(b => b.onclick = () => { $r('rbQ').value = b.textContent; make(); });
     $r('rbGo').onclick = make;
     $r('rbPrompt').onclick = () => promptOnPage();
+    $r('rbRemake').onclick = remakeName;
     $r('rbIdeas').onclick = () => ideasOnPage($r('rbQ').value.trim());
     $r('rbPaste').onclick = pasteOnly;
     $r('rbLangs').querySelectorAll('[data-l]').forEach(b => b.onclick = () => { setPLang(b.dataset.l); $r('rbLangs').querySelectorAll('[data-l]').forEach(x => x.classList.toggle('on', x === b)); });
@@ -140,17 +143,35 @@ window.RobloxUI = (function () {
     $r('rbMain').querySelectorAll('[data-p]').forEach(b => b.onclick = () => promptOnPage(r.ideas[+b.dataset.p]));
     $r('rbMain').querySelectorAll('[data-b]').forEach(b => b.onclick = () => { const x = r.ideas[+b.dataset.b]; $r('rbQ').value = `Prototyp für mein Spiel "${x.name}": ${x.pitch} ${x.loop} Baue die Start-Map und die wichtigste Mechanik.`; make(); });
   }
-  async function promptOnPage(idea) {
+  // Remake: first choose the new name (examples or an own one)
+  function remakeName() {
+    const q = $r('rbQ').value.trim(); if (!q) return window.toast('Schreib den Namen des Spiels oder deine Idee');
+    stop3d();
+    const opts = [`${q} 2`, `${q}: The End`, `${q} Reborn`, `Super ${q}`, `${q} Remastered`, `${q} X`];
+    $r('rbMain').innerHTML = `<div class="rb-names"><div class="rb-top"><div><small>Remake · ${esc(q)}</small><h2>Wie soll dein Remake heissen?</h2><p>Das Spiel wird gleich wie das Original – nur der Name ist neu. Wähl einen Vorschlag oder schreib einen eigenen.</p></div></div>
+      <div class="rb-nopts">${opts.map((n, i) => `<button data-n="${esc(n)}" class="${i ? '' : 'on'}" style="animation-delay:${i * 60}ms">${esc(n)}</button>`).join('')}</div>
+      <label class="rb-lbl">Eigener Name</label><input class="field" id="rbNName" maxlength="60" placeholder="z. B. Egg Heist Deluxe" value="${esc(opts[0])}">
+      <button class="btn primary rb-go" id="rbNGo">${ic('wand-sparkles')} Remake-Prompt erstellen</button>
+      <small class="rb-nhint">Tipp: Ein eigener Name ist am besten – Roblox mag keine Spiele, die so tun, als wären sie das Original.</small></div>`;
+    const inp = $r('rbNName');
+    $r('rbMain').querySelectorAll('[data-n]').forEach(b => b.onclick = () => { inp.value = b.dataset.n; $r('rbMain').querySelectorAll('[data-n]').forEach(x => x.classList.toggle('on', x === b)); });
+    inp.oninput = () => $r('rbMain').querySelectorAll('[data-n]').forEach(x => x.classList.toggle('on', x.dataset.n === inp.value));
+    const go = () => promptOnPage(null, { mode: 'remake', newName: inp.value.trim() || opts[0] });
+    $r('rbNGo').onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+    inp.focus(); inp.select();
+  }
+  async function promptOnPage(idea, opt = {}) {
     if (idea instanceof Event) idea = null;
+    const remake = opt.mode === 'remake';
     const q = idea ? idea.name : $r('rbQ').value.trim(); if (!q) return window.toast('Schreib den Namen des Spiels oder deine Idee');
     stop3d();
     $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b id="rbPStep">${idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'}</b><small>${esc(q)}</small></div>`;
     const off = window.kairo.roblox.onPromptStep(s => { const el = $r('rbPStep'); if (el) el.textContent = s === 'write' || idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
-    const r = await window.kairo.roblox.prompt(idea ? { idea, lang: pLang() } : { game: q, lang: pLang() }); usedLang = pLang();
+    const r = await window.kairo.roblox.prompt(idea ? { idea, lang: pLang() } : { game: q, lang: pLang(), mode: remake ? 'remake' : 'style', newName: opt.newName }); usedLang = pLang();
     off?.();
     if (!$r('rbMain')) return;
     if (!r.ok) { $r('rbMain').innerHTML = `<div class="rb-wait"><b>✕ ${esc(r.error.message)}</b></div>`; return; }
-    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Prompt · ${esc(r.platform)}</small><h2>${esc(r.name || (idea ? q : 'Prompt für ' + q))}</h2><p>${idea ? 'Kairos eigene Spielidee.' : `Inspiriert von „${esc(q)}“ – als eigenes Spiel.`} ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
+    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>${remake ? 'Remake-Prompt' : 'KI-Prompt'} · ${esc(r.platform)}</small><h2>${esc(r.name || (idea ? q : 'Prompt für ' + q))}</h2><p>${idea ? 'Kairos eigene Spielidee.' : remake ? `Remake von „${esc(q)}“ – gleiches Spiel, neuer Name.` : `Inspiriert von „${esc(q)}“ – als eigenes Spiel.`} ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
       <div class="rb-act"><button class="btn primary" id="rbPCopy">${ic('copy')} Prompt kopieren</button>${AIS.map(([k, n]) => `<button class="btn" data-ai="${k}">${ic('external-link')} In ${n} öffnen</button>`).join('')}</div>
       ${r.research ? `<details class="rb-research"><summary>${ic('search')} Was Kairo über das Spiel herausgefunden hat</summary><div class="md">${window.renderMarkdown ? window.renderMarkdown(r.research) : esc(r.research)}</div></details>` : ''}
       ${howToBuild(r.prompt)}
@@ -267,11 +288,11 @@ window.RobloxUI = (function () {
   }
 
   // voice: "Mach einen Prompt für Steal an Egg (in ChatGPT)" -> research, write, open the AI with it
-  async function voicePrompt(game, target = 'claude', lang) {
+  async function voicePrompt(game, target = 'claude', lang, opt = {}) {
     document.getElementById('gpCard')?.remove();
     document.body.insertAdjacentHTML('beforeend', `<div class="gp-card" id="gpCard"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><div><small>KI-Prompt für ${esc(AIS.find(a => a[0] === target)?.[1] || 'KI')}</small><b>${esc(game)}</b><span id="gpStep">Recherchiere das Spiel…</span></div></div>`);
     const off = window.kairo.roblox.onPromptStep(s => { const el = $r('gpStep'); if (el) el.textContent = s === 'write' ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
-    const r = await window.kairo.roblox.prompt({ game, lang: lang || pLang() });
+    const r = await window.kairo.roblox.prompt({ game, lang: lang || pLang(), mode: opt.mode, newName: opt.newName });
     off?.();
     const card = $r('gpCard');
     if (!r.ok) { if (card) card.innerHTML = `<div><b>✕ Prompt fehlgeschlagen</b><span>${esc(r.error.message)}</span></div>`; setTimeout(() => card?.remove(), 6000); return null; }

@@ -92,23 +92,29 @@ Return ONLY JSON: {"ideas":[{"name":"catchy game name","genre":"","pitch":"one e
   return { ideas: j.ideas.slice(0, 3) };
 }
 
-async function gamePrompt({ game, extra, idea, lang: want }, onStep = () => {}) {
+// mode 'style' = an own game in the style of the game, 'remake' = the same game rebuilt from scratch under a new name
+async function gamePrompt({ game, extra, idea, lang: want, mode = 'style', newName = '' }, onStep = () => {}) {
+  const remake = !idea && mode === 'remake';
+  newName = String(newName || '').trim().slice(0, 60) || (remake ? game + ' 2' : '');
   const s = store.get(), LANGS = { de: 'German', en: 'English', sq: 'Albanian', fr: 'French', es: 'Spanish', it: 'Italian', tr: 'Turkish', pt: 'Portuguese' }, lang = LANGS[want] || LANGS[s.language] || 'German';
   if (idea) game = idea.name || game;
   const platform = /unity/i.test(game + extra) ? 'Unity (C#)' : /godot/i.test(game + extra) ? 'Godot (GDScript)' : /(web|browser|html)/i.test(game + extra) ? 'a browser game (HTML5 + JavaScript)' : 'Roblox (Luau, Roblox Studio)';
   onStep('research');
   let research = idea ? `This is Kairo's own ORIGINAL game idea – build exactly this game, keep its name "${idea.name}":\n${JSON.stringify(idea, null, 1)}` : '';
   if (!idea) try {
-    research = await P().complete(s, { webSearch: s.provider === 'gemini', system: `You are a game researcher. Search the web and describe the game precisely and completely: genre, core gameplay loop, every mechanic and system, items/pets/units and their rarities, economy (currencies, prices, income rates), progression and rebirths, maps and areas, UI screens, social/multiplayer features (trading, stealing, PvP, teams), events and updates, monetization (game passes, developer products), what makes it fun and addictive, common player complaints. Use concrete numbers where known. Max 700 words. Language: ${lang}.`, messages: [{ role: 'user', text: `Game: ${game}${platform.startsWith('Roblox') ? ' (Roblox game)' : ''}` }] });
+    research = await P().complete(s, { webSearch: s.provider === 'gemini', system: `You are a game researcher. Search the web and describe the game precisely and completely: genre, core gameplay loop, every mechanic and system, items/pets/units and their rarities, economy (currencies, prices, income rates), progression and rebirths, maps and areas, UI screens, social/multiplayer features (trading, stealing, PvP, teams), events and updates, monetization (game passes, developer products), what makes it fun and addictive, common player complaints. Use concrete numbers where known. ${remake ? 'Also describe exactly how it LOOKS: map layout and sizes, colours, art style, lighting, every UI screen with its position, colours and buttons, animations and sounds. Max 1100 words.' : 'Max 700 words.'} Language: ${lang}.`, messages: [{ role: 'user', text: `Game: ${game}${platform.startsWith('Roblox') ? ' (Roblox game)' : ''}` }] });
   } catch { research = ''; }
   onStep('write');
   const sys = `You are a senior ${platform} game designer, lead programmer and expert prompt engineer.
 ${idea ? `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build the complete, polished game "${idea.name}" for ${platform}, exactly as described in the game idea below. Keep its name, theme, loop and twist, and work out every detail.`
+  : remake ? `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a REMAKE of "${game}" for ${platform}, called "${newName}".
+The remake must play, feel and look as close to the original as possible: the same core loop, the same mechanics and systems, the same kind of items/pets and rarities, the same economy and numbers, the same map layout and sizes, the same art style, colours and lighting, the same UI screens with the same layout and buttons, the same animations, sounds and game feel. Describe ALL of it so precisely that the AI can rebuild it without ever having seen the original.
+Its name is "${newName}" everywhere (title, UI, logo text). All code, models and textures are made fresh by the AI – never copy the original's files, logos or images.`
   : `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a complete, polished, original game for ${platform} in the style of "${game}".
 The new game must be ORIGINAL: its own name, own theme/setting, own item names and visuals, plus 2-3 fresh twists — it uses the same kind of mechanics and game feel, but is not a copy (no copied names, logos, assets or text).`}
 Write the WHOLE prompt in ${lang} (also translate all section headings below into ${lang}), in Markdown, addressed to the AI in the second person. Be very concrete: exact numbers, tables, names, file paths. Structure it with these sections:
 1. Rolle & Ziel (who the AI is, what to build, quality bar)
-2. Spielidee & neuer Name, Setting, Zielgruppe, was es süchtig macht
+2. ${remake ? `Spielidee: Remake von „${game}“ als „${newName}“, Setting, Zielgruppe, was es süchtig macht` : 'Spielidee & neuer Name, Setting, Zielgruppe, was es süchtig macht'}${remake ? '\n2b. Look & Feel 1:1 (art style, colours as hex codes, lighting, map layout, every UI screen exactly as in the original)' : ''}
 3. Core Gameplay Loop (Schritt für Schritt, was der Spieler jede Minute tut)
 4. Alle Systeme im Detail (each with rules, numbers, edge cases): e.g. Sammeln/Kaufen, Ausbrüten/Seltenheiten (table with chances), Stehlen/Verteidigen, Basis/Plot, Geld & Einkommen pro Sekunde, Upgrades, Rebirth, Leaderboards, Handel, Events — only what fits the game
 5. Economy-Tabelle (prices, income, rarity multipliers, balancing curve)
@@ -122,15 +128,17 @@ Write the WHOLE prompt in ${lang} (also translate all section headings below int
 13. Qualitätsregeln für die AI: complete code for every file (no placeholders, no "…"), comments, modern ${platform.startsWith('Roblox') ? 'Luau (task.wait, typed where useful, no deprecated APIs)' : 'code'}, ask before guessing assets, output file by file with full paths, start with Phase 1 and wait for "weiter"
 14. Test-Checkliste (what to test after each phase)
 Use the research below for the mechanics. Return ONLY the prompt text, no explanation before or after.`;
-  let prompt = await P().complete(s, { system: sys, messages: [{ role: 'user', text: `${idea ? 'Game to build' : 'Game to take inspiration from'}: ${game}\n${extra ? 'Extra wishes: ' + extra + '\n' : ''}\nResearch about the game:\n${research || '(no research available – use your knowledge of the genre)'}` }] });
+  let prompt = await P().complete(s, { system: sys, messages: [{ role: 'user', text: `${idea ? 'Game to build' : remake ? `Game to remake (new name: ${newName})` : 'Game to take inspiration from'}: ${game}\n${extra ? 'Extra wishes: ' + extra + '\n' : ''}\nResearch about the game:\n${research || '(no research available – use your knowledge of the genre)'}` }] });
   prompt = String(prompt || '').replace(/^```(?:markdown)?\s*/i, '').replace(/```\s*$/, '').trim();
+  // sometimes the AI puts a short intro ('The following prompt is ...') before the real prompt: start at its first heading
+  { const h = prompt.search(/^#\s/m); if (h > 0 && h < 1500 && /prompt/i.test(prompt.slice(0, h))) prompt = prompt.slice(h).trim(); }
   if (prompt.length < 800) throw new Error('Der Prompt ist zu kurz geworden – nochmal versuchen');
-  const name = (prompt.match(/(?:neuer name|spielname|name des spiels)[^\n:]*[:：]\s*\**([^\n*]{2,40})/i) || [])[1]?.trim() || '';
+  const name = remake ? newName : (prompt.match(/(?:neuer name|spielname|name des spiels)[^\n:]*[:：]\s*\**([^\n*]{2,40})/i) || [])[1]?.trim() || '';
   // keep a copy as a file
   const dir = path.join(app.getPath('documents'), 'Kairo', 'Prompts'); fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `Prompt ${String(game).replace(/[<>:"/\\|?*]/g, '').slice(0, 40)} ${new Date().toLocaleDateString('sv')}.md`);
+  const file = path.join(dir, `Prompt ${remake ? 'Remake ' : ''}${String(remake ? newName : game).replace(/[<>:"/\\|?*]/g, '').slice(0, 40)} ${new Date().toLocaleDateString('sv')}.md`);
   fs.writeFileSync(file, prompt);
-  return { prompt, research, name, file, platform, chars: prompt.length };
+  return { prompt, research, name, file, platform, chars: prompt.length, mode: remake ? 'remake' : idea ? 'idea' : 'style' };
 }
 
 function build(planObj) {
