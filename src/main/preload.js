@@ -37,7 +37,10 @@ contextBridge.exposeInMainWorld('kairo', {
   },
   openExternal: url => invoke('app:open-external', url),
   action: a => invoke('action:run', a),
-  memory: { list: () => invoke('mem:list'), add: t => invoke('mem:add', t), remove: id => invoke('mem:remove', id) },
+  memory: { list: () => invoke('mem:list'), add: t => invoke('mem:add', t), remove: id => invoke('mem:remove', id), learn: texts => invoke('mem:learn', texts), upcoming: () => invoke('mem:upcoming') },
+  marks: { show: d => invoke('marks:show', d), hide: () => invoke('marks:hide') },
+  geoAiGuess: b64 => invoke('geo:aiGuess', b64),
+  onMarks: fn => on('marks:data', fn),
   reminders: {
     list: () => invoke('rem:list'), add: r => invoke('rem:add', r), remove: id => invoke('rem:remove', id),
     snooze: (r, m) => invoke('rem:snooze', r, m), onFire: fn => on('reminder:fire', fn)

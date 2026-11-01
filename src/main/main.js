@@ -479,6 +479,7 @@ if (gotLock) app.whenReady().then(() => {
     }
   });
   optional('./fun', { register: () => {} }).register({ getWin: () => win, store });
+  optional('./look', { register: () => {} }).register({ getWin: () => win, store });
   optional('./extras2', { register: () => {} }).register({ getWin: () => win, store });
   optional('./show', { register: () => {} }).register({ getWin: () => win, store });
   optional('./finder', { register: () => {} }).register({ getWin: () => win, store });

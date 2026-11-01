@@ -30,6 +30,7 @@ const DEFAULTS = {
   schema: 4,
   miniOrb: true,
   devMode: false,
+  autoMemory: true,
   userTitle: '',
   pet: false,
   desktopWeather: false,

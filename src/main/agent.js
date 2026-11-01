@@ -4,6 +4,13 @@ const tools = require('./tools');
 const { buildSystemPrompt } = require('./persona');
 
 const SCREEN_RX = /(bildschirm|screen|was siehst|what do you see|what'?s on my|ekran|écran|pantalla|schermo|was ist das hier|what is this|çfarë sheh|cosa vedi|qué ves|monitor)/i;
+// "hilf mir hier", "schau mal hier", "was ist das für ein Fehler": look at the screen and point at things
+const HELP_RX = /(hilf mir (hier|mal|dabei|damit|bei dem|bei diesem)|schau (mal )?(hier|her|da)\b|guck (mal )?(hier|her|da)\b|schau (mal )?auf (meinen|den) bildschirm|was (ist|bedeutet) (das|dieser|der) (hier )?(für (ein|einen) )?fehler|wo (muss|soll|kann) ich (hier )?(klicken|drücken)|wo (ist|finde ich) (hier )?(der|die|das) .{0,30}(knopf|button|einstellung|option|menü)|zeig mir,? wo|help me (here|with this)|look (here|at this|at my screen)|what does this error|where do i click|më ndihmo këtu|shiko këtu)/i;
+const MARK_PROMPT = `The user wants live help with what is on their screen right now (the attached screenshot).
+Answer short and concrete in their language: for an error, say what it means and how to fix it step by step; for an app or a website, say exactly where to click; for homework or a game, help with the thing they see.
+Point at the exact spots on the screen: at the very end add up to 4 tags, each on its own line:
+[[mark: ymin, xmin, ymax, xmax | label of 1-4 words]]
+The 4 numbers are the box around the thing, normalized to 0-1000 of the screenshot (0,0 = top-left corner). Only mark things you really see, tight boxes, most important first. The app draws them on the user's real screen.`;
 const WHERE_RX = /(wo (ist|könnte|liegt) das|wo bin ich|welches land|which country|where (is|could) this|where am i|ku është kjo|ku jam|në cilin vend|où est-ce|quel pays|dónde es esto|qué país|dove si trova|che paese|burası neresi|hangi ülke)/i;
 const NEWS_RX = /(news|nachrichten|neuigkeiten|heute.{0,25}(passiert|los|geschehen|neu)|was gibt.{0,12}neues|aktuell|happened today|today'?s|going on (in the world|today)|schlagzeilen|headlines|was ist los|lajme|sot.{0,20}ndodh|çfarë.{0,20}ndodh|actualités|aujourd'hui|noticias|qué pasó hoy|notizie|oggi|haber|bugün|ne oldu)/i;
 const NEWS_ABOUT_RX = /(?:news|nachrichten|lajme|noticias|notizie|actualités)\s+(?:about|über|zu|aus|from|in|për|nga|sobre|su|sur)\s+(.{2,60})/i;
@@ -12,7 +19,7 @@ const WHERE_PROMPT = `The user wants to know WHERE the place on their screen is 
 1. List the concrete clues you see: signs and their language/script, road markings, driving side, licence plates, poles, bollards, architecture, vegetation, landscape, sun, weather, people, shops, brands.
 2. Use Google Search if available to check specific clues (shop names, signs, landmarks, phone prefixes).
 3. Give your best guess: country, region/city, approximate coordinates, and confidence in %. Mention 1-2 alternatives if unsure.
-4. End your reply with a line \`[[fly: <best guess place name>]]\` so the app can show it on the Earth.`;
+4. End your reply with a line \`[[guess: <lat>, <lng> | <best guess place, country> | <confidence 0-100>]]\` so the app can show your guess as a pin over the screen.`;
 
 // questions whose answer changes over time -> let Gemini search Google
 const FRESH_RX = /(wann kommt|wann erscheint|release|erscheint|ist .{1,30} down|server.{0,10}(down|status)|morgen|aktuell|neueste|latest|newest|preis|price|kostet|score|ergebnis|resultat|spielstand|tabelle|transfer|update|patch|season|saison|turnier|tournament|this week|diese woche|gestern|yesterday|2026|2027)/i;
@@ -48,7 +55,8 @@ function detect(text) {
     clip: CLIP_RX.test(text),
     mail: MAIL_RX.test(text),
     history: HISTORY_RX.test(text),
-    screen: where || SCREEN_RX.test(text),
+    help: HELP_RX.test(text),
+    screen: where || HELP_RX.test(text) || SCREEN_RX.test(text),
     news: !where && NEWS_RX.test(text),
     newsQuery: (text.match(NEWS_ABOUT_RX) || [])[1]?.replace(/[?.!]+$/, '') || ''
   };
@@ -66,7 +74,7 @@ async function run(settings, req, onEvent, signal) {
   const images = [...(req.images || [])];
   const context = [];
   const sources = [];
-  const extra = [req.extraSystem, want.where ? WHERE_PROMPT : ''].filter(Boolean).join('\n\n');
+  const extra = [req.extraSystem, want.where ? WHERE_PROMPT : '', (attachScreen && !want.where) ? MARK_PROMPT : ''].filter(Boolean).join('\n\n');
 
   if (attachScreen) {
     onEvent('status', want.where ? 'where' : 'screen');

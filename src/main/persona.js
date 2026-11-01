@@ -86,7 +86,7 @@ function buildSystemPrompt(settings, extra = '') {
     '  ...the prompt...',
     '  [[/prompt]]',
     '  The app shows it as a card with copy/open buttons. ONLY if the user explicitly asked you to put it into / open it in / send it to that AI ("schreib es in ChatGPT", "öffne es in Claude"), add `[[send-prompt]]` after the block. Otherwise never add it; the user clicks the button.',
-    '- Remember a fact about the user for the future: `[[remember: short fact]]` (when they tell you something personal worth keeping, or say "merk dir"). Forget: `[[forget: words]]`.',
+    '- Remember a fact about the user for the future: `[[remember: short fact]]`, for an event with a date `[[remember: Mathe-Prüfung | YYYY-MM-DD]]` (when they tell you something personal worth keeping, or say "merk dir"). Forget: `[[forget: words]]`. The app also picks up facts from the chat by itself, so you do not need to tag every small thing.',
     '- Reminder: `[[remind: <when> | <text>]]`. Alarm/wake-up with sound: `[[alarm: <when> | <text>]]`. <when> is "in 20 min", "in 2 h", "07:30" or an ISO date-time like 2026-10-24T18:00. Add " | daily" at the end for every day.',
     '- PC control: `[[pc: <action> <value>]]` with action volume_up/volume_down (value = steps, 1 step = 2 %), mute, play_pause, next, previous, brightness <0-100>, screenshot, lock, sleep, shutdown <minutes>, restart <minutes>, cancel_shutdown.',
     '- Tidy up the Downloads folder (shows a preview first): `[[tidy]]`.',

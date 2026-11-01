@@ -203,13 +203,19 @@ function parseReply(text) {
   const readAloud = /\[\[read\]\]/i.test(shown), saveClip = /\[\[clip\]\]/i.test(shown);
   shown = shown.replace(/\[\[(read|clip)\]\]/gi, '').replace(/\[\[(cards|translate):[^\]]*\]\]/gi, '');
   const quiz = grab(/\[\[quiz:\s*([^\]]+)\]\]/gi)[0] || null;
+  // live screen help: boxes to draw on the real screen, and a place guess (GeoGuessr & co.)
+  const marks = grab(/\[\[mark:\s*([^\]]+)\]\]/gi).map(s => { const [nums, label] = s.split('|'); const box = (nums.match(/-?\d+(\.\d+)?/g) || []).slice(0, 4).map(Number); return box.length === 4 ? { box, label: (label || '').trim().slice(0, 40) } : null; }).filter(Boolean);
+  let guess = null;
+  const gt = grab(/\[\[guess:\s*([^\]]+)\]\]/gi)[0];
+  if (gt) { const [ll, place, conf] = gt.split('|').map(x => x.trim()); const n = (ll.match(/-?\d+(\.\d+)?/g) || []).map(Number); if (n.length >= 2) guess = { lat: n[0], lng: n[1], place: place || '', confidence: parseFloat(conf) || 0 }; }
+  shown = shown.replace(/\[\[(mark|guess):[^\]]*\]\]/gi, '');
   shown = shown.replace(OPEN_RX, '').replace(APP_RX, '').replace(FLY_RX, '')
     .replace(/\[\[(chess|tidy|briefing)\]\]/gi, '').replace(/\[\[(remember|forget|remind|alarm|pc|quiz):[^\]]*\]\]/gi, '').trim();
   // leftovers like empty ``` fences around removed tags
   shown = shown.replace(/^\s*`{1,3}\s*$/gm, '').replace(/`{2,3}(?=\s*$)/g, '').replace(/\n{3,}/g, '\n\n').trim();
   const sendPrompt = /\[\[send-prompt\]\]/i.test(shown);
   shown = shown.replace(/\[\[send-prompt\]\]/gi, '');
-  return { prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio, build };
+  return { marks, guess, prompts, sendPrompt, shown, files, opens, apps, places, chess, remember, forget, reminds, pcs, tidy, briefing, quiz, cards, translate, readAloud, saveClip, images, pptx, homework, exams, money, diary, routines, layers, tours, roles, countdowns, countries, cams, recipes, patches, vfx, bdays, flags, show, space, studio, build };
 }
 
 // prompt for another AI: card with copy + open buttons
@@ -427,6 +433,7 @@ async function send(text, opts = {}) {
   if (!text || currentReq) return;
   $('input').value = ''; autosize();
   Voice.stop();
+  window.kairo.marks.hide();
 
   // handled locally: a routine's trigger phrase ("Gute Nacht")
   const routine = await Life.matchPhrase(text);
@@ -498,8 +505,13 @@ async function send(text, opts = {}) {
   saveHistory();
   scrollDown();
 
-  const { places, shown } = parseReply(aiMsg.text);
+  const { places, shown, marks, guess } = parseReply(aiMsg.text);
   if (places.length) { go('earth'); setTimeout(() => Earth.flyToName(places[0]), 250); }
+  if (r.ok && (marks.length || guess)) {
+    const plain = shown.replace(/%%\w+?\d+%%/g, '').replace(/[*#`_>]/g, '').replace(/\n{2,}/g, '\n').trim();
+    window.kairo.marks.show({ marks, guess, text: plain.length > 320 ? plain.slice(0, 317) + '…' : plain, seconds: guess ? 25 : 35, stepAside: true, guessTitle: S.language === 'de' ? 'Kairos Tipp' : "Kairo's guess" });
+  }
+  if (r.ok) learnFrom(text);
   if (S.voice.autoSpeak && r.ok) Voice.speak(shown.replace(/%%FILE\d+%%/g, ''), S);
 }
 
@@ -932,3 +944,40 @@ window.kairo.search.onAsk(text => window.App.askInChat(text));
   renderAll();
   setTimeout(() => { $('boot').remove(); $('input').focus(); applyHandsFree(); }, 2200);
 })();
+
+// ---------- smart memory: Kairo picks up facts and dates from the chat by itself ----------
+const learnQ = [];
+let learnN = 0;
+function learnFrom(text) {
+  if (S.autoMemory === false || !text || text.length < 8) return;
+  learnQ.push(text); learnN++;
+  // personal-sounding messages right away, others every 4th message
+  const personal = /\b(ich (bin|habe|hab|heisse|heiße|spiele|mag|liebe|hasse|gehe|will|baue|mache)|mein(e|en|em)?|morgen|übermorgen|nächste woche|prüfung|test|geburtstag|ferien|merk dir|i am|i'm|i have|my|tomorrow|exam|birthday)\b/i.test(text);
+  if (!personal && learnN % 4) return;
+  const batch = learnQ.splice(0);
+  window.kairo.memory.learn(batch.slice(-4)).then(r => {
+    if (!r?.ok || !r.added?.length) return;
+    window.toast((S.language === 'de' ? 'Gemerkt: ' : 'Remembered: ') + r.added.map(m => m.text + (m.when ? ' (' + new Date(m.when + 'T12:00').toLocaleDateString(S.language === 'de' ? 'de-CH' : 'en-GB', { day: 'numeric', month: 'numeric' }) + ')' : '')).join(', '));
+    window.Today?.loadMemory?.();
+  }).catch(() => {});
+}
+
+// once a day: "Morgen: Mathe-Prüfung – soll ich dir helfen?"
+async function memNudge() {
+  let key = 'kairo.nudge.' + new Date().toDateString();
+  try { if (localStorage.getItem(key)) return; } catch {}
+  const list = await window.kairo.memory.upcoming();
+  const ev = (list || [])[0];
+  if (!ev) return;
+  try { localStorage.setItem(key, '1'); } catch {}
+  const de = S.language === 'de', days = Math.round((new Date(ev.when + 'T12:00') - new Date(new Date().toDateString() + ' 12:00')) / 864e5);
+  const when = days <= 0 ? (de ? 'Heute' : 'Today') : days === 1 ? (de ? 'Morgen' : 'Tomorrow') : (de ? 'In ' + days + ' Tagen' : 'In ' + days + ' days');
+  document.getElementById('memNudge')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `<div class="mem-nudge" id="memNudge"><div class="mn-ic">${ic('calendar')}</div>
+    <div class="mn-tx"><small>${when}</small><b>${escAttr(ev.text)}</b><span>${de ? 'Soll ich dir helfen, dich vorzubereiten?' : 'Want me to help you get ready?'}</span></div>
+    <div class="mn-bt"><button class="btn primary" id="mnYes">${de ? 'Ja, los' : "Yes, let's go"}</button><button class="btn" id="mnNo">${de ? 'Später' : 'Later'}</button></div></div>`);
+  const box = document.getElementById('memNudge');
+  document.getElementById('mnNo').onclick = () => box.remove();
+  document.getElementById('mnYes').onclick = () => { box.remove(); go('chat'); send(de ? `Hilf mir, mich auf „${ev.text}“ (${when.toLowerCase()}) vorzubereiten.` : `Help me get ready for "${ev.text}" (${when.toLowerCase()}).`); };
+}
+setTimeout(() => { if (S) memNudge().catch(() => {}); }, 6000);

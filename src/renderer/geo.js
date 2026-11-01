@@ -54,9 +54,9 @@ window.Geo = (function () {
           <button class="geo-x" id="geoClose">${ic('x')}</button></div>
         <div class="geo-main">
           <div class="geo-photo"><canvas id="geoCanvas"></canvas><div class="geo-scan"></div>
-            <div class="geo-photo-tools"><button class="btn" id="geoZoomOut">${ic('scan-search')} ${t('geo.zoomOut')} <small>−500</small></button></div>
+            <div class="geo-photo-tools"><button class="btn" id="geoZoomOut">${ic('scan-search')} ${t('geo.zoomOut')} <small>−500</small></button><button class="btn geo-ai" id="geoAi">${ic('bot')} Kairo spielt</button></div>
             <div class="geo-load" id="geoLoad">${ic('satellite')}<span>${t('geo.loading')}</span></div></div>
-          <div class="geo-map"><div id="geoGlobe"></div><div class="geo-hint" id="geoHint">${t('geo.click')}</div>
+          <div class="geo-map"><div id="geoGlobe"></div><div class="geo-hint" id="geoHint">${t('geo.click')}</div><div class="geo-ai-note" id="geoAiNote" hidden></div>
             <button class="btn primary geo-go" id="geoGo" disabled>${ic('map-pin')} ${t('geo.guess')}</button></div>
         </div>
         <div class="geo-result" id="geoResult" hidden></div>
@@ -64,6 +64,7 @@ window.Geo = (function () {
     el = $('geoGame');
     $('geoClose').onclick = close;
     $('geoGo').onclick = submit;
+    $('geoAi').onclick = aiPlay;
     $('geoZoomOut').onclick = async () => { if (zoomLv <= 10 || !cur) return; zoomLv -= 3; hints++; $('geoLoad').classList.add('on'); await photo($('geoCanvas'), cur.lat, cur.lng, zoomLv); $('geoLoad').classList.remove('on'); if (zoomLv <= 10) $('geoZoomOut').disabled = true; };
     return el;
   }
@@ -113,6 +114,7 @@ window.Geo = (function () {
     const p = PLACES[Math.floor(Math.random() * PLACES.length)];
     cur = { name: p[0], country: p[1], lat: p[2] + (Math.random() - .5) * .01, lng: p[3] + (Math.random() - .5) * .01, done: false };
     guess = null; zoomLv = 16; hints = 0;
+    $('geoAiNote').hidden = true; $('geoAi').disabled = false;
     $('geoZoomOut').disabled = false;
     $('geoGo').disabled = true; $('geoHint').classList.remove('hide');
     globe.htmlElementsData([]).arcsData([]).ringsData([]);
@@ -123,6 +125,28 @@ window.Geo = (function () {
     await photo($('geoCanvas'), cur.lat, cur.lng, zoomLv);
     $('geoLoad').classList.remove('on');
     $('geoCanvas').classList.remove('in'); void $('geoCanvas').offsetWidth; $('geoCanvas').classList.add('in');
+  }
+
+  // Kairo looks at the satellite photo, says why, sets the pin and guesses (only in Kairo's own game)
+  async function aiPlay() {
+    if (!cur || cur.done) return;
+    const b = $('geoAi'), note = $('geoAiNote');
+    b.disabled = true; b.innerHTML = `${ic('scan-search')} Kairo schaut…`;
+    note.hidden = false; note.className = 'geo-ai-note think'; note.innerHTML = `<b>Kairo</b><span>Ich schaue mir das Foto an …</span>`;
+    try {
+      const r = await window.kairo.geoAiGuess($('geoCanvas').toDataURL('image/jpeg', 0.85).split(',')[1]);
+      if (!r.ok) throw new Error(r.error.code === 'NO_KEY' ? t('err.nokey') : r.error.message);
+      if (!cur || cur.done) return;
+      const g = r.guess;
+      note.className = 'geo-ai-note';
+      note.innerHTML = `<b>Kairo tippt: ${esc(g.place)}${g.country ? ', ' + esc(g.country) : ''}</b><span>${esc(g.reason)}</span>${g.confidence ? `<i style="--c:${Math.min(100, g.confidence)}%"></i>` : ''}`;
+      globe.pointOfView({ lat: g.lat, lng: g.lng, altitude: 1.1 }, 1500);
+      await new Promise(res => setTimeout(res, 1600));
+      place(g.lat, g.lng);
+      await new Promise(res => setTimeout(res, 1400));
+      submit();
+    } catch (e) { note.hidden = true; window.toast('✕ ' + e.message); }
+    b.innerHTML = `${ic('bot')} Kairo spielt`;
   }
 
   function submit() {

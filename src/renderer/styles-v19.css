@@ -59,3 +59,19 @@
 .wlc-conf { position: absolute; left: 50%; top: 30%; pointer-events: none; }
 .wlc-conf i { position: absolute; width: 10px; height: 14px; border-radius: 3px; background: var(--c); opacity: 0; animation: wlcConf 1.8s var(--d) cubic-bezier(.16,1,.3,1) forwards; }
 @keyframes wlcConf { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 500px)) rotate(var(--r)); } }
+
+/* Kairo plays GeoGuessr */
+.geo-photo-tools { display: flex; gap: 8px; }
+.geo-ai { background: linear-gradient(135deg, rgba(139,92,255,.35), rgba(255,122,69,.35)); border-color: rgba(255,255,255,.18); }
+.geo-ai-note { position: absolute; left: 14px; right: 14px; top: 14px; z-index: 3; display: flex; flex-direction: column; gap: 3px; padding: 11px 14px 13px; border-radius: 14px; background: rgba(12,13,18,.9); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 14px 34px rgba(0,0,0,.45); backdrop-filter: blur(10px); animation: chipIn .45s; font-size: 13px; overflow: hidden; }
+.geo-ai-note b { color: var(--accent); font-size: 14px; } .geo-ai-note span { color: #c9ccd3; }
+.geo-ai-note i { position: absolute; left: 0; bottom: 0; height: 3px; width: var(--c); background: linear-gradient(90deg, #ffd27a, var(--accent)); }
+.geo-ai-note.think b::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 7px; border-radius: 50%; background: var(--accent); animation: blink 1s infinite; vertical-align: middle; }
+
+/* "Morgen: Mathe-Prüfung" nudge from the memory */
+.mem-nudge { position: fixed; right: 22px; bottom: 22px; z-index: 900; display: flex; align-items: center; gap: 14px; max-width: 520px; padding: 14px 16px; border-radius: 20px; background: rgba(16,17,22,.94); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 22px 60px rgba(0,0,0,.5); backdrop-filter: blur(14px); animation: chipIn .5s cubic-bezier(.2,.9,.2,1); }
+.mem-nudge .mn-ic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #ff5d8f); color: #fff; }
+.mem-nudge .mn-ic svg { width: 22px; height: 22px; }
+.mem-nudge .mn-tx { display: flex; flex-direction: column; min-width: 0; } .mem-nudge small { color: var(--accent); font-weight: 650; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+.mem-nudge b { font-size: 15px; } .mem-nudge span { color: #a7adb8; font-size: 13px; }
+.mem-nudge .mn-bt { display: flex; flex-direction: column; gap: 6px; flex: none; }

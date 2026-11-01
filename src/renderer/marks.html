@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src https://server.arcgisonline.com data:">
+<style>
+  :root { --acc: #ff7a45; --acc2: #ffb15c; }
+  html, body { margin: 0; width: 100%; height: 100%; background: transparent; overflow: hidden; font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", sans-serif; color: #f4f4f6; }
+  #stage { position: fixed; inset: 0; transition: opacity .35s; }
+  #stage.off { opacity: 0; }
+  /* dim everything a little, the marked spots stay bright */
+  .veil { position: fixed; inset: 0; background: rgba(6,8,12,.18); animation: fade .5s both; }
+  @keyframes fade { from { opacity: 0; } }
+
+  .box { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0), 0 0 0 2px var(--acc), 0 0 22px 4px rgba(255,122,69,.55), inset 0 0 18px rgba(255,122,69,.25);
+    animation: pop .55s cubic-bezier(.2,1.4,.4,1) both, glow 1.6s ease-in-out .6s infinite; }
+  @keyframes pop { from { transform: scale(1.35); opacity: 0; } }
+  @keyframes glow { 50% { box-shadow: 0 0 0 2px var(--acc2), 0 0 34px 8px rgba(255,140,80,.7), inset 0 0 24px rgba(255,140,80,.35); } }
+  .box::before, .box::after { content: ''; position: absolute; width: 16px; height: 16px; border: 3px solid #fff; }
+  .box::before { left: -7px; top: -7px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+  .box::after { right: -7px; bottom: -7px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+  .scan { position: absolute; inset: 0; overflow: hidden; border-radius: 10px; }
+  .scan i { position: absolute; left: 0; right: 0; height: 40%; background: linear-gradient(transparent, rgba(255,177,92,.28), transparent); animation: scan 1.8s linear infinite; }
+  @keyframes scan { from { top: -40%; } to { top: 100%; } }
+  .tag { position: absolute; left: -2px; display: flex; align-items: center; gap: 7px; white-space: nowrap; padding: 5px 11px 5px 5px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--acc), #ff5d8f); color: #fff; font-weight: 650; font-size: 13px; box-shadow: 0 8px 22px rgba(0,0,0,.45); animation: tagIn .5s .25s both; }
+  .tag b { display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: rgba(0,0,0,.28); font-size: 12px; }
+  .tag.up { bottom: calc(100% + 10px); } .tag.down { top: calc(100% + 10px); }
+  @keyframes tagIn { from { opacity: 0; transform: translateY(6px); } }
+
+  .card { position: fixed; right: 28px; bottom: 28px; width: 360px; padding: 14px 16px 16px; border-radius: 18px; background: rgba(14,15,19,.9); border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 20px 50px rgba(0,0,0,.5); backdrop-filter: blur(14px); animation: cardIn .55s cubic-bezier(.2,.9,.2,1) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+  .head { display: flex; align-items: center; gap: 8px; font: 600 11px "Cascadia Code", Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--acc); margin-bottom: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 10px var(--acc); animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  .txt { font-size: 13.5px; color: #e6e7ea; max-height: 150px; overflow: hidden; }
+  .bar { position: absolute; left: 16px; right: 16px; bottom: 7px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2)); transform-origin: left; }
+
+  .guess { position: fixed; right: 28px; top: 28px; width: 300px; border-radius: 18px; overflow: hidden; background: rgba(14,15,19,.92); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 20px 50px rgba(0,0,0,.5); animation: cardIn .6s .1s cubic-bezier(.2,.9,.2,1) both; }
+  .map { position: relative; height: 190px; overflow: hidden; background: #0b0f17; }
+  .map canvas { width: 100%; height: 100%; display: block; animation: zoom 1.4s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes zoom { from { transform: scale(1.6); filter: blur(4px); } }
+  .pin { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--acc); border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(255,122,69,.7); animation: ping 1.6s infinite; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 26px rgba(255,122,69,0); } 100% { box-shadow: 0 0 0 0 rgba(255,122,69,0); } }
+  .gi { padding: 12px 14px 14px; }
+  .gi b { display: block; font-size: 17px; }
+  .gi small { color: #9aa1ad; }
+  .conf { margin-top: 8px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .conf i { display: block; height: 100%; background: linear-gradient(90deg, #ffd27a, var(--acc)); animation: grow 1s .4s both; }
+  @keyframes grow { from { width: 0 !important; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const stage = document.getElementById('stage');
+  let tm = null;
+  const lon2tile = (lng, z) => (lng + 180) / 360 * (1 << z);
+  const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * (1 << z); };
+  function drawMap(cv, lat, lng, z) {
+    const g = cv.getContext('2d'), S = 256; cv.width = 600; cv.height = 380;
+    const fx = lon2tile(lng, z), fy = lat2tile(lat, z);
+    const ox = cv.width / 2 - (fx - Math.floor(fx)) * S, oy = cv.height / 2 - (fy - Math.floor(fy)) * S;
+    for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) {
+      const x = ((Math.floor(fx) + dx) % (1 << z) + (1 << z)) % (1 << z), y = Math.floor(fy) + dy;
+      if (y < 0 || y >= (1 << z)) continue;
+      const im = new Image(); im.onload = () => g.drawImage(im, ox + dx * S, oy + dy * S);
+      im.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+    }
+  }
+  window.kairo.onMarks(d => {
+    clearTimeout(tm);
+    if (!d) { stage.classList.add('off'); return; }
+    stage.classList.remove('off');
+    const secs = Math.max(8, Math.min(60, d.seconds || 30));
+    const W = innerWidth, H = innerHeight;
+    let html = (d.marks || []).length ? '<div class="veil"></div>' : '';
+    (d.marks || []).slice(0, 6).forEach((m, i) => {
+      let [y1, x1, y2, x2] = m.box.map(Number);
+      if (y2 < y1) [y1, y2] = [y2, y1]; if (x2 < x1) [x1, x2] = [x2, x1];
+      const pad = 6, l = x1 / 1000 * W - pad, t = y1 / 1000 * H - pad, w = Math.max(24, (x2 - x1) / 1000 * W + pad * 2), h = Math.max(20, (y2 - y1) / 1000 * H + pad * 2);
+      html += `<div class="box" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px;animation-delay:${i * .18}s,${.6 + i * .18}s"><div class="scan"><i></i></div>
+        ${m.label ? `<div class="tag ${t > 60 ? 'up' : 'down'}"><b>${i + 1}</b>${esc(m.label)}</div>` : ''}</div>`;
+    });
+    if (d.text) html += `<div class="card"><div class="head"><span class="dot"></span>Kairo</div><div class="txt">${esc(d.text)}</div><div class="bar"><i id="bar"></i></div></div>`;
+    if (d.guess) {
+      const c = Math.max(0, Math.min(100, +d.guess.confidence || 0));
+      html += `<div class="guess"><div class="map"><canvas id="map"></canvas><div class="pin"></div></div>
+        <div class="gi"><small>${esc(d.guessTitle || 'Kairos Tipp')}</small><b>${esc(d.guess.place || '')}</b>
+        <small>${(+d.guess.lat).toFixed(2)}°, ${(+d.guess.lng).toFixed(2)}°${c ? ' · ' + c + '%' : ''}</small>${c ? `<div class="conf"><i style="width:${c}%"></i></div>` : ''}</div></div>`;
+    }
+    stage.innerHTML = html;
+    // the answer card goes to a corner where it covers no mark (and not the guess card)
+    const card = stage.querySelector('.card');
+    if (card) {
+      const cw = card.offsetWidth, ch = card.offsetHeight, m = 28;
+      const boxes = [...stage.querySelectorAll('.box')].map(b => b.getBoundingClientRect());
+      if (d.guess) boxes.push({ left: W - 328, top: 28, right: W - 28, bottom: 360 });
+      const spots = [[W - cw - m, H - ch - m], [m, H - ch - m], [m, m], [W - cw - m, m], [(W - cw) / 2, H - ch - m]];
+      const free = spots.find(([x, y]) => !boxes.some(b => x < b.right + 12 && x + cw > b.left - 12 && y < b.bottom + 40 && y + ch > b.top - 40)) || spots[0];
+      Object.assign(card.style, { left: free[0] + 'px', top: free[1] + 'px', right: 'auto', bottom: 'auto' });
+    }
+    if (d.guess) drawMap(document.getElementById('map'), +d.guess.lat, +d.guess.lng, 5);
+    const bar = document.getElementById('bar');
+    if (bar) bar.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: secs * 1000, easing: 'linear', fill: 'forwards' });
+  });
+</script>
+</body>
+</html>
