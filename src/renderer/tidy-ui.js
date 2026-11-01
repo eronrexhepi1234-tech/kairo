@@ -68,6 +68,7 @@ window.Tidy = (function () {
     ['today', 'Heute', 'sun', 'tools', 'heute wetter erinnerung wecker countdown geburtstag', () => window.App.go('today'), 'App'],
     ['deck', 'Stream Deck', 'layout-dashboard', 'tools', 'stream deck knöpfe handy fernbedienung', () => DeckUI.open(), 'DeckUI'],
     ['phone', 'Handy-App', 'smartphone', 'tools', 'handy app telefon anruf qr', () => window.App.go('phone'), 'App'],
+    ['welcome', 'Einrichtung (Willkommen)', 'sparkles', 'tools', 'einrichtung setup start willkommen schlüssel key', () => Welcome.open(), 'Welcome'],
     ['settings', 'Einstellungen', 'settings', 'tools', 'einstellungen stimme ki schlüssel sprache', () => window.App.go('settings'), 'App']
   ];
   const feats = () => F.filter(f => !f[6] || has(f[6])).map(([id, name, icon, cat, kw, run]) => ({ id, name, icon, cat, kw, run }));
