@@ -176,3 +176,20 @@
 .th-row { display: flex; gap: 6px; padding: 8px; } .th-row .field { flex: 1; } .th-row .btn { display: inline-flex; align-items: center; }
 
 @media (max-width: 900px) { .cm-grid, .tr-grid, .ds-plan, .or-lists { grid-template-columns: 1fr; } .cm-stage { display: none; } }
+
+/* Discord builder: style picker, preview marks */
+.ds-style { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); margin-top: 6px; }
+.ds-style small { display: block; color: #8a93a6; font-size: 11.5px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .08em; }
+.ds-opts { display: flex; gap: 5px; flex-wrap: wrap; }
+.ds-opts button { padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: #dfe3ea; cursor: pointer; font-size: 13px; transition: .15s; }
+.ds-opts button:hover { border-color: rgba(88,101,242,.6); } .ds-opts button.on { background: #5865f2; border-color: #5865f2; color: #fff; }
+.ds-tg { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.ds-sum { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 13.5px; }
+.ds-sum b { color: #3ddc97; font-size: 16px; } .ds-old b { color: #8a93a6 !important; } .ds-old { color: #8a93a6; }
+.ds-badge { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 999px; background: rgba(88,101,242,.16); color: #c3c9ff; font-size: 12px; } .ds-badge svg { width: 14px; height: 14px; }
+.ds-ch u { text-decoration: none; margin-left: auto; display: inline-flex; color: #80848e; font-size: 11px; } .ds-ch u svg { width: 13px; height: 13px; } .ds-ch u + u { margin-left: 6px; }
+.ds-ch em, .ds-cat > b em { font-style: normal; font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,.08); color: #949ba4; margin-left: 6px; text-transform: none; letter-spacing: 0; }
+.ds-ch.ex, .ds-cat.ex > b, .ds-roles span.ex { opacity: .45; } .ds-roles span.ex { text-decoration: line-through; }
+.ds-roles span.hoist { font-weight: 700; }
+.ds-tree { max-height: 460px; } .ds-welcome + h5 { margin-top: 12px; }
+.ds-pbar { height: 8px; border-radius: 8px; background: rgba(255,255,255,.06); overflow: hidden; } .ds-pbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #5865f2, #3ddc97); transition: width .3s; }

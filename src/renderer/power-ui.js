@@ -277,9 +277,42 @@ window.Power = (function () {
   }
 
   // ================= 20: Discord server builder =================
-  const DS_IDEAS = () => de() ? ['Gaming-Server für Roblox mit Turnieren', 'Lern-Server für unsere Klasse', 'Server für meine Freunde', 'Community für meinen YouTube-Kanal'] : ['Gaming server for Roblox with tournaments', 'Study server for our class', 'Server for my friends', 'Community for my YouTube channel'];
+  const DS_IDEAS = () => de() ? ['Editing-Server für Edits (After Effects, Alight Motion, CapCut)', 'Gaming-Server für Roblox mit Turnieren', 'Lern-Server für unsere Klasse', 'Server für meine Freunde', 'Community für meinen YouTube-Kanal'] : ['Editing server for edits (After Effects, Alight Motion, CapCut)', 'Gaming server for Roblox with tournaments', 'Study server for our class', 'Server for my friends', 'Community for my YouTube channel'];
+  // fancy Discord fonts (Unicode letters), separators and category decorations
+  const SC = { a: 'ᴀ', b: 'ʙ', c: 'ᴄ', d: 'ᴅ', e: 'ᴇ', f: 'ꜰ', g: 'ɢ', h: 'ʜ', i: 'ɪ', j: 'ᴊ', k: 'ᴋ', l: 'ʟ', m: 'ᴍ', n: 'ɴ', o: 'ᴏ', p: 'ᴘ', q: 'ǫ', r: 'ʀ', s: 'ꜱ', t: 'ᴛ', u: 'ᴜ', v: 'ᴠ', w: 'ᴡ', x: 'x', y: 'ʏ', z: 'ᴢ' };
+  const mapFont = (s, A, a, d) => [...String(s).normalize('NFD')].map(ch => { const c = ch.charCodeAt(0); if (c >= 65 && c <= 90) return String.fromCodePoint(A + c - 65); if (c >= 97 && c <= 122) return String.fromCodePoint(a + c - 97); if (d && c >= 48 && c <= 57) return String.fromCodePoint(d + c - 48); return ch; }).join('');
+  const FONTS = [
+    ['plain', 'Normal', s => s],
+    ['bold', '𝗙𝗲𝘁𝘁', s => mapFont(s, 0x1D5D4, 0x1D5EE, 0x1D7EC)],
+    ['small', 'ꜱᴍᴀʟʟ ᴄᴀᴘꜱ', s => [...String(s).toLowerCase().normalize('NFD')].map(c => SC[c] || c).join('')],
+    ['mono', '𝙼𝚘𝚗𝚘', s => mapFont(s, 0x1D670, 0x1D68A, 0x1D7F6)],
+    ['script', '𝓢𝓬𝓻𝓲𝓹𝓽', s => mapFont(s, 0x1D4D0, 0x1D4EA, null)],
+    ['serif', '𝐒𝐞𝐫𝐢𝐟', s => mapFont(s, 0x1D400, 0x1D41A, 0x1D7CE)]
+  ];
+  const SEPS = ['︱', '・', '┃', '»', '-'];
+  const DECOS = [['plain', n => n], ['line', n => `── ${n} ──`], ['soft', n => `꒰ ${n} ꒱`], ['box', n => `【 ${n} 】`], ['star', n => `✦ ${n} ✦`], ['bar', n => `┊ ${n}`]];
+  const dsStyle = { font: 'small', sep: '︱', deco: 'soft', emoji: true, roleFont: false };
+  const TEXTY = t => !/voice|stage/.test(t || 'text');
+  function styled(plan, st = dsStyle) {
+    const font = (FONTS.find(f => f[0] === st.font) || FONTS[0])[2], deco = (DECOS.find(d => d[0] === st.deco) || DECOS[0])[1];
+    const out = JSON.parse(JSON.stringify(plan));
+    for (const c of out.categories || []) {
+      c.plain = c.name;
+      const base = st.font === 'plain' ? c.name.toUpperCase() : c.name;
+      c.name = deco((st.emoji && c.emoji ? c.emoji + ' ' : '') + font(base)).slice(0, 95);
+      for (const ch of c.channels || []) {
+        ch.plain = ch.name;
+        const nm = TEXTY(ch.type) ? ch.name.toLowerCase().trim().replace(/\s+/g, '-') : ch.name;
+        ch.name = ((st.emoji && ch.emoji ? ch.emoji + st.sep : '') + font(nm)).slice(0, 95);
+      }
+    }
+    for (const r of out.roles || []) { r.plain = r.name; r.name = ((st.emoji && r.emoji ? r.emoji + ' ' : '') + (st.roleFont ? font(r.name) : r.name)).slice(0, 95); }
+    return out;
+  }
+  const CH_IC = t => /voice/.test(t) ? ic('volume-2') : /stage/.test(t) ? ic('radio') : /forum/.test(t) ? '<i>≡</i>' : /announce/.test(t) ? '<i>!</i>' : '<i>#</i>';
+
   async function discordBuild() {
-    const B = frame('pwDsb', { kicker: 'Discord', title: de() ? 'Server mit einem Satz bauen' : 'Build a server with one sentence', sub: de() ? 'Kairo plant Kategorien, Kanäle, Rollen und eine Begrüssung. Es wird nur hinzugefügt, nie etwas gelöscht.' : 'Kairo only adds, never deletes.', icon: 'users', wide: true });
+    const B = frame('pwDsb', { kicker: 'Discord', title: de() ? 'Server mit einem Satz bauen' : 'Build a server with one sentence', sub: de() ? 'Kairo recherchiert, was die besten Server dieser Art haben, und plant alles mit Emojis und Schriften. Was schon da ist, wird übersprungen. Es wird nie etwas gelöscht.' : 'Kairo researches the best servers of this kind. Existing things are skipped, nothing is deleted.', icon: 'users', wide: true });
     B.innerHTML = wait(de() ? 'Verbinde mit deinem Discord-Bot …' : 'Connecting to your Discord bot …');
     const r = await P.dsGuilds();
     if (!$p('pwDsbB')) return;
@@ -287,36 +320,67 @@ window.Power = (function () {
     if (!r.guilds.length) { B.innerHTML = `<div class="pw-err">${de() ? 'Der Bot ist in keinem Server. Lade ihn zuerst in deinen Server ein.' : 'The bot is in no server yet.'}</div><button class="btn primary" id="dsInv">${ic('external-link')} ${de() ? 'Bot einladen' : 'Invite bot'}</button>`; $p('dsInv').onclick = () => openUrl(r.invite); return; }
     let gid = r.guilds[0].id;
     B.innerHTML = `<label>${de() ? 'Welcher Server?' : 'Which server?'}</label><div class="ds-guilds">${r.guilds.map((g, i) => `<button data-g="${g.id}" class="${i ? '' : 'on'}">${g.icon ? `<img src="${esc(g.icon)}">` : `<span>${esc(g.name[0] || '?')}</span>`}<b>${esc(g.name)}</b><small>${fmt(g.members)} ${de() ? 'Mitglieder' : 'members'}</small></button>`).join('')}</div>
-      <label>${de() ? 'Was für ein Server soll es sein?' : 'What kind of server?'}</label><textarea class="field" id="dsDesc" rows="2" placeholder="${de() ? 'z. B. Gaming-Server für Roblox mit Turnieren und einem Bereich für Memes' : ''}"></textarea>
+      <label>${de() ? 'Was für ein Server soll es sein?' : 'What kind of server?'}</label><textarea class="field" id="dsDesc" rows="2" placeholder="${de() ? 'z. B. Editing-Server für Edits mit After Effects, Alight Motion und CapCut' : 'e.g. editing server for After Effects, Alight Motion and CapCut edits'}"></textarea>
       <div class="ds-ideas">${DS_IDEAS().map(x => `<button>${esc(x)}</button>`).join('')}</div>
-      <button class="btn primary pw-go" id="dsPlan">${ic('wand-sparkles')} ${de() ? 'Plan erstellen' : 'Create plan'}</button><div id="dsOut"></div>`;
+      <button class="btn primary pw-go" id="dsPlan">${ic('wand-sparkles')} ${de() ? 'Recherchieren und planen' : 'Research and plan'}</button><div id="dsOut"></div>`;
     B.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { gid = b.dataset.g; B.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b)); });
     B.querySelectorAll('.ds-ideas button').forEach(b => b.onclick = () => { $p('dsDesc').value = b.textContent; });
     $p('dsPlan').onclick = async () => {
       const desc = $p('dsDesc').value.trim(); if (!desc) return $p('dsDesc').focus();
-      const out = $p('dsOut'); out.innerHTML = wait(de() ? 'Kairo plant deinen Server …' : 'Planning your server …');
-      const p = await P.dsPlan({ desc });
+      const out = $p('dsOut');
+      out.innerHTML = wait(de() ? 'Kairo schaut, was die besten Server haben …' : 'Looking at what the best servers have …', de() ? ['Recherche', 'Plan'] : ['Research', 'Plan']);
+      stepOn(out, 0);
+      const off = P.onProgress((k, st) => { if (k === 'ds') stepOn(out, st === 'plan' ? 1 : 0); });
+      const p = await P.dsPlan({ desc, guildId: gid });
+      off?.();
       if (!$p('dsOut')) return;
       if (!p.ok) { out.innerHTML = `<div class="pw-err">${esc(errText(p))}</div>`; return; }
-      const g = r.guilds.find(x => x.id === gid);
-      const nCh = (p.categories || []).reduce((s, c) => s + (c.channels || []).length, 0);
-      out.innerHTML = `<div class="ds-plan"><div class="ds-tree">${(p.categories || []).map(c => `<div class="ds-cat"><b>${esc(c.name)}</b>${(c.channels || []).map(ch => `<div class="ds-ch">${/voice|sprach/i.test(ch.type) ? ic('mic') : '<i>#</i>'}<span>${esc(ch.name)}</span></div>`).join('')}</div>`).join('')}</div>
-        <div class="ds-right"><h5>${de() ? 'Rollen' : 'Roles'}</h5><div class="ds-roles">${(p.roles || []).map(x => `<span style="--c:${esc(x.color || '#99aab5')}">${esc(x.name)}</span>`).join('')}</div>
-        <h5>${de() ? 'Begrüssung' : 'Welcome'}</h5><div class="ds-welcome">${esc(p.welcome || '')}</div></div></div>
+      dsPreview(out, p, r, gid);
+    };
+  }
+
+  function dsPreview(out, p, r, gid) {
+    const g = r.guilds.find(x => x.id === gid);
+    out.innerHTML = `<div class="ds-style no-ic">
+        <div><small>${de() ? 'Schrift' : 'Font'}</small><div class="ds-opts" data-o="font">${FONTS.map(([k, l]) => `<button data-v="${k}" class="${dsStyle.font === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+        <div><small>${de() ? 'Trenner' : 'Separator'}</small><div class="ds-opts" data-o="sep">${SEPS.map(x => `<button data-v="${esc(x)}" class="${dsStyle.sep === x ? 'on' : ''}">🎬${esc(x)}chat</button>`).join('')}</div></div>
+        <div><small>${de() ? 'Kategorien' : 'Categories'}</small><div class="ds-opts" data-o="deco">${DECOS.map(([k, f]) => `<button data-v="${k}" class="${dsStyle.deco === k ? 'on' : ''}">${esc(f('NAME'))}</button>`).join('')}</div></div>
+        <div class="ds-tg"><label class="tog"><input type="checkbox" id="dsEmo" ${dsStyle.emoji ? 'checked' : ''}><span>Emojis</span></label><label class="tog"><input type="checkbox" id="dsRoleF" ${dsStyle.roleFont ? 'checked' : ''}><span>${de() ? 'Schrift auch für Rollen' : 'Font for roles too'}</span></label></div>
+      </div><div id="dsPrev" class="no-ic"></div>`;
+    const draw = () => {
+      const sp = styled(p);
+      const cnt = { new: 0, old: 0 };
+      (sp.categories || []).forEach(c => (c.channels || []).forEach(ch => ch.exists ? cnt.old++ : cnt.new++));
+      (sp.roles || []).forEach(x => x.exists ? cnt.old++ : cnt.new++);
+      $p('dsPrev').innerHTML = `<div class="ds-sum">${p.research ? `<span class="ds-badge">${ic('scan-search')} ${de() ? 'mit Internet-Recherche' : 'with web research'}</span>` : ''}<span><b>${cnt.new}</b> ${de() ? 'neu' : 'new'}</span>${cnt.old ? `<span class="ds-old"><b>${cnt.old}</b> ${de() ? 'schon da – wird übersprungen' : 'already there – skipped'}</span>` : ''}</div>
+        <div class="ds-plan"><div class="ds-tree">${(sp.categories || []).map((c, ci) => `<div class="ds-cat ${c.exists ? 'ex' : ''}" style="animation-delay:${ci * 60}ms"><b>${esc(c.name)}${c.exists ? ` <em>${de() ? 'schon da' : 'exists'}</em>` : ''}</b>${(c.channels || []).map(ch => `<div class="ds-ch ${ch.exists ? 'ex' : ''}" title="${esc(ch.topic || '')}">${CH_IC(ch.type)}<span>${esc(ch.name)}</span>${ch.readonly ? `<u title="${de() ? 'nur Team schreibt' : 'staff only'}">${ic('lock')}</u>` : ''}${ch.slowmode ? `<u>${ch.slowmode}s</u>` : ''}${ch.exists ? `<em>${de() ? 'schon da' : 'exists'}</em>` : ''}</div>`).join('')}</div>`).join('')}</div>
+        <div class="ds-right"><h5>${de() ? 'Rollen' : 'Roles'}</h5><div class="ds-roles">${(sp.roles || []).map(x => `<span style="--c:${esc(x.color || '#99aab5')}" class="${x.exists ? 'ex' : ''} ${x.hoist ? 'hoist' : ''}">${esc(x.name)}</span>`).join('')}</div>
+        <h5>${de() ? 'Begrüssung' : 'Welcome'}</h5><div class="ds-welcome">${esc(p.welcome || '')}</div>
+        ${p.rules?.length ? `<h5>${de() ? 'Regeln' : 'Rules'}</h5><div class="ds-welcome">${p.rules.map((x, i) => `${i + 1}. ${esc(x)}`).join('<br>')}</div>` : ''}</div></div>
         ${g && !g.canBuild ? `<div class="pw-warn">${de() ? 'Dem Bot fehlen Rechte zum Bauen (Kanäle und Rollen verwalten).' : 'The bot needs the rights to manage channels and roles.'}<div class="pw-btns"><button class="btn primary" id="dsReinv">${ic('external-link')} ${de() ? 'Bot mit Bau-Rechten einladen' : 'Invite with build rights'}</button><button class="btn" id="dsRecheck">${ic('refresh-cw')} ${de() ? 'Nochmal prüfen' : 'Check again'}</button></div></div>` : ''}
-        <button class="btn primary pw-go" id="dsBuild" ${g && !g.canBuild ? 'disabled' : ''}>${ic('hammer')} ${de() ? `${nCh} Kanäle in „${g?.name || ''}“ bauen` : `Build ${nCh} channels`}</button>`;
+        <button class="btn primary pw-go" id="dsBuild" ${g && !g.canBuild || !cnt.new ? 'disabled' : ''}>${ic('hammer')} ${de() ? `${cnt.new} neue Sachen in „${g?.name || ''}“ bauen` : `Build ${cnt.new} new things`}</button><div class="ds-pbar" id="dsPbar" hidden><i></i></div>`;
       $p('dsReinv')?.addEventListener('click', () => openUrl(r.invite));
       $p('dsRecheck')?.addEventListener('click', () => discordBuild());
-      $p('dsBuild').onclick = async () => {
-        if (!confirm(de() ? `Kairo erstellt jetzt ${nCh} Kanäle und ${(p.roles || []).length} Rollen in „${g?.name}“. Es wird nichts gelöscht. Los?` : `Create ${nCh} channels in "${g?.name}"? Nothing gets deleted.`)) return;
-        const b = $p('dsBuild'); b.disabled = true; b.innerHTML = `${ic('hammer')} ${de() ? 'Baue …' : 'Building …'}`;
-        const res = await P.dsBuild({ guildId: gid, plan: p });
-        if (!$p('dsOut')) return;
-        if (!res.ok) { b.disabled = false; b.innerHTML = `${ic('hammer')} ${de() ? 'Nochmal versuchen' : 'Try again'}`; return window.toast('✕ ' + res.error.message); }
-        b.outerHTML = `<div class="so-done"><b>${ic('circle-check')} ${de() ? 'Server gebaut!' : 'Server built!'}</b><p>${res.categories} ${de() ? 'Kategorien' : 'categories'} · ${res.channels} ${de() ? 'Kanäle' : 'channels'} · ${res.roles} ${de() ? 'Rollen' : 'roles'}</p></div>`;
-        window.confettiAt?.(out);
-      };
+      $p('dsBuild').onclick = () => dsDoBuild(out, styled(p), g, gid, cnt.new);
     };
+    out.querySelectorAll('.ds-opts').forEach(box => box.querySelectorAll('button').forEach(b => b.onclick = () => { dsStyle[box.dataset.o] = b.dataset.v; box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); draw(); }));
+    $p('dsEmo').onchange = e => { dsStyle.emoji = e.target.checked; draw(); };
+    $p('dsRoleF').onchange = e => { dsStyle.roleFont = e.target.checked; draw(); };
+    draw();
+  }
+
+  async function dsDoBuild(out, plan, g, gid, n) {
+    if (!confirm(de() ? `Kairo baut jetzt ${n} neue Sachen in „${g?.name}“ (Kanäle, Kategorien, Rollen). Was schon da ist, wird übersprungen. Es wird nichts gelöscht. Los?` : `Build ${n} new things in "${g?.name}"? Existing things are skipped, nothing gets deleted.`)) return;
+    const b = $p('dsBuild'); b.disabled = true; b.innerHTML = `${ic('hammer')} ${de() ? 'Baue … (das kann eine Minute dauern)' : 'Building … (may take a minute)'}`;
+    const bar = $p('dsPbar'); bar.hidden = false;
+    const off = P.onProgress((k, pct) => { if (k === 'dsb' && bar) bar.firstElementChild.style.width = pct + '%'; });
+    const res = await P.dsBuild({ guildId: gid, plan });
+    off?.();
+    if (!$p('dsOut')) return;
+    if (!res.ok) { b.disabled = false; b.innerHTML = `${ic('hammer')} ${de() ? 'Nochmal versuchen' : 'Try again'}`; return window.toast('✕ ' + res.error.message); }
+    bar.hidden = true;
+    b.outerHTML = `<div class="so-done"><b>${ic('circle-check')} ${de() ? 'Server gebaut!' : 'Server built!'}</b><p>${res.categories} ${de() ? 'Kategorien' : 'categories'} · ${res.channels} ${de() ? 'Kanäle' : 'channels'} · ${res.roles} ${de() ? 'Rollen' : 'roles'}${res.skipped ? ` · ${res.skipped} ${de() ? 'übersprungen (schon da)' : 'skipped (already there)'}` : ''}</p><p class="muted small">${de() ? 'Tipp: Die Rechte der Team-Rollen (z. B. Nachrichten löschen) stellst du in Discord selbst ein.' : 'Tip: set the permissions of the staff roles in Discord yourself.'}</p></div>`;
+    window.confettiAt?.(out);
   }
   const dsNoBot = r => `<div class="pw-empty">${ic('users')}<b>${esc(r.error?.message || '')}</b><p>${de() ? 'Unter Einstellungen → Discord trägst du den Bot-Token ein und startest den Bot. Danach geht es hier weiter.' : 'Add the bot token in Settings → Discord and start the bot.'}</p><button class="btn primary" id="dsSet">${de() ? 'Zu den Einstellungen' : 'Open settings'}</button></div>`;
 

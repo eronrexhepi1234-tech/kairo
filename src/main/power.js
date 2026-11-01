@@ -165,35 +165,114 @@ function dsGuilds() {
     guilds: [...c.guilds.cache.values()].map(g => { const me = g.members.me, p = me?.permissions; const has = b => !!p && (p.has(PERM.admin) || p.has(b)); return { id: g.id, name: g.name, icon: g.iconURL?.({ size: 64 }) || '', members: g.memberCount, canBuild: has(PERM.channels) && has(PERM.roles) }; })
   };
 }
-async function dsPlan({ desc }) {
-  return askJson(`You design Discord servers. Build a clean, fun server structure for: "${desc}". Use the language ${lang()} for names and texts.
-Channel names: lowercase, words joined with "-", one fitting emoji at the start is allowed (e.g. "📢-ankündigungen"). 3-5 categories, 2-5 channels each, at least one voice category. 3-6 roles with hex colours (no admin powers).
-Reply ONLY JSON: {"categories":[{"name":"CATEGORY NAME","channels":[{"name":"channel-name","type":"text|voice","topic":"short channel topic"}]}],"roles":[{"name":"Role","color":"#hex"}],"welcome":"welcome message for the first text channel, 3-6 lines, Discord markdown, includes 3 short rules"}`, desc);
+// names are compared without emojis, fancy fonts, separators or case: "🎬︱𝗲𝗱𝗶𝘁𝘀" == "edits"
+const SMALLCAPS = { 'ᴀ': 'a', 'ʙ': 'b', 'ᴄ': 'c', 'ᴅ': 'd', 'ᴇ': 'e', 'ꜰ': 'f', 'ɢ': 'g', 'ʜ': 'h', 'ɪ': 'i', 'ᴊ': 'j', 'ᴋ': 'k', 'ʟ': 'l', 'ᴍ': 'm', 'ɴ': 'n', 'ᴏ': 'o', 'ᴘ': 'p', 'ǫ': 'q', 'ʀ': 'r', 'ꜱ': 's', 'ᴛ': 't', 'ᴜ': 'u', 'ᴠ': 'v', 'ᴡ': 'w', 'ʏ': 'y', 'ᴢ': 'z' };
+const norm = s => String(s || '').normalize('NFKC').replace(/[ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡʏᴢ]/g, c => SMALLCAPS[c]).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+function existing(g) {
+  const cats = [], chans = [];
+  for (const ch of g.channels.cache.values()) {
+    if (ch.type === 4) cats.push({ id: ch.id, name: ch.name, n: norm(ch.name) });
+    else chans.push({ id: ch.id, name: ch.name, n: norm(ch.name), type: ch.type, parent: ch.parentId || null });
+  }
+  const roles = [...g.roles.cache.values()].filter(r => r.name !== '@everyone' && !r.managed).map(r => ({ name: r.name, n: norm(r.name) }));
+  return { cats, chans, roles };
 }
+
+// research what the best servers of this kind have, then plan a big, complete structure
+async function dsPlan({ desc, guildId }) {
+  const s = store.get();
+  let ex = null;
+  try { const g = dc().guilds.cache.get(guildId); if (g) ex = existing(g); } catch {}
+  let research = '';
+  send('power:progress', 'ds', 'research');
+  try {
+    research = await timeout(P().complete(s, {
+      webSearch: s.provider === 'gemini' || !!s.keys.gemini,
+      ...(s.provider !== 'gemini' && s.keys.gemini ? { providerOverride: 'gemini' } : {}),
+      system: 'You research Discord servers. Be concrete and short.',
+      messages: [{ role: 'user', text: `Search the web: what do the BEST and most popular Discord servers of this kind have? "${desc}"\nList: typical categories, the most useful channels (with what each is for), forum channels, voice channels, roles (staff, levels, interest/ping roles, software/skill roles), rules that fit, and special ideas that make such a server great (events, contests, resources, feedback systems). Max 350 words, bullet points.` }]
+    }), 60000);
+  } catch {}
+  send('power:progress', 'ds', 'plan');
+  const have = ex ? `\nThe server ALREADY HAS these (do NOT plan them again, plan around them; you may put new channels into an existing category by using its exact name):\nCategories: ${ex.cats.map(c => c.name).join(', ') || '-'}\nChannels: ${ex.chans.map(c => c.name).join(', ') || '-'}\nRoles: ${ex.roles.map(r => r.name).join(', ') || '-'}` : '';
+  const j = await askJson(`You are the best Discord server designer. Design a COMPLETE, professional server for: "${desc}". Language for all names and texts: ${lang()}.
+Use this research about what top servers of this kind have:
+${research || '(no research available, use your own knowledge)'}
+${have}
+Rules for your plan:
+- 6-9 categories in a logical order: start (welcome, rules, announcements, roles info), then the main topic areas, community/off-topic, voice, staff at the end.
+- 4-8 channels per category and AT LEAST 28 channels in total (a real big server), every channel useful and specific to this kind of server. Use "forum" for feedback/help/requests/resources where threads make sense, "announcement" for news, "voice" and "stage" for talking.
+- Names PLAIN (no emojis, no special fonts, no dashes): short words like "showcase" or "after effects hilfe". Give each category and channel ONE fitting emoji separately.
+- "readonly": true for rules, announcements, info and resource-drop channels where only staff posts. "slowmode" in seconds (0-60) for showcase/promo channels.
+- Roles: 10-18 roles in groups: staff (owner, admin, moderator, helper), level (newbie … legend), interest/skill (e.g. software or games), ping roles (events, announcements). Hex colours that fit. hoist true for staff.
+- "post": mark exactly one channel "welcome", one "rules", one "roles" (where the app posts those messages).
+Reply ONLY JSON: {"categories":[{"name":"Name","emoji":"🎬","channels":[{"name":"name","emoji":"✂️","type":"text|voice|forum|announcement|stage","topic":"what it is for","readonly":false,"slowmode":0,"post":""}]}],"roles":[{"name":"Role","emoji":"","color":"#hex","hoist":false,"group":"staff|level|interest|ping"}],"welcome":"welcome message, 4-7 lines, Discord markdown","rules":["8-10 short rules"],"rolesInfo":"short message explaining the role groups, Discord markdown"}`, desc);
+  // mark what already exists, so the preview can show it and the build skips it
+  if (ex) {
+    for (const c of j.categories || []) {
+      c.exists = ex.cats.some(x => x.n === norm(c.name));
+      for (const ch of c.channels || []) ch.exists = ex.chans.some(x => x.n === norm(ch.name));
+    }
+    for (const r of j.roles || []) r.exists = ex.roles.some(x => x.n === norm(r.name));
+  }
+  return { ...j, research: !!research };
+}
+
+// builds the styled plan; skips everything that already exists (same name without emojis/fonts)
 async function dsBuild({ guildId, plan }) {
   const c = dc(), g = c.guilds.cache.get(guildId);
   if (!g) throw new Error('Server nicht gefunden');
-  const { ChannelType } = require('discord.js');
-  const made = { roles: 0, categories: 0, channels: 0 };
-  let firstText = null;
-  for (const r of (plan.roles || []).slice(0, 8)) {
-    try { await g.roles.create({ name: String(r.name).slice(0, 90), color: /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : undefined, mentionable: true, reason: 'Kairo Server-Bauer' }); made.roles++; } catch {}
+  const { ChannelType, PermissionFlagsBits } = require('discord.js');
+  const ex = existing(g);
+  const made = { roles: 0, categories: 0, channels: 0, skipped: 0 };
+  const total = (plan.roles || []).length + (plan.categories || []).reduce((s, x) => s + 1 + (x.channels || []).length, 0);
+  let step = 0; const tick = () => send('power:progress', 'dsb', Math.round(++step / Math.max(1, total) * 100));
+  const posts = {};
+  const clean = t => String(t || '').replace(/@(everyone|here)/g, '@​$1');
+  for (const r of (plan.roles || []).slice(0, 25)) {
+    tick();
+    if (ex.roles.some(x => x.n === norm(r.plain || r.name))) { made.skipped++; continue; }
+    try { await g.roles.create({ name: String(r.name).slice(0, 90), color: /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : undefined, hoist: !!r.hoist, mentionable: r.group === 'ping', reason: 'Kairo Server-Bauer' }); made.roles++; ex.roles.push({ n: norm(r.plain || r.name) }); } catch {}
   }
-  for (const cat of (plan.categories || []).slice(0, 8)) {
-    let parent = null;
-    try { parent = await g.channels.create({ name: String(cat.name).slice(0, 90), type: ChannelType.GuildCategory, reason: 'Kairo Server-Bauer' }); made.categories++; } catch { continue; }
-    for (const ch of (cat.channels || []).slice(0, 8)) {
-      try {
-        const voice = /voice|sprach/i.test(ch.type);
-        const nc = await g.channels.create({ name: String(ch.name).slice(0, 90), type: voice ? ChannelType.GuildVoice : ChannelType.GuildText, parent: parent.id, ...(voice ? {} : { topic: String(ch.topic || '').slice(0, 1000) }), reason: 'Kairo Server-Bauer' });
-        made.channels++;
-        if (!voice && !firstText) firstText = nc;
-      } catch {}
+  const TYPE = { text: ChannelType.GuildText, voice: ChannelType.GuildVoice, forum: ChannelType.GuildForum, announcement: ChannelType.GuildAnnouncement, stage: ChannelType.GuildStageVoice };
+  const FALLBACK = { forum: 'text', announcement: 'text', stage: 'voice' };
+  for (const cat of (plan.categories || []).slice(0, 12)) {
+    tick();
+    let parent = ex.cats.find(x => x.n === norm(cat.plain || cat.name));
+    if (parent) made.skipped++;
+    else {
+      try { const pc = await g.channels.create({ name: String(cat.name).slice(0, 95), type: ChannelType.GuildCategory, reason: 'Kairo Server-Bauer' }); parent = { id: pc.id, n: norm(cat.plain || cat.name) }; ex.cats.push(parent); made.categories++; } catch { continue; }
+    }
+    for (const ch of (cat.channels || []).slice(0, 10)) {
+      tick();
+      const n = norm(ch.plain || ch.name);
+      const have = ex.chans.find(x => x.n === n);
+      if (have) { made.skipped++; if (ch.post && !posts[ch.post]) posts[ch.post] = have.id; continue; }
+      let kind = TYPE[ch.type] != null ? ch.type : 'text';
+      const voice = () => kind === 'voice' || kind === 'stage';
+      for (let tries = 0; tries < 2; tries++) {
+        try {
+          const opts = { name: String(ch.name).slice(0, 95), type: TYPE[kind], parent: parent.id, reason: 'Kairo Server-Bauer' };
+          if (!voice()) opts.topic = String(ch.topic || '').slice(0, 1000);
+          if (!voice() && ch.slowmode) opts.rateLimitPerUser = Math.max(0, Math.min(21600, +ch.slowmode || 0));
+          if (ch.readonly && !voice()) opts.permissionOverwrites = [{ id: g.roles.everyone.id, deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.CreatePublicThreads, PermissionFlagsBits.SendMessagesInThreads] }, { id: c.user.id, allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ViewChannel] }];
+          const nc = await g.channels.create(opts);
+          made.channels++; ex.chans.push({ id: nc.id, n });
+          if (ch.post && !posts[ch.post] && (kind === 'text' || kind === 'announcement')) posts[ch.post] = nc.id;
+          if (!posts.first && kind === 'text') posts.first = nc.id;
+          break;
+        } catch { if (FALLBACK[kind]) kind = FALLBACK[kind]; else break; }
+      }
     }
   }
-  if (firstText && plan.welcome) { try { await firstText.send(String(plan.welcome).replace(/@(everyone|here)/g, '@​$1').slice(0, 1900)); } catch {} }
+  // messages: welcome, rules, roles info (only into channels Kairo made or found)
+  const say = async (id, text) => { if (!id || !text) return; try { const chn = g.channels.cache.get(id) || await g.channels.fetch(id); await chn.send(clean(text).slice(0, 1990)); } catch {} };
+  await say(posts.welcome || posts.first, plan.welcome);
+  if (plan.rules?.length) await say(posts.rules || posts.welcome || posts.first, (lang() === 'German' ? '**Regeln**\n' : '**Rules**\n') + plan.rules.map((r, i) => `${i + 1}. ${r}`).join('\n'));
+  await say(posts.roles, plan.rolesInfo);
   return made;
 }
+
 function dsChannels(guildId) {
   const c = dc(), g = c.guilds.cache.get(guildId);
   if (!g) throw new Error('Server nicht gefunden');
