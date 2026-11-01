@@ -290,11 +290,27 @@ window.SocialStudio = (function () {
         <label>TikTok-Text</label><textarea class="field" rows="3" id="soTk">${escQ(S.tiktok?.caption || '')}</textarea>
         <label>YouTube-Titel</label><input class="field" id="soYtT" value="${escQ(S.youtube?.title || '')}">
         <label>YouTube-Beschreibung</label><textarea class="field" rows="3" id="soYtD">${escQ(S.youtube?.description || '')}</textarea>
-        <div class="so-btns"><button class="btn" id="soFile">${ic('folder-open')} Video zeigen</button><button class="btn primary" id="soTik">${ic('external-link')} Auf TikTok hochladen</button><button class="btn" id="soYt">${ic('external-link')} YouTube Studio</button></div>
+        <div class="so-btns"><button class="btn" id="soFile">${ic('folder-open')} Video zeigen</button><button class="btn primary" id="soTik">${ic('external-link')} Auf TikTok hochladen</button><button class="btn primary" id="soYt">${ic('external-link')} Auf YouTube hochladen</button></div>
+        <div id="soYtHelp"></div>
         <p class="muted small">Tipp: Text kopieren → beim Hochladen einfügen. Kairo postet nie selbst.</p></div>`;
       $q('soFile').onclick = () => window.kairo.st.reveal(file);
       $q('soTik').onclick = () => { navigator.clipboard.writeText($q('soTk').value); window.toast('TikTok-Text kopiert'); window.kairo.action({ type: 'open', url: 'https://www.tiktok.com/upload' }); window.kairo.st.reveal(file); };
-      $q('soYt').onclick = () => { navigator.clipboard.writeText($q('soYtT').value + '\n\n' + $q('soYtD').value); window.toast('YouTube-Text kopiert'); window.kairo.action({ type: 'open', url: 'https://studio.youtube.com' }); window.kairo.st.reveal(file); };
+      // YouTube: open the upload dialog, show the file, then a step list with one copy button per field
+      $q('soYt').onclick = () => {
+        const copy = (txt, b) => { navigator.clipboard.writeText(txt); $q('soYtHelp').querySelectorAll('.so-cp').forEach(x => x.classList.toggle('on', x === b)); window.toast('Kopiert – jetzt bei YouTube einfügen (Strg+V)'); };
+        $q('soYtHelp').innerHTML = `<ol class="so-steps">
+          <li>Ziehe das Video aus dem Ordner in das YouTube-Fenster.</li>
+          <li>Titel: <button class="btn so-cp on" id="soCpT">${ic('copy')} Titel kopieren</button></li>
+          <li>Beschreibung: <button class="btn so-cp" id="soCpD">${ic('copy')} Beschreibung kopieren</button></li>
+          <li>Bei „Speziell für Kinder?“ wähle „Nein“, dann 3× „Weiter“.</li>
+          <li>Wähle „Öffentlich“ und klicke „Veröffentlichen“.</li></ol>`;
+        $q('soCpT').onclick = e => copy($q('soYtT').value, e.currentTarget);
+        $q('soCpD').onclick = e => copy($q('soYtD').value, e.currentTarget);
+        navigator.clipboard.writeText($q('soYtT').value);
+        window.toast('Titel kopiert');
+        window.kairo.action({ type: 'open', url: 'https://www.youtube.com/upload' });
+        window.kairo.st.reveal(file);
+      };
     } catch (e) { window.toast('✕ ' + e.message); go.disabled = false; go.innerHTML = `${ic('clapperboard')} Video erstellen`; }
     busy = false;
   }
