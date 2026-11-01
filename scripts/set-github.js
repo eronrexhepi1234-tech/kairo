@@ -8,7 +8,7 @@ if (!owner) { console.log('Usage: node scripts/set-github.js <your-github-name> 
 
 const pkgFile = path.join(__dirname, '..', 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
-pkg.build.publish = [{ provider: 'github', owner, repo }];
+pkg.build.publish = [{ provider: 'github', owner, repo, releaseType: 'release' }]; // 'release' = visible right away (not a hidden draft)
 pkg.repository = { type: 'git', url: `https://github.com/${owner}/${repo}.git` };
 pkg.homepage = `https://github.com/${owner}/${repo}`;
 fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');

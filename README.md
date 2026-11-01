@@ -8,6 +8,8 @@
 Hands-free voice, a cinematic 3D Earth, Jarvis mode, games, school help, a desktop pet and a lot more.
 Works with Gemini (free), Claude, GPT or a local model.
 
+[**⬇ Download for Windows**](https://github.com/Erbis-Tech/kairo/releases/latest/download/Kairo-Setup.exe) · [Website](https://erbis-tech.github.io/kairo/)
+
 ![Today](docs/screenshots/today.png)
 
 </div>
@@ -18,14 +20,18 @@ Works with Gemini (free), Claude, GPT or a local model.
 |---|---|
 | ![Chat](docs/screenshots/chat.png) | ![Earth](docs/screenshots/earth-layers.png) |
 | **Chat & voice** – type or just talk, Kairo answers out loud | **3D Earth** – live weather, earthquakes, day/night, flights, ISS |
-| ![Jarvis](docs/screenshots/jarvis.png) | ![Solar system](docs/screenshots/solar.png) |
+| ![Jarvis](docs/screenshots/jarvis-app.png) | ![Solar system](docs/screenshots/solar.png) |
 | **Jarvis mode** – a holographic HUD over your desktop (`Ctrl+Shift+J`) | **Solar system** – real planet positions today |
 | ![Weather](docs/screenshots/weather-card.png) | ![Games](docs/screenshots/games.png) |
 | **Animated weather** – also on the desktop while Kairo is minimized | **Games** – chess vs Stockfish, GeoGuessr, quiz, riddles, game maker |
 
 ## Install
 
-**Easy way:** download `Kairo-Setup-x.y.z.exe` from the [Releases page](https://github.com/YOUR_GITHUB_NAME/kairo/releases) and run it. It updates itself when a new version is out.
+**Easy way:** [**Download Kairo-Setup.exe**](https://github.com/Erbis-Tech/kairo/releases/latest/download/Kairo-Setup.exe) and run it – a welcome setup guides you through the rest. Kairo updates itself when a new version is out.
+
+Or visit the download page: **https://erbis-tech.github.io/kairo/**
+
+> Windows may say *"Windows protected your PC"* because Kairo is new and not code-signed. Click **More info → Run anyway**.
 
 **From source** (needs [Node.js](https://nodejs.org) 20 or newer):
 

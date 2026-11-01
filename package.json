@@ -90,9 +90,15 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "YOUR_GITHUB_NAME",
-        "repo": "kairo"
+        "owner": "Erbis-Tech",
+        "repo": "kairo",
+        "releaseType": "release"
       }
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Erbis-Tech/kairo.git"
+  },
+  "homepage": "https://github.com/Erbis-Tech/kairo"
 }
