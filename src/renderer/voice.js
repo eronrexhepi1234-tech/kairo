@@ -52,11 +52,15 @@ window.Voice = (function () {
     presence().classList.add('speaking');
 
     const engine = await window.kairo.voice.engine();
+    let r = null;
     if (engine !== 'system') {
       fakeBars();
-      const r = await window.kairo.voice.speak(said);
+      r = await window.kairo.voice.speak(said);
       cancelAnimationFrame(raf);
-      if (!r.ok) { presence().classList.remove('speaking'); return window.toast(r.error.code === 'NO_KEY' ? t('err.nokey') : r.error.message); }
+      if (!r.ok && r.error.code === 'NO_KEY') { presence().classList.remove('speaking'); return window.toast(t('err.nokey')); }
+    }
+    // AI voice failed (e.g. daily limit): keep talking with the Windows voice instead of going silent
+    if (r && r.ok) {
       audio = new Audio(/L16|pcm/i.test(r.mime) ? pcmToWavUrl(r.audio, +(r.mime.match(/rate=(\d+)/) || [])[1] || 24000) : `data:${r.mime};base64,${r.audio}`);
       audio.playbackRate = settings.voice.rate || 1;
       // real level meter from the audio

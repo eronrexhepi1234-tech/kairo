@@ -242,8 +242,14 @@ ipcMain.handle('voice:engine', () => ttsEngine(store.get()));
 ipcMain.handle('voice:speak', async (_e, text) => {
   const s = store.get();
   try {
-    const r = ttsEngine(s) === 'openai' ? await providers.speak(s, text) : await providers.geminiSpeak(s, text);
-    return { ok: true, ...r };
+    const first = ttsEngine(s) === 'openai' ? 'openai' : 'gemini';
+    try { return { ok: true, ...(first === 'openai' ? await providers.speak(s, text) : await providers.geminiSpeak(s, text)) }; }
+    catch (e) {
+      // the other natural voice as backup (e.g. Gemini daily limit reached)
+      if (first === 'gemini' && s.keys.openai) return { ok: true, ...(await providers.speak(s, text)) };
+      if (first === 'openai' && s.keys.gemini) return { ok: true, ...(await providers.geminiSpeak(s, text)) };
+      throw e;
+    }
   } catch (e) { return { ok: false, error: errInfo(e) }; }
 });
 

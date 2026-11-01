@@ -255,11 +255,28 @@ window.SocialStudio = (function () {
       const r = await window.kairo.st.social(kind, extra);
       if (!r.ok) throw new Error(r.error.message);
       const S = r.script;
-      go.innerHTML = `${ic('mic')} Nimmt die Stimme auf…`;
       // voice for every scene (+ hook and call to action)
       const lines = [S.hookSay || S.hook, ...S.scenes.map(s => s.say || s.title), S.ctaSay || S.cta];
       const ac = new AudioContext();
-      const bufs = await Promise.all(lines.map(async t => { try { const a = await window.kairo.voice.speak(t); if (!a.ok) return null; const url = /L16|pcm/i.test(a.mime) ? Voice.pcmToWavUrl(a.audio, +(a.mime.match(/rate=(\d+)/) || [])[1] || 24000) : `data:${a.mime};base64,${a.audio}`; return await ac.decodeAudioData(await (await fetch(url)).arrayBuffer()); } catch { return null; } }));
+      // one line after another (all at once hits the voice rate limit), with retries
+      let voiceErr = '';
+      const voiceOf = async t => {
+        for (let n = 0; n < 4; n++) {
+          try {
+            const a = await window.kairo.voice.speak(t);
+            if (a.ok) { const url = /L16|pcm/i.test(a.mime) ? Voice.pcmToWavUrl(a.audio, +(a.mime.match(/rate=(\d+)/) || [])[1] || 24000) : `data:${a.mime};base64,${a.audio}`; return await ac.decodeAudioData(await (await fetch(url)).arrayBuffer()); }
+            voiceErr = a.error?.code === 'NO_KEY' ? 'NO_KEY' : (a.error?.message || '');
+            if (voiceErr === 'NO_KEY') return null;
+          } catch (e) { voiceErr = e.message; }
+          if (n < 3) await new Promise(r => setTimeout(r, [3000, 8000, 15000][n]));
+        }
+        return null;
+      };
+      const bufs = [];
+      for (let k = 0; k < lines.length; k++) { go.innerHTML = `${ic('mic')} Nimmt die Stimme auf… ${k + 1}/${lines.length}`; bufs.push(await voiceOf(lines[k])); }
+      const missing = bufs.filter(b => !b).length;
+      if (missing === bufs.length) throw new Error(voiceErr === 'NO_KEY' ? 'Für die Stimme brauchst du einen Gemini- oder OpenAI-Schlüssel (Einstellungen).' : 'Die Stimme hat nicht geklappt (' + (/429|quota|exhaust|rate/i.test(voiceErr) ? 'Tageslimit der KI-Stimme erreicht – später nochmal versuchen' : voiceErr.slice(0, 120)) + ').');
+      if (missing) window.toast(`${missing} von ${bufs.length} Sätzen ohne Stimme`);
       // the AI voice often has silence at the start/end: cut it so the video stays snappy
       const trim = b => { if (!b) return b; const d = b.getChannelData(0), th = 0.015; let a = 0, e = d.length - 1; while (a < e && Math.abs(d[a]) < th) a++; while (e > a && Math.abs(d[e]) < th) e--; a = Math.max(0, a - b.sampleRate * 0.03); e = Math.min(d.length - 1, e + b.sampleRate * 0.12); if (e - a < b.sampleRate * 0.2) return b; const nb = ac.createBuffer(b.numberOfChannels, e - a, b.sampleRate); for (let c = 0; c < b.numberOfChannels; c++) nb.copyToChannel(b.getChannelData(c).slice(a, e), c); return nb; };
       for (let k = 0; k < bufs.length; k++) bufs[k] = trim(bufs[k]);
