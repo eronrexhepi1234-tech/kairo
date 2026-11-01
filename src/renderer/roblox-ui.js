@@ -2,6 +2,9 @@
 window.RobloxUI = (function () {
   const $r = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const PLANGS = [['de', 'DE'], ['en', 'EN'], ['sq', 'SQ'], ['fr', 'FR'], ['es', 'ES'], ['it', 'IT'], ['tr', 'TR']];
+  const pLang = () => { try { return localStorage.getItem('kairo.promptLang') || (window.App?.settings?.()?.language || 'de'); } catch { return 'de'; } };
+  const setPLang = l => { try { localStorage.setItem('kairo.promptLang', l); } catch {} };
   const IDEAS = ['Obby mit 10 Levels, Checkpoints und Lava', 'Kleines Haus mit Möbeln und Garten', 'Coins zum Einsammeln mit Punkte-Leaderboard', 'Tag-Nacht-Zyklus', 'Tür, die sich bei Berührung öffnet', 'Turm-Parkour mit Neon-Plattformen', 'Rennstrecke mit Startlinie', 'Shop-GUI mit Coins'];
   let P = null, mode = 'build', timer = 0, three = null;
   function open(prompt, opts = {}) {
@@ -17,6 +20,7 @@ window.RobloxUI = (function () {
         <div class="rb-modes" id="rbModes"><button data-m="build" class="on">${ic('pickaxe')} Bauen + Skripte</button><button data-m="script">${ic('terminal')} Nur Skript</button></div>
         <button class="btn primary rb-go" id="rbGo">${ic('wand-sparkles')} Bauplan erstellen</button>
         <button class="btn rb-pbtn" id="rbPrompt" title="Schreib den Namen eines Spiels oder deine Idee – Kairo macht einen sehr detaillierten Prompt für Claude, ChatGPT oder Gemini">${ic('message-circle')} Als KI-Prompt (für Claude, ChatGPT …)</button>
+        <div class="rb-langs" id="rbLangs" title="Sprache des Prompts"><span>Prompt-Sprache</span>${PLANGS.map(([k, n]) => `<button data-l="${k}" class="${k === pLang() ? 'on' : ''}">${n}</button>`).join('')}</div>
         <button class="btn rb-pbtn rb-ibtn" id="rbIdeas" title="Kairo erfindet 3 komplett neue Roblox-Spiele (optional mit deinem Wunsch im Feld oben)">${ic('lightbulb')} Eigene Spielidee erfinden</button>
         <button class="btn rb-pbtn" id="rbPaste" title="Antwort von ChatGPT oder Claude einfügen – Kairo legt alle Dateien in Studio an">${ic('clipboard-list')} KI-Antwort einfügen</button>
         <div class="rb-ideas">${IDEAS.map(i => `<button>${esc(i)}</button>`).join('')}</div></aside>
@@ -28,6 +32,7 @@ window.RobloxUI = (function () {
     $r('rbPrompt').onclick = () => promptOnPage();
     $r('rbIdeas').onclick = () => ideasOnPage($r('rbQ').value.trim());
     $r('rbPaste').onclick = pasteOnly;
+    $r('rbLangs').querySelectorAll('[data-l]').forEach(b => b.onclick = () => { setPLang(b.dataset.l); $r('rbLangs').querySelectorAll('[data-l]').forEach(x => x.classList.toggle('on', x === b)); });
     poll(); clearInterval(timer); timer = setInterval(poll, 2000);
     if (opts.ideas) { if (prompt) $r('rbQ').value = prompt; ideasOnPage(prompt || ''); }
     else if (prompt) { $r('rbQ').value = prompt; make(); }
@@ -141,7 +146,7 @@ window.RobloxUI = (function () {
     stop3d();
     $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b id="rbPStep">${idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'}</b><small>${esc(q)}</small></div>`;
     const off = window.kairo.roblox.onPromptStep(s => { const el = $r('rbPStep'); if (el) el.textContent = s === 'write' || idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
-    const r = await window.kairo.roblox.prompt(idea ? { idea } : { game: q });
+    const r = await window.kairo.roblox.prompt(idea ? { idea, lang: pLang() } : { game: q, lang: pLang() }); usedLang = pLang();
     off?.();
     if (!$r('rbMain')) return;
     if (!r.ok) { $r('rbMain').innerHTML = `<div class="rb-wait"><b>✕ ${esc(r.error.message)}</b></div>`; return; }
@@ -158,6 +163,13 @@ window.RobloxUI = (function () {
   const ADD_CONNECTED = `\n\n## Arbeitsweise: Du bist direkt mit Roblox Studio verbunden\nDu hast über MCP (Roblox Studio MCP) direkten Zugriff auf mein geöffnetes Roblox Studio. Schreib den Code nicht nur in den Chat – lege alles selbst in Studio an:\n1. Lege zuerst die komplette Ordnerstruktur an (Folders in den richtigen Services).\n2. Erstelle jedes Skript als richtiges Objekt (Script, LocalScript oder ModuleScript) am richtigen Ort und setze den kompletten Code.\n3. Baue die Map und die nötigen Teile direkt im Workspace.\n4. Starte nach jeder Phase einen Playtest, lies die Output-Konsole und behebe alle Fehler, bevor du weitermachst.\n5. Fasse nach jeder Phase kurz zusammen, was du gebaut hast, und warte auf mein „weiter“.\nLösche oder ändere nichts, was schon vorher in meinem Spiel war, ohne mich zu fragen.`;
   const ADD_FORMAT = `\n\n## Ausgabeformat (sehr wichtig – meine App fügt deine Antwort automatisch in Roblox Studio ein)\nGib JEDE Datei einzeln so aus: zuerst eine Zeile \`-- Datei: <Pfad>\`, direkt danach genau ein \`\`\`lua Codeblock mit dem KOMPLETTEN Code der Datei.\nDer Pfad beginnt mit dem Roblox-Service und endet mit Skriptname + Endung: \`.server.lua\` = Script, \`.client.lua\` = LocalScript, \`.lua\` = ModuleScript.\nBeispiele: \`-- Datei: ServerScriptService/Services/DataService.lua\`, \`-- Datei: ServerScriptService/Main.server.lua\`, \`-- Datei: StarterPlayer/StarterPlayerScripts/UIController.client.lua\`.\nOrdner im Pfad werden automatisch angelegt. Teile und Map beschreibst du nicht als Code, sondern baust sie per Skript (z. B. ein MapBuilder.server.lua, das die Map beim Start erzeugt).`;
   const ADD_ASSISTANT = `\n\n## Arbeitsweise\nArbeite in kleinen Schritten: erledige immer nur EINE Phase, erstelle die Skripte direkt in Studio und warte dann auf „weiter“.`;
+  let usedLang = 'de';
+  const EN_ADD = {
+    connected: `\n\n## How to work: you are connected directly to Roblox Studio\nYou have direct access to my open Roblox Studio through MCP (Roblox Studio MCP). Do not only write code in the chat – create everything in Studio yourself:\n1. First create the complete folder structure (Folders in the right services).\n2. Create every script as a real object (Script, LocalScript or ModuleScript) in the right place with its complete code.\n3. Build the map and needed parts directly in Workspace.\n4. After each phase start a playtest, read the Output console and fix every error before you continue.\n5. After each phase give a short summary and wait for my "continue".\nDo not delete or change anything that was already in my game without asking me.`,
+    format: `\n\n## Output format (very important – my app inserts your answer into Roblox Studio automatically)\nOutput EVERY file separately: first a line \`-- File: <path>\`, directly followed by exactly one \`\`\`lua code block with the COMPLETE code of the file.\nThe path starts with the Roblox service and ends with the script name + extension: \`.server.lua\` = Script, \`.client.lua\` = LocalScript, \`.lua\` = ModuleScript.\nExamples: \`-- File: ServerScriptService/Services/DataService.lua\`, \`-- File: ServerScriptService/Main.server.lua\`, \`-- File: StarterPlayer/StarterPlayerScripts/UIController.client.lua\`.\nFolders in the path are created automatically. Build the map and parts with a script (e.g. MapBuilder.server.lua that creates the map on start).`,
+    assistant: `\n\n## How to work\nWork in small steps: do only ONE phase at a time, create the scripts directly in Studio and then wait for "continue".`
+  };
+  const addOn = k => usedLang === 'de' ? { connected: ADD_CONNECTED, format: ADD_FORMAT, assistant: ADD_ASSISTANT }[k] : EN_ADD[k];
   function howToBuild(prompt) {
     return `<h3>Wie willst du bauen?</h3><div class="rb-how">
       <button data-how="connected"><span>${ic('zap')}</span><b>Meine KI ist mit Studio verbunden</b><small>Die KI legt alles selbst an, testet und repariert Fehler. Am stärksten.</small></button>
@@ -173,17 +185,17 @@ window.RobloxUI = (function () {
       root.querySelectorAll('[data-how]').forEach(x => x.classList.toggle('on', x === b));
       const how = b.dataset.how, box = $r('rbHow');
       if (how === 'connected') {
-        const text = prompt + ADD_CONNECTED;
+        const text = prompt + addOn('connected');
         box.innerHTML = copyOpen(text, `<p><b>So geht's:</b> Die KI muss über <b>Roblox Studio MCP</b> mit Studio verbunden sein, zum Beispiel <b>Claude Desktop</b>, <b>Claude Code</b> oder <b>Cursor</b> mit dem offiziellen Roblox-Studio-MCP (Anleitung: create.roblox.com → „Studio MCP“). Dann Studio mit deinem Spiel öffnen und den Prompt unten in diese KI geben. Der Prompt sagt ihr schon, dass sie alles selbst anlegen, testen und reparieren soll.</p><p class="rb-tipline">${ic('lightbulb')} Bei dir ist das in Claude Code schon eingerichtet – du kannst den Prompt auch einfach dort reinkopieren, während Studio offen ist.</p>`);
         bindCO(text);
       }
       if (how === 'assistant') {
-        const text = prompt + ADD_ASSISTANT;
+        const text = prompt + addOn('assistant');
         box.innerHTML = copyOpen(text, `<p><b>So geht's:</b> In Roblox Studio oben auf <b>Assistant</b> klicken, Prompt einfügen, und nach jeder Phase „weiter“ schreiben. Der Assistant schafft kleine Schritte am besten – bei einem grossen Spiel ist Weg 1 oder 2 stärker.</p>`);
         bindCO(text);
       }
       if (how === 'paste' || how === 'manual') {
-        const text = prompt + ADD_FORMAT;
+        const text = prompt + addOn('format');
         box.innerHTML = copyOpen(text, `<p><b>Schritt 1:</b> Diesen Prompt (mit Spezial-Format, damit Kairo die Dateien erkennt) in ChatGPT oder Claude geben.<br><b>Schritt 2:</b> Die <b>ganze Antwort</b> kopieren und unten einfügen.${how === 'paste' ? ' Kairo legt dann alle Dateien in Studio an.' : ' Kairo zeigt dir dann, welche Datei wohin gehört.'}</p>`) + pasteBox(how);
         bindCO(text); bindPaste(how);
       }
@@ -255,11 +267,11 @@ window.RobloxUI = (function () {
   }
 
   // voice: "Mach einen Prompt für Steal an Egg (in ChatGPT)" -> research, write, open the AI with it
-  async function voicePrompt(game, target = 'claude') {
+  async function voicePrompt(game, target = 'claude', lang) {
     document.getElementById('gpCard')?.remove();
     document.body.insertAdjacentHTML('beforeend', `<div class="gp-card" id="gpCard"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><div><small>KI-Prompt für ${esc(AIS.find(a => a[0] === target)?.[1] || 'KI')}</small><b>${esc(game)}</b><span id="gpStep">Recherchiere das Spiel…</span></div></div>`);
     const off = window.kairo.roblox.onPromptStep(s => { const el = $r('gpStep'); if (el) el.textContent = s === 'write' ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
-    const r = await window.kairo.roblox.prompt({ game });
+    const r = await window.kairo.roblox.prompt({ game, lang: lang || pLang() });
     off?.();
     const card = $r('gpCard');
     if (!r.ok) { if (card) card.innerHTML = `<div><b>✕ Prompt fehlgeschlagen</b><span>${esc(r.error.message)}</span></div>`; setTimeout(() => card?.remove(), 6000); return null; }

@@ -53,3 +53,9 @@
 .rb-ft.Script { background: rgba(110,168,255,.18); color: #8fbaff; } .rb-ft.LocalScript { background: rgba(61,220,151,.16); color: #5ff0b0; } .rb-ft.ModuleScript { background: rgba(255,210,122,.16); color: #ffd27a; }
 .rb-warn { display: flex; gap: 6px; align-items: flex-start; color: #ffb347; font-size: 13px; } .rb-warn .ic { width: 15px; height: 15px; flex: none; margin-top: 2px; }
 @media (max-width: 1200px) { .rb-how { grid-template-columns: 1fr 1fr; } }
+
+/* prompt language */
+.rb-langs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rb-langs span { font-size: 11px; color: #8d96aa; margin-right: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.rb-langs button { padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: #aab3c5; font: 700 11px 'JetBrains Mono Var', monospace; cursor: pointer; }
+.rb-langs button.on { border-color: #ff7a45; color: #fff; background: rgba(255,122,69,.16); }

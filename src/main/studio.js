@@ -73,18 +73,28 @@ const FEATURES = `Kairo is a free desktop AI assistant for Windows (Electron). H
 - desktop pet that grows when you study, school helper (homework, exams, flashcards, PDFs, presentations)
 - phone app: chat, control the PC, Kairo calls you about new mail/birthdays
 - Super-Search (Alt+Space), logo maker, Minecraft builder, inventor mode, prompt helper
-- works with Gemini (free), Claude, GPT or local models; open source on GitHub`;
+- works with Gemini (free), Claude, GPT or local models; open source on GitHub
+NEW in the latest updates:
+- Jarvis mode now turns the WHOLE app into a holographic Iron-Man HUD (boot sequence, answers appear as hologram panels, live log on the desktop)
+- Kairo Builder: draw a sketch -> working app; voice coding ("make the button red"); websites that get better the longer Kairo works (1-20 min)
+- Kairo Pro Studio: deep research with sources, CV/application letters as PDF+Word, writing coach, document translator, exam simulator with grade, language teacher by voice, learning paths, brand kit, AGENT MODE that does whole tasks alone
+- Roblox Studio assistant: describe a game -> 3D preview -> one click builds it in Roblox Studio; Kairo even invents its own Roblox game ideas and writes huge prompts for other AIs
+- Stream Deck on the phone: big glowing buttons that control the PC
+- tidy mode: everything in one search (Ctrl+K), much faster voice answers`;
+// what the screenshots show, so the script picks the right picture for each scene
+const SHOT_INFO = { chat: 'chat with Kairo', today: 'Today page with weather and favourites', earth: '3D satellite Earth', 'earth-flight': 'cinematic flight over a city', 'earth-layers': 'Earth with live rain radar and flights', games: 'games: chess, GeoGuessr, quiz', school: 'school helper', settings: 'settings', solar: 'solar system with real planet positions', jarvis: 'Jarvis HUD over the desktop', 'weather-card': 'animated weather card', 'jarvis-app': 'the whole app in holographic Jarvis mode', pro: 'Kairo Pro Studio (research, documents, exams, agent mode)', builder: 'Kairo Builder idea shop (apps and websites)', roblox: 'Roblox Studio assistant', deck: 'Stream Deck on the phone', finder: 'search for every feature (Ctrl+K)' };
 async function social(kind, extra) {
   const ver = (() => { try { return require(path.join(__dirname, '..', '..', 'package.json')).version; } catch { return ''; } })();
   const what = { why: 'Why people should try Kairo (convincing, fun)', update: `Update video: what is new in Kairo ${ver}`, feature: 'Spotlight on ONE cool feature', tutorial: 'Quick tutorial: how to get started with Kairo' }[kind] || kind;
   const shots = (() => { try { return fs.readdirSync(path.join(__dirname, '..', '..', 'docs', 'screenshots')).filter(f => /\.png$/i.test(f)).map(f => f.replace(/\.png$/i, '')); } catch { return []; } })();
-  const j = await json(`You are a viral TikTok / YouTube Shorts creator making a 25-40 second vertical video for the account of the app "Kairo". Language: ${lang()}.
+  const j = await json(`You are a top viral TikTok / YouTube Shorts editor making a FAST 22-32 second vertical video for the account of the app "Kairo". Language: ${lang()}.
 About the app:\n${FEATURES}
-Video goal: ${what}. ${extra ? 'Extra wish: ' + extra : ''}
-Available screenshots of the app (use their exact names): ${shots.join(', ') || 'none'}.
-Return ONLY JSON: {"hook":"first 1-2 seconds, max 6 words, makes people stop scrolling","scenes":[{"title":"big text, max 5 words","sub":"small text, max 12 words","shot":"screenshot name or empty","emoji":"one emoji","say":"what the voice says (1-2 short sentences)"}],
-"cta":"call to action at the end, max 8 words","tiktok":{"caption":"TikTok caption with 5-8 hashtags"},"youtube":{"title":"YouTube Shorts title max 70 chars","description":"2-4 lines + hashtags"}}
-5-7 scenes. Fast, energetic, honest (no fake claims).`, 'Mach das Video');
+Video goal: ${what}. ${extra ? 'Extra wish: ' + extra : ''} Prefer showing the NEW features.
+Available screenshots (use the exact name before the colon): ${shots.map(n => n + (SHOT_INFO[n] ? ': ' + SHOT_INFO[n] : '')).join('; ') || 'none'}.
+Rules: the hook must stop the scroll in 1 second (a bold claim or question, max 5 words). Every scene shows a DIFFERENT screenshot. The voice speaks short punchy sentences (max 14 words per scene), like a hyped creator, no filler. Honest, no fake claims. No emojis anywhere.
+Return ONLY JSON: {"hook":"max 5 words","hookSay":"what the voice says for the hook, max 6 words, punchy","scenes":[{"title":"big text, max 4 words","key":"the ONE word of the title to highlight","sub":"small text, max 9 words","shot":"screenshot name","say":"voice, max 12 words"}],
+"cta":"call to action, max 6 words","ctaSay":"voice for the end, max 8 words","tiktok":{"caption":"TikTok caption with 5-8 hashtags"},"youtube":{"title":"YouTube Shorts title max 70 chars","description":"2-4 lines + hashtags"}}
+Exactly 5 scenes.`, 'Mach das Video');
   j.kind = kind; j.version = ver;
   return j;
 }

@@ -257,9 +257,12 @@ window.SocialStudio = (function () {
       const S = r.script;
       go.innerHTML = `${ic('mic')} Nimmt die Stimme auf…`;
       // voice for every scene (+ hook and call to action)
-      const lines = [S.hook, ...S.scenes.map(s => s.say || s.title), S.cta];
+      const lines = [S.hookSay || S.hook, ...S.scenes.map(s => s.say || s.title), S.ctaSay || S.cta];
       const ac = new AudioContext();
       const bufs = await Promise.all(lines.map(async t => { try { const a = await window.kairo.voice.speak(t); if (!a.ok) return null; const url = /L16|pcm/i.test(a.mime) ? Voice.pcmToWavUrl(a.audio, +(a.mime.match(/rate=(\d+)/) || [])[1] || 24000) : `data:${a.mime};base64,${a.audio}`; return await ac.decodeAudioData(await (await fetch(url)).arrayBuffer()); } catch { return null; } }));
+      // the AI voice often has silence at the start/end: cut it so the video stays snappy
+      const trim = b => { if (!b) return b; const d = b.getChannelData(0), th = 0.015; let a = 0, e = d.length - 1; while (a < e && Math.abs(d[a]) < th) a++; while (e > a && Math.abs(d[e]) < th) e--; a = Math.max(0, a - b.sampleRate * 0.03); e = Math.min(d.length - 1, e + b.sampleRate * 0.12); if (e - a < b.sampleRate * 0.2) return b; const nb = ac.createBuffer(b.numberOfChannels, e - a, b.sampleRate); for (let c = 0; c < b.numberOfChannels; c++) nb.copyToChannel(b.getChannelData(c).slice(a, e), c); return nb; };
+      for (let k = 0; k < bufs.length; k++) bufs[k] = trim(bufs[k]);
       const shots = await Promise.all(S.scenes.map(async s => (s.shot ? loadImg(await window.kairo.st.shot(s.shot) || '') : null)));
       const logo = await loadImg('assets/icon.png');
       go.innerHTML = `${ic('circle-dot')} Video wird aufgenommen…`;
@@ -278,19 +281,46 @@ window.SocialStudio = (function () {
     } catch (e) { window.toast('✕ ' + e.message); go.disabled = false; go.innerHTML = `${ic('clapperboard')} Video erstellen`; }
     busy = false;
   }
-  // draws the video into the canvas while recording it (with the voice track)
+  // draws the video into the canvas while recording it: beat music + voice, word-by-word captions, motion design
   function record(S, bufs, shots, logo, ac) {
     return new Promise(async resolve => {
       const cv = $q('soCv'), g = cv.getContext('2d'), W = 1080, H = 1920;
-      const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff7a45';
+      const accRaw = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), acc = /^#[0-9a-f]{6}$/i.test(accRaw) ? accRaw : '#ff7a45', acc2 = '#8b5cff';
+      const lines = [S.hookSay || S.hook, ...S.scenes.map(s => s.say || s.title), S.ctaSay || S.cta];
       const parts = [{ type: 'hook', text: S.hook }, ...S.scenes.map((s, i) => ({ type: 'scene', s, shot: shots[i] })), { type: 'cta', text: S.cta }];
-      parts.forEach((p, i) => { p.dur = Math.max(1.8, (bufs[i]?.duration || 2.2) + 0.35); });
+      parts.forEach((p, i) => { p.say = lines[i] || ''; const raw = bufs[i]?.duration || 0, max = p.type === 'hook' ? 3 : p.type === 'cta' ? 4 : 5.2; p.rate = raw > max ? Math.min(1.18, raw / max) : 1; p.vdur = raw / p.rate; p.dur = Math.max(p.type === 'scene' ? 3 : 2.2, p.vdur + 0.4); });
       let t = 0; parts.forEach(p => { p.start = t; t += p.dur; });
-      const total = t + 0.6;
+      const total = t + 0.4, BPM = 112, beat = 60 / BPM;
+      // word timings for the captions (spread over the voice by word length)
+      parts.forEach(p => { const ws = String(p.say).split(/\s+/).filter(Boolean), sum = ws.reduce((a, w) => a + w.length + 2, 0) || 1, span = (p.vdur || p.dur * 0.8) * 0.96; let x = 0.15; p.words = ws.map(w => { const d = (w.length + 2) / sum * span, o = { w, t0: x, t1: x + d }; x += d; return o; }); });
+
+      // ---------- audio: voice + synthesized beat, music ducks under the voice ----------
       const dest = ac.createMediaStreamDestination();
+      const out = ac.createGain(); out.connect(dest); out.connect(ac.destination);
+      const music = ac.createGain(); music.connect(out);
+      const t0 = ac.currentTime + 0.3;
+      music.gain.setValueAtTime(0.22, t0);
+      parts.forEach(p => { if (p.vdur) { const a = t0 + p.start + 0.2; music.gain.setTargetAtTime(0.075, a, 0.05); music.gain.setTargetAtTime(0.22, a + p.vdur + 0.1, 0.15); } });
+      music.gain.setTargetAtTime(0, t0 + total - 0.5, 0.2);
+      const noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate); { const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+      const kick = at => { const o = ac.createOscillator(), e = ac.createGain(); o.frequency.setValueAtTime(140, at); o.frequency.exponentialRampToValueAtTime(42, at + 0.18); e.gain.setValueAtTime(0.9, at); e.gain.exponentialRampToValueAtTime(0.001, at + 0.32); o.connect(e).connect(music); o.start(at); o.stop(at + 0.35); };
+      const noise = (at, len, freq, vol, type = 'highpass') => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), e = ac.createGain(); s.buffer = noiseBuf; f.type = type; f.frequency.value = freq; e.gain.setValueAtTime(vol, at); e.gain.exponentialRampToValueAtTime(0.001, at + len); s.connect(f).connect(e).connect(music); s.start(at); s.stop(at + len + 0.02); };
+      const note = (at, f, len, vol, type = 'sawtooth', cut = 900) => { const o = ac.createOscillator(), fl = ac.createBiquadFilter(), e = ac.createGain(); o.type = type; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = cut; e.gain.setValueAtTime(0.0001, at); e.gain.exponentialRampToValueAtTime(vol, at + 0.02); e.gain.exponentialRampToValueAtTime(0.0001, at + len); o.connect(fl).connect(e).connect(music); o.start(at); o.stop(at + len + 0.05); };
+      const CH = [[220, 261.6, 329.6], [174.6, 220, 261.6], [261.6, 329.6, 392], [196, 246.9, 293.7]]; // Am F C G
+      for (let b = 0, bt = 0; bt < total; b++, bt = b * beat) {
+        const at = t0 + bt, bar = Math.floor(b / 4) % 4;
+        if (b % 2 === 0) kick(at); else noise(at, 0.16, 1500, 0.35, 'bandpass');
+        noise(at + beat / 2, 0.05, 7000, 0.12); noise(at, 0.04, 8000, 0.08);
+        note(at, CH[bar][0] / 4, beat * 0.9, 0.22, 'sawtooth', 380);
+        if (b % 4 === 0) CH[bar].forEach(f => note(at, f, beat * 3.8, 0.035, 'triangle', 1800));
+      }
+      parts.forEach((p, i) => { if (i) noise(t0 + p.start - 0.25, 0.35, 900, 0.18, 'bandpass'); }); // whoosh into every scene
+      kick(t0 + 0.02);
+      parts.forEach((p, i) => { if (bufs[i]) { const src = ac.createBufferSource(); src.buffer = bufs[i]; src.playbackRate.value = p.rate; src.connect(out); src.start(t0 + p.start + 0.2); } });
+
       const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
       const mime = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m));
-      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
+      const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 9e6 });
       const chunks = []; rec.ondataavailable = e => chunks.push(e.data);
       rec.onstop = async () => {
         // plain type for the file (the codec list contains a comma, which would break the data URL)
@@ -300,42 +330,115 @@ window.SocialStudio = (function () {
         const sv = await window.kairo.st.saveVideo(b64, mime.includes('mp4') ? 'mp4' : 'webm', S.youtube?.title || 'Kairo');
         ac.close(); resolve(sv.path);
       };
-      const t0 = ac.currentTime + 0.25;
-      parts.forEach((p, i) => { if (bufs[i]) { const src = ac.createBufferSource(); src.buffer = bufs[i]; src.connect(dest); src.connect(ac.destination); src.start(t0 + p.start); } });
       rec.start();
+
+      // ---------- drawing helpers ----------
+      const clamp = x => Math.min(1, Math.max(0, x)), ease = x => 1 - Math.pow(1 - clamp(x), 3);
+      const back = x => { x = clamp(x); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+      const FONT = (w, s) => `${w} ${s}px 'Space Grotesk Var', 'Inter Var', Arial`;
       const wrap = (txt, maxW, font) => { g.font = font; const words = String(txt || '').split(' '), out = []; let line = ''; for (const w of words) { const tl = line ? line + ' ' + w : w; if (g.measureText(tl).width > maxW && line) { out.push(line); line = w; } else line = tl; } if (line) out.push(line); return out; };
-      const ease = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+      const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+      const grad = (x0, x1) => { const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, acc); gr.addColorStop(1, acc2); return gr; };
+      const dots = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 3, v: 10 + Math.random() * 40 }));
+      const confetti = Array.from({ length: 90 }, () => ({ x: W / 2, y: H * 0.42, vx: (Math.random() - .5) * 1600, vy: -600 - Math.random() * 1200, r: Math.random() * 6, c: [acc, acc2, '#3ddc97', '#ffd27a', '#4fc3ff'][Math.floor(Math.random() * 5)] }));
+      // words that pop in one after another; "key" gets a gradient pill
+      function popWords(text, y, size, lt, key, perWord = 0.13) {
+        const lines = wrap(text, W - 150, FONT(900, size)); let n = 0;
+        lines.forEach((l, li) => {
+          g.font = FONT(900, size); const ws = l.split(' '), widths = ws.map(w => g.measureText(w + ' ').width), lw = widths.reduce((a, b) => a + b, 0);
+          let x = (W - lw) / 2;
+          ws.forEach((w, wi) => {
+            const k = back((lt - n * perWord) / 0.32), yy = y + li * size * 1.12;
+            if (k > 0) {
+              g.save(); g.translate(x + widths[wi] / 2, yy); g.scale(0.4 + 0.6 * k, 0.4 + 0.6 * k); g.globalAlpha *= clamp(k * 1.5);
+              const isKey = key && w.replace(/[^\p{L}\d]/gu, '').toLowerCase() === String(key).replace(/[^\p{L}\d]/gu, '').toLowerCase();
+              if (isKey) { const ww = widths[wi] - size * 0.25; g.fillStyle = grad(-ww / 2, ww / 2); rr(-ww / 2 - 18, -size * 0.62, ww + 36, size * 1.12, 22); g.fill(); }
+              g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = FONT(900, size);
+              g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 24; g.fillText(w, 0, 0); g.shadowBlur = 0;
+              g.restore();
+            }
+            x += widths[wi]; n++;
+          });
+        });
+        return lines.length;
+      }
+      // CapCut-style captions: 3-4 words at a time, the spoken word highlighted
+      function captions(p, lt) {
+        if (!p.words?.length) return;
+        const vt = lt - 0.2, i = p.words.findIndex(w => vt >= w.t0 && vt < w.t1), cur = i < 0 ? (vt < p.words[0].t0 ? -1 : p.words.length - 1) : i;
+        if (cur < 0) return;
+        const start = Math.floor(cur / 3) * 3, chunk = p.words.slice(start, start + 3);
+        g.font = FONT(900, 70); g.textBaseline = 'middle'; g.textAlign = 'left';
+        const widths = chunk.map(w => g.measureText(w.w.toUpperCase() + ' ').width), lw = widths.reduce((a, b) => a + b, 0);
+        const fit = Math.min(1, (W - 120) / lw); g.save(); g.translate(W / 2, 0); g.scale(fit, fit); g.translate(-W / 2, 0); let x = (W - lw) / 2; const y = (H - 330) / fit;
+        chunk.forEach((w, k) => {
+          const on = start + k === cur, pop = on ? back((vt - w.t0) / 0.18) : 1;
+          g.save(); g.translate(x + widths[k] / 2, y); g.scale(on ? 0.9 + 0.12 * pop : 1, on ? 0.9 + 0.12 * pop : 1);
+          if (on) { g.fillStyle = acc; rr(-widths[k] / 2 - 4, -46, widths[k] - 8, 92, 18); g.fill(); }
+          g.lineWidth = 12; g.strokeStyle = 'rgba(0,0,0,.85)'; g.lineJoin = 'round'; g.textAlign = 'center';
+          const txt = w.w.toUpperCase(); g.strokeText(txt, -g.measureText(' ').width / 2, 0); g.fillStyle = start + k <= cur ? '#fff' : 'rgba(255,255,255,.55)'; g.fillText(txt, -g.measureText(' ').width / 2, 0);
+          g.restore(); x += widths[k];
+        });
+        g.restore();
+      }
+
       const frame = () => {
         const now = ac.currentTime - t0;
         if (now > total) { rec.stop(); return; }
-        // animated background
-        const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0b0d16'); bg.addColorStop(1, '#1b1030'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-        for (let i = 0; i < 3; i++) { const x = W * (0.2 + 0.6 * ((Math.sin(now * 0.4 + i * 2) + 1) / 2)), y = H * (0.15 + i * 0.33); const gr = g.createRadialGradient(x, y, 0, x, y, 600); gr.addColorStop(0, i === 1 ? 'rgba(122,92,255,.35)' : 'rgba(255,122,69,.32)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
-        const p = parts.find(q => now >= q.start && now < q.start + q.dur) || parts[parts.length - 1], lt = now - p.start, a = ease(lt / 0.45);
-        g.textAlign = 'center'; g.textBaseline = 'middle';
-        if (p.type === 'hook' || p.type === 'cta') {
-          if (logo) { const s = 260 * (0.8 + 0.2 * a); g.globalAlpha = a; g.drawImage(logo, W / 2 - s / 2, H * 0.3 - s / 2, s, s); }
-          g.fillStyle = '#fff'; const lines = wrap(p.text, W - 160, `900 112px 'Space Grotesk Var', Arial`);
-          lines.forEach((l, i) => { g.globalAlpha = ease((lt - i * 0.12) / 0.4); g.fillText(l, W / 2, H * 0.52 + i * 128 - (1 - a) * 60); });
-          if (p.type === 'cta') { g.globalAlpha = a; g.font = `700 56px 'Inter Var', Arial`; g.fillStyle = acc; g.fillText('Kairo AI · gratis auf GitHub', W / 2, H * 0.8); }
-          g.globalAlpha = 1;
-        } else {
-          const s = p.s;
-          // screenshot in a rounded "window" with a slow zoom
+        const pi = Math.max(0, parts.findIndex(q => now >= q.start && now < q.start + q.dur)), p = parts[pi] || parts[parts.length - 1], lt = now - p.start;
+        const bp = (now % beat) / beat, pulse = Math.pow(1 - bp, 3);
+        // background: dark gradient, glowing blobs on the beat, synthwave grid, particles
+        const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#07070e'); bg.addColorStop(1, '#140a24'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+        [[acc, .2, .25], [acc2, .78, .55], ['#4fc3ff', .3, .85]].forEach(([c, fx, fy], k) => { const x = W * (fx + 0.12 * Math.sin(now * 0.5 + k * 2)), y = H * (fy + 0.05 * Math.cos(now * 0.4 + k)), r = 620 + 80 * pulse; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, c + '55'); gr.addColorStop(1, 'transparent'); g.fillStyle = gr; g.fillRect(0, 0, W, H); });
+        g.save(); g.strokeStyle = `rgba(139,92,255,${0.18 + 0.12 * pulse})`; g.lineWidth = 2; const hz = H * 0.74;
+        for (let k = 0; k < 14; k++) { const z = ((k + (now * 1.6) % 1) / 14), y = hz + Math.pow(z, 2.2) * (H - hz); g.globalAlpha = z; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+        g.globalAlpha = 0.5; for (let k = -10; k <= 10; k++) { g.beginPath(); g.moveTo(W / 2 + k * 30, hz); g.lineTo(W / 2 + k * 260, H); g.stroke(); } g.restore();
+        dots.forEach(d => { d.y -= d.v / 30; if (d.y < -10) { d.y = H + 10; d.x = Math.random() * W; } g.fillStyle = `rgba(255,255,255,${0.15 + 0.25 * pulse})`; g.beginPath(); g.arc(d.x, d.y, d.s, 0, 7); g.fill(); });
+
+        // zoom punch + flash at the start of every part
+        const punch = 1 + 0.12 * (1 - ease(lt / 0.35)), shake = lt < 0.25 ? (1 - lt / 0.25) * 10 : 0;
+        g.save(); g.translate(W / 2 + (Math.random() - .5) * shake, H / 2 + (Math.random() - .5) * shake); g.scale(punch, punch); g.translate(-W / 2, -H / 2);
+        if (lt < 0.18) g.filter = `blur(${(1 - lt / 0.18) * 8}px)`;
+        if (p.type === 'hook') {
+          if (logo) { const k = back(lt / 0.5); g.globalAlpha = clamp(k); g.drawImage(logo, W / 2 - 90 * k, 420 - 90 * k, 180 * k, 180 * k); g.globalAlpha = 1; }
+          const n = popWords(p.text, H * 0.44, 132, lt - 0.1, p.text.split(' ').slice(-1)[0], 0.16);
+          g.font = FONT(700, 40); g.fillStyle = 'rgba(255,255,255,.7)'; g.textAlign = 'center'; g.globalAlpha = ease((lt - 0.6) / 0.4); g.fillText('KAIRO AI', W / 2, H * 0.44 + n * 150 + 30); g.globalAlpha = 1;
+        } else if (p.type === 'scene') {
+          const s = p.s; const tl = popWords(s.title, 320, 100, lt, s.key, 0.11), subY = 320 + tl * 112 + 34;
+          g.font = FONT(600, 46); g.fillStyle = '#c9d2e4'; g.textAlign = 'center'; g.globalAlpha = ease((lt - 0.45) / 0.4); const subL = wrap(s.sub, W - 180, FONT(600, 46)).slice(0, 2); subL.forEach((l, i) => g.fillText(l, W / 2, subY + i * 58)); g.globalAlpha = 1;
           if (p.shot) {
-            const bw = W - 120, bh = bw * p.shot.height / p.shot.width, x = 60, y = 360 + (1 - a) * 120, z = 1 + lt * 0.025;
-            g.save(); g.globalAlpha = a; g.beginPath(); g.roundRect(x, y, bw, bh, 36); g.clip();
-            g.drawImage(p.shot, x - (z - 1) * bw / 2, y - (z - 1) * bh / 2, bw * z, bh * z); g.restore();
-            g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 3; g.beginPath(); g.roundRect(x, y, bw, bh, 36); g.stroke();
-          } else { g.globalAlpha = a; g.font = '260px serif'; g.fillText(s.emoji || '✨', W / 2, 640); g.globalAlpha = 1; }
-          g.globalAlpha = a; g.font = '110px serif'; g.fillText(s.emoji || '', W / 2, 1170);
-          g.fillStyle = '#fff'; wrap(s.title, W - 140, `900 104px 'Space Grotesk Var', Arial`).forEach((l, i) => g.fillText(l, W / 2, 1320 + i * 116));
-          g.fillStyle = '#c9d2e4'; wrap(s.sub, W - 180, `500 52px 'Inter Var', Arial`).forEach((l, i) => { g.globalAlpha = ease((lt - 0.25) / 0.4); g.fillText(l, W / 2, 1560 + i * 66); });
-          g.globalAlpha = 1;
+            // screenshot in a device frame that flies in tilted and then floats
+            // the picture sits between the texts and the captions
+            const top = Math.max(600, subY + subL.length * 58 + 30), k = ease(lt / 0.7), bh = Math.min(900, (W - 110) * p.shot.height / p.shot.width, H - 470 - top), bw = Math.min(W - 110, bh * p.shot.width / p.shot.height), x = (W - bw) / 2, y = top + (1 - k) * 500 + Math.sin(now * 1.4) * 8;
+            const tilt = (1 - k) * 0.12 + Math.sin(now * 0.8) * 0.012;
+            g.save(); g.translate(W / 2, y + bh / 2); g.rotate(tilt); g.transform(1, 0, -tilt * 0.6, 1, 0, 0); g.translate(-W / 2, -(y + bh / 2));
+            g.globalAlpha = clamp(k * 1.4);
+            const glow = g.createRadialGradient(W / 2, y + bh / 2, 0, W / 2, y + bh / 2, bw * 0.75); glow.addColorStop(0, acc + '66'); glow.addColorStop(1, 'transparent'); g.fillStyle = glow; g.fillRect(0, y - 200, W, bh + 400);
+            g.fillStyle = '#0b0d14'; rr(x - 14, y - 14, bw + 28, bh + 28, 44); g.fill();
+            g.save(); rr(x, y, bw, bh, 32); g.clip(); const z = 1.04 + lt * 0.03; g.drawImage(p.shot, x - (z - 1) * bw / 2, y - (z - 1) * bh / 2, bw * z, bh * z);
+            const sheen = g.createLinearGradient(x, y, x + bw, y + bh); const sp = ((now * 0.35) % 1.6) - 0.3; sheen.addColorStop(clamp(sp - 0.1), 'transparent'); sheen.addColorStop(clamp(sp), 'rgba(255,255,255,.14)'); sheen.addColorStop(clamp(sp + 0.1), 'transparent'); g.fillStyle = sheen; g.fillRect(x, y, bw, bh);
+            g.restore();
+            g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 3; rr(x, y, bw, bh, 32); g.stroke();
+            g.restore();
+          }
+          captions(p, lt);
+        } else {
+          // end card: logo with pulsing rings, gradient name, call to action, confetti
+          const k = back(lt / 0.6), cx = W / 2, cy = H * 0.34;
+          for (let r = 0; r < 3; r++) { const ph = ((now * 0.8 + r / 3) % 1); g.strokeStyle = acc; g.globalAlpha = (1 - ph) * 0.6; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, 150 + ph * 260, 0, 7); g.stroke(); }
+          g.globalAlpha = 1; if (logo) g.drawImage(logo, cx - 130 * k, cy - 130 * k, 260 * k, 260 * k);
+          g.font = FONT(900, 170); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = grad(W / 2 - 300, W / 2 + 300); g.globalAlpha = clamp(k); g.fillText('Kairo', cx, H * 0.53); g.globalAlpha = 1;
+          popWords(p.text, H * 0.63, 76, lt - 0.3, null, 0.1);
+          const ck = ease((lt - 0.9) / 0.4); if (ck > 0) { g.globalAlpha = ck; g.font = FONT(800, 48); const tw = g.measureText('Gratis · Link in Bio').width + 90; g.fillStyle = '#fff'; rr(cx - tw / 2, H * 0.75 - 50, tw, 100, 50); g.fill(); g.fillStyle = '#111'; g.fillText('Gratis · Link in Bio', cx, H * 0.75 + 2); g.globalAlpha = 1; }
+          confetti.forEach(c => { const tt = Math.max(0, lt - 0.2); const x = c.x + c.vx * tt * 0.6, y = c.y + c.vy * tt * 0.6 + 900 * tt * tt; if (y < H) { g.fillStyle = c.c; g.save(); g.translate(x, y); g.rotate(tt * 6 + c.r); g.fillRect(-9, -5, 18, 10); g.restore(); } });
+          captions(p, lt);
         }
-        // progress bar + watermark
-        g.fillStyle = 'rgba(255,255,255,.15)'; g.fillRect(60, 120, W - 120, 10); g.fillStyle = acc; g.fillRect(60, 120, (W - 120) * Math.min(1, now / total), 10);
-        g.font = `700 40px 'Inter Var', Arial`; g.fillStyle = 'rgba(255,255,255,.7)'; g.textAlign = 'left'; g.fillText('Kairo AI', 60, 200);
+        g.filter = 'none'; g.restore();
+        if (lt < 0.09) { g.fillStyle = `rgba(255,255,255,${(1 - lt / 0.09) * 0.3})`; g.fillRect(0, 0, W, H); }
+        // story-style progress segments + watermark
+        const segW = (W - 120 - (parts.length - 1) * 10) / parts.length;
+        parts.forEach((q, k) => { const x = 60 + k * (segW + 10); g.fillStyle = 'rgba(255,255,255,.22)'; rr(x, 90, segW, 9, 5); g.fill(); const f = k < pi ? 1 : k === pi ? clamp(lt / q.dur) : 0; if (f > 0) { g.fillStyle = '#fff'; rr(x, 90, segW * f, 9, 5); g.fill(); } });
+        g.font = FONT(700, 38); g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(255,255,255,.75)'; g.fillText('Kairo AI', 60, 150);
         requestAnimationFrame(frame);
       };
       frame();

@@ -92,8 +92,8 @@ Return ONLY JSON: {"ideas":[{"name":"catchy game name","genre":"","pitch":"one e
   return { ideas: j.ideas.slice(0, 3) };
 }
 
-async function gamePrompt({ game, extra, idea }, onStep = () => {}) {
-  const s = store.get(), lang = { de: 'German', en: 'English' }[s.language] || 'German';
+async function gamePrompt({ game, extra, idea, lang: want }, onStep = () => {}) {
+  const s = store.get(), LANGS = { de: 'German', en: 'English', sq: 'Albanian', fr: 'French', es: 'Spanish', it: 'Italian', tr: 'Turkish', pt: 'Portuguese' }, lang = LANGS[want] || LANGS[s.language] || 'German';
   if (idea) game = idea.name || game;
   const platform = /unity/i.test(game + extra) ? 'Unity (C#)' : /godot/i.test(game + extra) ? 'Godot (GDScript)' : /(web|browser|html)/i.test(game + extra) ? 'a browser game (HTML5 + JavaScript)' : 'Roblox (Luau, Roblox Studio)';
   onStep('research');
@@ -106,7 +106,7 @@ async function gamePrompt({ game, extra, idea }, onStep = () => {}) {
 ${idea ? `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build the complete, polished game "${idea.name}" for ${platform}, exactly as described in the game idea below. Keep its name, theme, loop and twist, and work out every detail.`
   : `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a complete, polished, original game for ${platform} in the style of "${game}".
 The new game must be ORIGINAL: its own name, own theme/setting, own item names and visuals, plus 2-3 fresh twists — it uses the same kind of mechanics and game feel, but is not a copy (no copied names, logos, assets or text).`}
-Write the prompt in ${lang}, in Markdown, addressed to the AI ("Du bist …"). Be very concrete: exact numbers, tables, names, file paths. Structure it with these sections:
+Write the WHOLE prompt in ${lang} (also translate all section headings below into ${lang}), in Markdown, addressed to the AI in the second person. Be very concrete: exact numbers, tables, names, file paths. Structure it with these sections:
 1. Rolle & Ziel (who the AI is, what to build, quality bar)
 2. Spielidee & neuer Name, Setting, Zielgruppe, was es süchtig macht
 3. Core Gameplay Loop (Schritt für Schritt, was der Spieler jede Minute tut)

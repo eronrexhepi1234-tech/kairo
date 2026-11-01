@@ -824,8 +824,13 @@ window.App = {
     if (gp && !/\b(bewerbung|lebenslauf|bild|foto|logo|aufsatz|text|mail|e-mail|brief|präsentation|referat)\b/i.test(gp[1])) {
       const game = gp[1].replace(/\s+(und\s+)?(schick|send|gib|öffne|füg|tu|mach)\w*(\s+(ihn|es|den|das|mir|ihm))*\s*$/i, '').replace(/\s+(schreiben|machen|erstellen|senden|schicken|geben)$/i, '').trim();
       const ai = (gp[2] || (c.match(/claude|chatgpt|chat gpt|gemini|perplexity|copilot/) || [])[0] || 'claude').replace(/\s/g, '').toLowerCase();
-      RobloxUI.voicePrompt(game, ai);
-      return `Kairo recherchiert "${game}" und schreibt einen sehr detaillierten Prompt. In etwa einer Minute öffnet sich ${ai === 'chatgpt' ? 'ChatGPT' : ai === 'gemini' ? 'Gemini' : 'Claude'} mit dem Prompt. Sag das dem Nutzer kurz.`;
+      // "… auf Englisch" / "in English" -> prompt language
+      const LN = { deutsch: 'de', german: 'de', englisch: 'en', english: 'en', albanisch: 'sq', shqip: 'sq', französisch: 'fr', spanisch: 'es', italienisch: 'it', türkisch: 'tr' };
+      const lm = c.match(/(?:auf|in)\s+(deutsch|german|englisch|english|albanisch|shqip|französisch|spanisch|italienisch|türkisch)/);
+      const pl = lm ? LN[lm[1]] : undefined;
+      const gameClean = game.replace(/\s+(?:auf|in)\s+(?:deutsch|german|englisch|english|albanisch|shqip|französisch|spanisch|italienisch|türkisch)\b.*$/i, '').trim();
+      RobloxUI.voicePrompt(gameClean, ai, pl);
+      return `Kairo recherchiert "${gameClean}"${pl ? " (Prompt-Sprache: " + pl + ")" : ""} und schreibt einen sehr detaillierten Prompt. In etwa einer Minute öffnet sich ${ai === 'chatgpt' ? 'ChatGPT' : ai === 'gemini' ? 'Gemini' : 'Claude'} mit dem Prompt. Sag das dem Nutzer kurz.`;
     }
     // Kairo invents its own game ideas ("Erfinde ein Roblox-Spiel", "eigene Spielidee mit Drachen")
     if (/(erfind|ausdenk|denk dir).*(spiel|game)|eigene.{0,12}(roblox-?)?spiel-?idee|spiel-?ideen?\b.*(roblox|eigene|neue)|(neue|eigene) roblox-?spiel/.test(c)) {
