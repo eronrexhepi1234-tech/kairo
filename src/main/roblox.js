@@ -73,18 +73,39 @@ Return ONLY JSON: {"title":"short name","summary":"2 sentences what was built","
 
 // ---------- big prompt for another AI ("Mach einen Prompt für Steal an Egg") ----------
 // 1) research the game on the web, 2) write one very detailed build prompt for an ORIGINAL game in that style
-async function gamePrompt({ game, extra }, onStep = () => {}) {
+// ---------- Kairo invents its own game ideas ----------
+async function ideas({ wish }) {
   const s = store.get(), lang = { de: 'German', en: 'English' }[s.language] || 'German';
+  let trends = '';
+  try {
+    trends = await P().complete(s, { webSearch: s.provider === 'gemini', system: 'Search the web: which Roblox game genres and mechanics are trending right now (most played, fastest growing)? List 8-10 trends with one line each why players like them. Max 250 words.', messages: [{ role: 'user', text: 'Roblox trends right now' }] });
+  } catch {}
+  const j = await (async () => {
+    for (let i = 0; i < 3; i++) {
+      const out = await P().complete(s, { system: `You are a hit-making Roblox game designer. Invent 3 completely ORIGINAL Roblox game ideas that could go viral. They must NOT copy an existing game: new name, new theme, a fresh core mechanic or a clever new combination, plus something kids instantly want to show their friends. Use the trends below only as inspiration for what players like. Language: ${lang}.
+Return ONLY JSON: {"ideas":[{"name":"catchy game name","genre":"","pitch":"one exciting sentence","loop":"the core gameplay loop in 2-3 sentences","hooks":["3 things that make it addictive"],"twist":"what no other game has","social":"how friends play together","why":"why it can go viral now","color":"#hex main color"}]}${i ? '\nIMPORTANT: valid JSON only.' : ''}`, messages: [{ role: 'user', text: `${wish ? 'Wish of the player: ' + wish + '\n' : ''}Trends:\n${trends || '(no trend data)'}` }] });
+      let r = null; try { r = P().parseJson(out); } catch {}
+      if (r?.ideas?.length) return r;
+    }
+    throw new Error('Keine Ideen bekommen – nochmal versuchen');
+  })();
+  return { ideas: j.ideas.slice(0, 3) };
+}
+
+async function gamePrompt({ game, extra, idea }, onStep = () => {}) {
+  const s = store.get(), lang = { de: 'German', en: 'English' }[s.language] || 'German';
+  if (idea) game = idea.name || game;
   const platform = /unity/i.test(game + extra) ? 'Unity (C#)' : /godot/i.test(game + extra) ? 'Godot (GDScript)' : /(web|browser|html)/i.test(game + extra) ? 'a browser game (HTML5 + JavaScript)' : 'Roblox (Luau, Roblox Studio)';
   onStep('research');
-  let research = '';
-  try {
+  let research = idea ? `This is Kairo's own ORIGINAL game idea – build exactly this game, keep its name "${idea.name}":\n${JSON.stringify(idea, null, 1)}` : '';
+  if (!idea) try {
     research = await P().complete(s, { webSearch: s.provider === 'gemini', system: `You are a game researcher. Search the web and describe the game precisely and completely: genre, core gameplay loop, every mechanic and system, items/pets/units and their rarities, economy (currencies, prices, income rates), progression and rebirths, maps and areas, UI screens, social/multiplayer features (trading, stealing, PvP, teams), events and updates, monetization (game passes, developer products), what makes it fun and addictive, common player complaints. Use concrete numbers where known. Max 700 words. Language: ${lang}.`, messages: [{ role: 'user', text: `Game: ${game}${platform.startsWith('Roblox') ? ' (Roblox game)' : ''}` }] });
   } catch { research = ''; }
   onStep('write');
   const sys = `You are a senior ${platform} game designer, lead programmer and expert prompt engineer.
-Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a complete, polished, original game for ${platform} in the style of "${game}".
-The new game must be ORIGINAL: its own name, own theme/setting, own item names and visuals, plus 2-3 fresh twists — it uses the same kind of mechanics and game feel, but is not a copy (no copied names, logos, assets or text).
+${idea ? `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build the complete, polished game "${idea.name}" for ${platform}, exactly as described in the game idea below. Keep its name, theme, loop and twist, and work out every detail.`
+  : `Write ONE extremely detailed, ready-to-paste prompt that makes another AI (Claude, ChatGPT, Gemini) build a complete, polished, original game for ${platform} in the style of "${game}".
+The new game must be ORIGINAL: its own name, own theme/setting, own item names and visuals, plus 2-3 fresh twists — it uses the same kind of mechanics and game feel, but is not a copy (no copied names, logos, assets or text).`}
 Write the prompt in ${lang}, in Markdown, addressed to the AI ("Du bist …"). Be very concrete: exact numbers, tables, names, file paths. Structure it with these sections:
 1. Rolle & Ziel (who the AI is, what to build, quality bar)
 2. Spielidee & neuer Name, Setting, Zielgruppe, was es süchtig macht
@@ -101,7 +122,7 @@ Write the prompt in ${lang}, in Markdown, addressed to the AI ("Du bist …"). B
 13. Qualitätsregeln für die AI: complete code for every file (no placeholders, no "…"), comments, modern ${platform.startsWith('Roblox') ? 'Luau (task.wait, typed where useful, no deprecated APIs)' : 'code'}, ask before guessing assets, output file by file with full paths, start with Phase 1 and wait for "weiter"
 14. Test-Checkliste (what to test after each phase)
 Use the research below for the mechanics. Return ONLY the prompt text, no explanation before or after.`;
-  let prompt = await P().complete(s, { system: sys, messages: [{ role: 'user', text: `Game to take inspiration from: ${game}\n${extra ? 'Extra wishes: ' + extra + '\n' : ''}\nResearch about the game:\n${research || '(no research available – use your knowledge of the genre)'}` }] });
+  let prompt = await P().complete(s, { system: sys, messages: [{ role: 'user', text: `${idea ? 'Game to build' : 'Game to take inspiration from'}: ${game}\n${extra ? 'Extra wishes: ' + extra + '\n' : ''}\nResearch about the game:\n${research || '(no research available – use your knowledge of the genre)'}` }] });
   prompt = String(prompt || '').replace(/^```(?:markdown)?\s*/i, '').replace(/```\s*$/, '').trim();
   if (prompt.length < 800) throw new Error('Der Prompt ist zu kurz geworden – nochmal versuchen');
   const name = (prompt.match(/(?:neuer name|spielname|name des spiels)[^\n:]*[:：]\s*\**([^\n*]{2,40})/i) || [])[1]?.trim() || '';
@@ -130,8 +151,9 @@ function register(ctx) {
   ipcMain.handle('rbx:install', wrap(async () => install()));
   ipcMain.handle('rbx:plan', wrap(o => plan(o)));
   ipcMain.handle('rbx:build', wrap(p => build(p)));
+  ipcMain.handle('rbx:ideas', wrap(o => ideas(o || {})));
   ipcMain.handle('rbx:prompt', wrap(o => gamePrompt(o, step => { try { require('electron').BrowserWindow.getAllWindows().forEach(w => w.webContents.send('rbx:promptStep', step)); } catch {} })));
   ipcMain.handle('rbx:reveal', () => shell.showItemInFolder(pluginFile()));
 }
 
-module.exports = { register, plan, build, status, install, gamePrompt };
+module.exports = { register, plan, build, status, install, gamePrompt, ideas };

@@ -827,6 +827,12 @@ window.App = {
       RobloxUI.voicePrompt(game, ai);
       return `Kairo recherchiert "${game}" und schreibt einen sehr detaillierten Prompt. In etwa einer Minute öffnet sich ${ai === 'chatgpt' ? 'ChatGPT' : ai === 'gemini' ? 'Gemini' : 'Claude'} mit dem Prompt. Sag das dem Nutzer kurz.`;
     }
+    // Kairo invents its own game ideas ("Erfinde ein Roblox-Spiel", "eigene Spielidee mit Drachen")
+    if (/(erfind|ausdenk|denk dir).*(spiel|game)|eigene.{0,12}(roblox-?)?spiel-?idee|spiel-?ideen?\b.*(roblox|eigene|neue)|(neue|eigene) roblox-?spiel/.test(c)) {
+      const wish = (cmd.match(/(?:mit|über|zum thema|wo|in dem)\s+(.+?)[?.!]*$/i) || [])[1] || '';
+      RobloxUI.open(wish, { ideas: true });
+      return 'Kairo erfindet gerade 3 komplett neue Roblox-Spiele und zeigt sie gleich auf dem Bildschirm. Sag nur einen kurzen Satz.';
+    }
     // Roblox Studio + Stream Deck
     if (/roblox/.test(c) && !/^(kairo,?\s*)?(öffne|starte?|open)\s+roblox\s*$/.test(c)) { const t = cmd.replace(/^(kairo,?\s*)?/i, '').replace(/(in |im |für )?roblox(-?\s*studio)?:?/i, ' ').replace(/\s+/g, ' ').trim(); RobloxUI.open(t.length > 8 ? t : undefined); return t.length > 8 ? `Kairo plant "${t}" für Roblox Studio. Die 3D-Vorschau erscheint gleich, dann ein Klick auf Bauen.` : 'Der Roblox-Studio-Assistent ist offen.'; }
     if (/stream[- ]?deck/.test(c)) { DeckUI.open(); return 'Das Stream Deck ist offen. Auf dem Handy ist es im Tab Deck.'; }

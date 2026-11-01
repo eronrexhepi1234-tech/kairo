@@ -4,7 +4,7 @@ window.RobloxUI = (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const IDEAS = ['Obby mit 10 Levels, Checkpoints und Lava', 'Kleines Haus mit Möbeln und Garten', 'Coins zum Einsammeln mit Punkte-Leaderboard', 'Tag-Nacht-Zyklus', 'Tür, die sich bei Berührung öffnet', 'Turm-Parkour mit Neon-Plattformen', 'Rennstrecke mit Startlinie', 'Shop-GUI mit Coins'];
   let P = null, mode = 'build', timer = 0, three = null;
-  function open(prompt) {
+  function open(prompt, opts = {}) {
     let el = $r('rbOverlay');
     if (!el) { document.body.insertAdjacentHTML('beforeend', '<div class="xo rbo" id="rbOverlay"></div>'); el = $r('rbOverlay'); }
     requestAnimationFrame(() => el.classList.add('on'));
@@ -17,15 +17,18 @@ window.RobloxUI = (function () {
         <div class="rb-modes" id="rbModes"><button data-m="build" class="on">${ic('pickaxe')} Bauen + Skripte</button><button data-m="script">${ic('terminal')} Nur Skript</button></div>
         <button class="btn primary rb-go" id="rbGo">${ic('wand-sparkles')} Bauplan erstellen</button>
         <button class="btn rb-pbtn" id="rbPrompt" title="Schreib den Namen eines Spiels oder deine Idee – Kairo macht einen sehr detaillierten Prompt für Claude, ChatGPT oder Gemini">${ic('message-circle')} Als KI-Prompt (für Claude, ChatGPT …)</button>
+        <button class="btn rb-pbtn rb-ibtn" id="rbIdeas" title="Kairo erfindet 3 komplett neue Roblox-Spiele (optional mit deinem Wunsch im Feld oben)">${ic('lightbulb')} Eigene Spielidee erfinden</button>
         <div class="rb-ideas">${IDEAS.map(i => `<button>${esc(i)}</button>`).join('')}</div></aside>
       <section class="rb-main" id="rbMain"><div class="rb-empty"><div class="rb-cubes">${'<i></i>'.repeat(9)}</div><b>Hier erscheint die 3D-Vorschau</b><small>Erst ansehen, dann mit einem Klick in Roblox Studio bauen. Alles geht mit Ctrl+Z rückgängig.</small></div></section></div>`;
     $r('rbX').onclick = close;
     el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; el.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); });
     el.querySelectorAll('.rb-ideas button').forEach(b => b.onclick = () => { $r('rbQ').value = b.textContent; make(); });
     $r('rbGo').onclick = make;
-    $r('rbPrompt').onclick = promptOnPage;
+    $r('rbPrompt').onclick = () => promptOnPage();
+    $r('rbIdeas').onclick = () => ideasOnPage($r('rbQ').value.trim());
     poll(); clearInterval(timer); timer = setInterval(poll, 2000);
-    if (prompt) { $r('rbQ').value = prompt; make(); }
+    if (opts.ideas) { if (prompt) $r('rbQ').value = prompt; ideasOnPage(prompt || ''); }
+    else if (prompt) { $r('rbQ').value = prompt; make(); }
   }
   function close() { clearInterval(timer); stop3d(); const el = $r('rbOverlay'); if (!el) return; el.classList.remove('on'); setTimeout(() => el.remove(), 400); }
   async function poll() {
@@ -110,16 +113,37 @@ window.RobloxUI = (function () {
 
   // ---------- big prompt for another AI ----------
   const AIS = [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['gemini', 'Gemini']];
-  async function promptOnPage() {
-    const q = $r('rbQ').value.trim(); if (!q) return window.toast('Schreib den Namen des Spiels oder deine Idee');
+  // Kairo invents 3 original game ideas -> pick one -> big prompt or a prototype in Studio
+  async function ideasOnPage(wish) {
     stop3d();
-    $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b id="rbPStep">Recherchiere das Spiel…</b><small>${esc(q)}</small></div>`;
-    const off = window.kairo.roblox.onPromptStep(s => { const el = $r('rbPStep'); if (el) el.textContent = s === 'write' ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
-    const r = await window.kairo.roblox.prompt({ game: q });
+    $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b>Kairo erfindet Spielideen…</b><small>schaut zuerst, was auf Roblox gerade beliebt ist</small></div>`;
+    const r = await window.kairo.roblox.ideas({ wish: wish || '' });
+    if (!$r('rbMain')) return;
+    if (!r.ok) { $r('rbMain').innerHTML = `<div class="rb-wait"><b>✕ ${esc(r.error.message)}</b></div>`; return; }
+    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>Kairos eigene Ideen</small><h2>3 neue Roblox-Spiele</h2><p>Komplett neu erfunden – wähle eine aus.</p></div><button class="btn" id="rbMore">${ic('refresh-cw')} Neue Ideen</button></div>
+      <div class="rb-ideas3">${r.ideas.map((x, i) => `<div class="rb-idea" style="--c:${esc(/^#[0-9a-f]{6}$/i.test(x.color) ? x.color : '#ff7a45')};animation-delay:${i * 120}ms">
+        <small>${esc(x.genre)}</small><h3>${esc(x.name)}</h3><p class="rb-pitch">${esc(x.pitch)}</p>
+        <div class="rb-ib"><b>So spielt man</b><p>${esc(x.loop)}</p></div>
+        <div class="rb-ib"><b>Macht süchtig</b><ul>${(x.hooks || []).map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>
+        <div class="rb-ib twist"><b>${ic('sparkles')} Das gibt es sonst nirgends</b><p>${esc(x.twist)}</p></div>
+        <div class="rb-ib"><b>Mit Freunden</b><p>${esc(x.social)}</p></div>
+        <p class="rb-why">${ic('trending-up')} ${esc(x.why)}</p>
+        <div class="rb-iact"><button class="btn primary" data-p="${i}">${ic('message-circle')} Grosser KI-Prompt</button><button class="btn" data-b="${i}">${ic('pickaxe')} Prototyp in Studio</button></div></div>`).join('')}</div>`;
+    $r('rbMore').onclick = () => ideasOnPage(wish);
+    $r('rbMain').querySelectorAll('[data-p]').forEach(b => b.onclick = () => promptOnPage(r.ideas[+b.dataset.p]));
+    $r('rbMain').querySelectorAll('[data-b]').forEach(b => b.onclick = () => { const x = r.ideas[+b.dataset.b]; $r('rbQ').value = `Prototyp für mein Spiel "${x.name}": ${x.pitch} ${x.loop} Baue die Start-Map und die wichtigste Mechanik.`; make(); });
+  }
+  async function promptOnPage(idea) {
+    if (idea instanceof Event) idea = null;
+    const q = idea ? idea.name : $r('rbQ').value.trim(); if (!q) return window.toast('Schreib den Namen des Spiels oder deine Idee');
+    stop3d();
+    $r('rbMain').innerHTML = `<div class="rb-wait"><div class="rb-cubes spin">${'<i></i>'.repeat(9)}</div><b id="rbPStep">${idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'}</b><small>${esc(q)}</small></div>`;
+    const off = window.kairo.roblox.onPromptStep(s => { const el = $r('rbPStep'); if (el) el.textContent = s === 'write' || idea ? 'Schreibe den grossen Prompt…' : 'Recherchiere das Spiel…'; });
+    const r = await window.kairo.roblox.prompt(idea ? { idea } : { game: q });
     off?.();
     if (!$r('rbMain')) return;
     if (!r.ok) { $r('rbMain').innerHTML = `<div class="rb-wait"><b>✕ ${esc(r.error.message)}</b></div>`; return; }
-    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Prompt · ${esc(r.platform)}</small><h2>${esc(r.name || 'Prompt für ' + q)}</h2><p>Inspiriert von „${esc(q)}“ – als eigenes Spiel. ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
+    $r('rbMain').innerHTML = `<div class="rb-top"><div><small>KI-Prompt · ${esc(r.platform)}</small><h2>${esc(r.name || (idea ? q : 'Prompt für ' + q))}</h2><p>${idea ? 'Kairos eigene Spielidee.' : `Inspiriert von „${esc(q)}“ – als eigenes Spiel.`} ${Math.round(r.chars / 1000)}k Zeichen · gespeichert in Dokumente → Kairo → Prompts</p></div></div>
       <div class="rb-act"><button class="btn primary" id="rbPCopy">${ic('copy')} Prompt kopieren</button>${AIS.map(([k, n]) => `<button class="btn" data-ai="${k}">${ic('external-link')} In ${n} öffnen</button>`).join('')}</div>
       ${r.research ? `<details class="rb-research"><summary>${ic('search')} Was Kairo über das Spiel herausgefunden hat</summary><div class="md">${window.renderMarkdown ? window.renderMarkdown(r.research) : esc(r.research)}</div></details>` : ''}
       <div class="rb-prompt md">${window.renderMarkdown ? window.renderMarkdown(r.prompt) : `<pre>${esc(r.prompt)}</pre>`}</div>`;
