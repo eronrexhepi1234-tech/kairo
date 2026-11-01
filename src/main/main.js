@@ -356,6 +356,15 @@ async function startRemote() {
     alerts: () => { const a = require('./alerts'); return { history: a.history(), guard: a.guardOn() }; },
     guard: on => require('./alerts').setGuard(!!on),
     sayOnPc: text => win?.webContents.send('remote:say', String(text).slice(0, 400)),
+    rtc: offer => askRenderer('remote:rtc', offer),
+    listen: async (b64, mime) => {
+      if (!b64) return '';
+      let text = '';
+      try { text = String(await providers.transcribe(store.get(), b64, mime) || '').trim(); }
+      catch (e) { throw new Error(e.code === 'NO_KEY' ? 'Zum Verstehen braucht Kairo einen OpenAI- oder Gemini-Schlüssel (Einstellungen am PC).' : e.message); }
+      if (text) win?.webContents.send('remote:voiceIn', text);
+      return text;
+    },
     app: name => require('./actions').openApp(name),
     deck: require('./deck'),
     pcinfo: async () => {
@@ -390,6 +399,16 @@ ipcMain.handle('party:end', () => require('./party').end());
 ipcMain.handle('remote:stop', async () => { remoteInfo = null; await remote.stop(); store.update({ remote: { enabled: false } }); return true; });
 ipcMain.handle('remote:reset', async () => { remoteInfo = null; await remote.stop(); store.update({ remote: { token: remote.newToken(), enabled: false } }); return true; });
 ipcMain.handle('remote:info', () => remote.lanAddress());
+// link + QR for "phone as webcam / microphone" (HTTPS page on the same port)
+ipcMain.handle('phonecam:link', async (_e, mode) => {
+  try {
+    const info = remoteInfo || await startRemote();
+    if (!info.camLink) throw new Error('Die sichere Verbindung konnte nicht gestartet werden.');
+    const link = info.camLink + '&m=' + (mode === 'mic' ? 'mic' : 'cam');
+    const qr = await require('qrcode').toDataURL(link, { margin: 1, width: 300, color: { dark: '#111214', light: '#ffffff' } });
+    return { ok: true, link, qr };
+  } catch (e) { return { ok: false, error: errInfo(e) }; }
+});
 ipcMain.handle('remote:firewall', async () => {
   try { return { ok: true, ...(await require('./firewall').check(store.get().remote.port)) }; } catch (e) { return { ok: false, error: errInfo(e) }; }
 });

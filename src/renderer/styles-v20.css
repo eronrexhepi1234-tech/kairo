@@ -193,3 +193,20 @@
 .ds-roles span.hoist { font-weight: 700; }
 .ds-tree { max-height: 460px; } .ds-welcome + h5 { margin-top: 12px; }
 .ds-pbar { height: 8px; border-radius: 8px; background: rgba(255,255,255,.06); overflow: hidden; } .ds-pbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #5865f2, #3ddc97); transition: width .3s; }
+
+/* phone as webcam / microphone */
+.pc-grid { flex: 1; display: grid; grid-template-columns: 360px 1fr; gap: 20px; min-height: 0; }
+.pc-side { display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+.pc-side .or-n button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; } .pc-side .or-n svg { width: 16px; height: 16px; }
+.pc-qr { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border-radius: 20px; background: #fff; }
+.pc-qr img { width: 230px; height: 230px; image-rendering: pixelated; } .pc-qr small { color: #444; font-size: 11.5px; word-break: break-all; text-align: center; }
+.pc-qr .pw-wait { padding: 50px 0; } .pc-qr .pw-err { color: #b00; background: none; border: 0; }
+.pc-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; color: #c9ccd3; font-size: 13.5px; }
+.pc-stage { position: relative; border-radius: 22px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #1d1430, #08090f 70%); min-height: 360px; }
+.pc-stage video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+.pc-idle { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #6f7686; } .pc-idle svg { width: 44px; height: 44px; animation: pwPulse 1.6s infinite; }
+.pc-live { position: absolute; left: 14px; top: 14px; display: none; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: rgba(0,0,0,.6); font-size: 12px; font-weight: 800; }
+.pc-live.on { display: flex; } .pc-live i { width: 9px; height: 9px; border-radius: 50%; background: #ff3b3b; animation: blink 1s infinite; }
+.pc-acts { position: absolute; left: 14px; right: 14px; bottom: 14px; display: none; gap: 8px; padding: 8px; border-radius: 16px; background: rgba(12,13,18,.85); backdrop-filter: blur(10px); }
+.pc-acts.on { display: flex; } .pc-acts .field { flex: 1; } .pc-acts .btn { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 900px) { .pc-grid { grid-template-columns: 1fr; } }

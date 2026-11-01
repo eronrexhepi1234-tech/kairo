@@ -301,6 +301,8 @@
       <button class="act c4" data-m="rap"><span><svg class="i" data-ic="mic"></svg></span>Deutschrap</button>
       <button class="act c2" data-m="sleep"><span><svg class="i" data-ic="moon"></svg></span>Einschlafen</button>
     </div>
+    <h3><svg class="i" data-ic="camera" style="width:15px;height:15px"></svg>Handy für Kairo</h3>
+    <div class="grid"><button class="act c3" id="toCam"><span><svg class="i" data-ic="camera"></svg></span>Webcam</button><button class="act c4" id="toMic"><span><svg class="i" data-ic="mic"></svg></span>Mikrofon</button></div>
     <h3><svg class="i" data-ic="zap" style="width:15px;height:15px"></svg>Routinen</h3>
     <div class="grid" id="routines"></div>
     <p class="note">PC einschalten, wenn er aus ist: Wake-on-LAN-App mit der MAC-Adresse aus Kairo → Handy.</p>
@@ -391,6 +393,10 @@
   if (token) localStorage.setItem('kairo.t', token);
   document.getElementById('mf').href = '/manifest.json?t=' + encodeURIComponent(token);
   const $ = id => document.getElementById(id);
+  // camera and microphone only work on the secure (https) page of the same address
+  const goCam = m => { location.href = 'https://' + location.host + '/cam?t=' + encodeURIComponent(token) + '&m=' + m; };
+  document.getElementById('toCam')?.addEventListener('click', () => goCam('cam'));
+  document.getElementById('toMic')?.addEventListener('click', () => goCam('mic'));
   const api = (path, body) => fetch(path, { method: body ? 'POST' : 'GET', headers: { 'x-kairo-token': token, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   let toastT = 0;
   const toast = m => { $('toast').textContent = m; $('toast').classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), 1900); };

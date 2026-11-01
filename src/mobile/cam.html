@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d14">
+<title>Kairo · Handy-Kamera</title>
+<style>
+  @font-face { font-family: Inter; src: url(/fonts/inter.woff2) format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: Grotesk; src: url(/fonts/grotesk.woff2) format('woff2'); font-weight: 300 700; }
+  :root { --acc: #ff7a45; --bg: #0b0d14; --card: #151824; --mut: #8a93a6; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: #eef1f7; font: 15px/1.45 Inter, system-ui, sans-serif; }
+  body { padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  header img { width: 34px; height: 34px; border-radius: 10px; }
+  header b { font: 700 19px Grotesk, sans-serif; } header small { display: block; color: var(--mut); font-size: 12px; }
+  .back { margin-left: auto; color: var(--mut); text-decoration: none; font-size: 13px; padding: 8px 12px; border-radius: 12px; background: var(--card); }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 16px; background: var(--card); }
+  .tabs button { padding: 11px; border: 0; border-radius: 12px; background: none; color: var(--mut); font: 600 15px Inter, sans-serif; }
+  .tabs button.on { background: var(--acc); color: #fff; }
+  .pane { display: none; flex-direction: column; gap: 12px; } .pane.on { display: flex; }
+  .stage { position: relative; aspect-ratio: 3 / 4; border-radius: 24px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,.08); }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; } video.mirror { transform: scaleX(-1); }
+  .live { position: absolute; left: 12px; top: 12px; display: none; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: rgba(0,0,0,.6); font-size: 12px; font-weight: 700; }
+  .live.on { display: flex; } .live i { width: 9px; height: 9px; border-radius: 50%; background: #ff3b3b; animation: bl 1s infinite; } @keyframes bl { 50% { opacity: .3; } }
+  .ph { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--mut); text-align: center; padding: 24px; }
+  .row { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 15px; border: 0; border-radius: 16px; background: var(--card); color: #eef1f7; font: 600 15px Inter, sans-serif; }
+  .btn.primary { background: linear-gradient(135deg, var(--acc), #ff4f8b); color: #fff; }
+  .btn:disabled { opacity: .4; }
+  .msg { padding: 12px 14px; border-radius: 14px; background: var(--card); color: #c9ccd3; font-size: 14px; } .msg.err { background: rgba(255,80,80,.12); color: #ffb3b3; } .msg.ok { background: rgba(61,220,151,.1); color: #9ff0c9; }
+  .mic { align-self: center; width: 190px; height: 190px; margin: 18px 0; border-radius: 50%; border: 0; background: radial-gradient(circle at 35% 30%, #ffb08a, var(--acc) 55%, #c2410c); color: #fff; font: 700 17px Inter, sans-serif; box-shadow: 0 20px 60px rgba(255,122,69,.4); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: .2s; }
+  .mic svg { width: 54px; height: 54px; } .mic.rec { background: radial-gradient(circle at 35% 30%, #ff8a8a, #ff3b3b 60%, #b31212); animation: pulse 1s infinite; } .mic:disabled { opacity: .5; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 22px rgba(255,59,59,.15), 0 20px 60px rgba(255,59,59,.4); } }
+  .log { display: flex; flex-direction: column; gap: 8px; }
+  .log div { padding: 10px 14px; border-radius: 14px; background: var(--card); font-size: 14px; } .log small { display: block; color: var(--mut); font-size: 11.5px; }
+  .note { color: var(--mut); font-size: 12.5px; text-align: center; }
+</style>
+</head>
+<body>
+<header><img src="/icon.png" alt=""><div><b>Kairo</b><small>Handy für deinen PC</small></div><a class="back" id="back" href="/">Zurück</a></header>
+<div class="tabs"><button data-t="cam">Webcam</button><button data-t="mic">Mikrofon</button></div>
+<div id="warn"></div>
+
+<div class="pane" id="p-cam">
+  <div class="stage"><video id="v" playsinline muted autoplay></video><div class="ph" id="ph"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Deine Handy-Kamera wird zur Webcam für Kairo.</div><div class="live" id="live"><i></i>LIVE zu Kairo</div></div>
+  <div class="row"><button class="btn primary" id="go">Kamera starten</button><button class="btn" id="flip" disabled>Kamera wechseln</button></div>
+  <div class="msg" id="cmsg">Das Bild geht direkt über dein WLAN zu Kairo am PC. Lass diese Seite offen, solange Kairo dich sehen soll.</div>
+</div>
+
+<div class="pane" id="p-mic">
+  <button class="mic" id="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></svg><span id="micT">Tippen und reden</span></button>
+  <p class="note">Tippen, reden, nochmal tippen. Kairo antwortet über die Lautsprecher am PC.</p>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const token = q.get('t') || localStorage.getItem('kairo.t') || '';
+  if (q.get('t')) try { localStorage.setItem('kairo.t', q.get('t')); } catch {}
+  $('back').href = 'http://' + location.host + '/?t=' + encodeURIComponent(token);
+  const post = (path, body) => fetch(path, { method: 'POST', headers: { 'x-kairo-token': token, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const msg = (el, t, cls = '') => { el.className = 'msg ' + cls; el.textContent = t; };
+
+  // tabs
+  const tab = t => { document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + t)); };
+  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => tab(b.dataset.t));
+  tab(q.get('m') === 'mic' ? 'mic' : 'cam');
+
+  if (!window.isSecureContext || !navigator.mediaDevices) {
+    $('warn').innerHTML = '<div class="msg err">Kamera und Mikrofon gehen nur auf der sicheren Seite. Öffne diese Seite über den Knopf in der Kairo-App oder den QR-Code in Kairo am PC.</div>';
+  }
+
+  // keep the screen on while streaming
+  let lock = null;
+  const awake = async on => { try { if (on && !lock && navigator.wakeLock) lock = await navigator.wakeLock.request('screen'); if (!on && lock) { await lock.release(); lock = null; } } catch {} };
+
+  // ---------- webcam (WebRTC straight to Kairo on the PC) ----------
+  let pc = null, stream = null, facing = 'user';
+  const waitIce = p => new Promise(res => { if (p.iceGatheringState === 'complete') return res(); const t = setTimeout(res, 2500); p.addEventListener('icegatheringstatechange', () => { if (p.iceGatheringState === 'complete') { clearTimeout(t); res(); } }); });
+  async function camera() {
+    stream?.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    $('v').srcObject = stream; $('v').classList.toggle('mirror', facing === 'user'); $('ph').style.display = 'none';
+    return stream;
+  }
+  async function startCam() {
+    const b = $('go'); b.disabled = true; msg($('cmsg'), 'Verbinde mit Kairo …');
+    try {
+      await camera();
+      pc?.close();
+      pc = new RTCPeerConnection({ iceServers: [] });
+      stream.getTracks().forEach(t => pc.addTrack(t, stream));
+      pc.onconnectionstatechange = () => {
+        const st = pc.connectionState;
+        $('live').classList.toggle('on', st === 'connected');
+        if (st === 'connected') msg($('cmsg'), 'Verbunden! Kairo sieht jetzt dein Kamerabild.', 'ok');
+        if (st === 'failed' || st === 'disconnected') msg($('cmsg'), 'Verbindung verloren. Tippe nochmal auf „Kamera starten“.', 'err');
+      };
+      await pc.setLocalDescription(await pc.createOffer());
+      await waitIce(pc);
+      const r = await post('/api/rtc', { sdp: pc.localDescription.sdp });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Kairo antwortet nicht');
+      await pc.setRemoteDescription(j);
+      b.textContent = 'Stoppen'; b.disabled = false; b.onclick = stopCam; $('flip').disabled = false; awake(true);
+    } catch (e) { msg($('cmsg'), e.name === 'NotAllowedError' ? 'Du hast die Kamera nicht erlaubt. Erlaube sie in den Browser-Einstellungen für diese Seite.' : 'Hat nicht geklappt: ' + e.message, 'err'); b.disabled = false; }
+  }
+  function stopCam() {
+    pc?.close(); pc = null; stream?.getTracks().forEach(t => t.stop()); stream = null; $('v').srcObject = null; $('ph').style.display = ''; $('live').classList.remove('on');
+    const b = $('go'); b.textContent = 'Kamera starten'; b.onclick = startCam; $('flip').disabled = true; awake(false);
+    msg($('cmsg'), 'Gestoppt.');
+  }
+  $('go').onclick = startCam;
+  $('flip').onclick = async () => {
+    facing = facing === 'user' ? 'environment' : 'user';
+    try { const s = await camera(); const sender = pc?.getSenders().find(x => x.track?.kind === 'video'); if (sender) await sender.replaceTrack(s.getVideoTracks()[0]); } catch (e) { msg($('cmsg'), e.message, 'err'); }
+  };
+
+  // ---------- microphone (tap, talk, tap) ----------
+  let rec = null, chunks = [];
+  const MIME = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+  $('mic').onclick = async () => {
+    if (rec) { rec.stop(); return; }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      chunks = [];
+      rec = new MediaRecorder(s, MIME ? { mimeType: MIME } : undefined);
+      rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        s.getTracks().forEach(t => t.stop());
+        const type = (rec.mimeType || MIME || 'audio/webm').split(';')[0]; rec = null;
+        $('mic').classList.remove('rec'); $('mic').disabled = true; $('micT').textContent = 'Kairo hört zu …';
+        try {
+          const buf = new Uint8Array(await new Blob(chunks, { type }).arrayBuffer());
+          let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+          const r = await post('/api/listen', { audio: btoa(bin), mime: type });
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.error || 'Fehler');
+          $('log').insertAdjacentHTML('afterbegin', j.text ? `<div><small>Du</small>${esc(j.text)}<small>Kairo antwortet am PC</small></div>` : '<div><small>Kairo</small>Ich habe nichts verstanden. Nochmal?</div>');
+        } catch (e) { $('log').insertAdjacentHTML('afterbegin', `<div><small>Fehler</small>${esc(e.message)}</div>`); }
+        $('mic').disabled = false; $('micT').textContent = 'Tippen und reden';
+      };
+      rec.start();
+      $('mic').classList.add('rec'); $('micT').textContent = 'Ich höre … tippen = fertig';
+      if (navigator.vibrate) navigator.vibrate(15);
+    } catch (e) { $('log').insertAdjacentHTML('afterbegin', `<div><small>Fehler</small>${e.name === 'NotAllowedError' ? 'Du hast das Mikrofon nicht erlaubt.' : esc(e.message)}</div>`); }
+  };
+</script>
+</body>
+</html>

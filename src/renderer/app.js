@@ -485,7 +485,8 @@ async function send(text, opts = {}) {
     attachNews: opts.attachNews ?? attach.news,
     newsQuery: opts.newsQuery || '',
     folderContext: attach.folderCtx,
-    fileContext: attach.file || null
+    fileContext: attach.file || null,
+    images: opts.images || undefined
   };
   if (attach.file) { attach.file = null; setChip('chipFile', false); $('chipFileLabel').textContent = t('chip.file'); }
   // one-shot chips reset after sending
@@ -524,7 +525,7 @@ async function send(text, opts = {}) {
     window.kairo.marks.show({ marks, guess, text: plain.length > 320 ? plain.slice(0, 317) + '…' : plain, seconds: guess ? 25 : 35, stepAside: true, guessTitle: S.language === 'de' ? 'Kairos Tipp' : "Kairo's guess" });
   }
   if (r.ok) learnFrom(text);
-  if (S.voice.autoSpeak && r.ok) Voice.speak(shown.replace(/%%FILE\d+%%/g, ''), S);
+  if ((S.voice.autoSpeak || opts.speak) && r.ok) Voice.speak(shown.replace(/%%FILE\d+%%/g, ''), S);
 }
 
 window.kairo.chat.onEvent((id, type, payload) => {
@@ -1001,6 +1002,8 @@ function powerRoute(text) {
   if (!x || x.length > 90) return null;
   const de = (S?.language || 'de') === 'de', m = re => x.match(re);
   let r;
+  if (/(handy (als|wird zur?|zur?) (webcam|kamera)|phone (as )?(webcam|camera))/i.test(x)) return { say: de ? 'Handy-Webcam: scanne den QR-Code mit dem Handy.' : 'Phone webcam: scan the QR code.', run: () => PhoneCam.open('cam') };
+  if (/(handy (als|wird zum|zum) mikro(fon)?|phone (as )?(mic|microphone))/i.test(x)) return { say: de ? 'Handy-Mikrofon: scanne den QR-Code mit dem Handy.' : 'Phone microphone: scan the QR code.', run: () => PhoneCam.open('mic') };
   if (/(was (habe|hab) ich (alles )?verpasst|what did i miss|was ist passiert,? (als|während) ich weg war)/i.test(x)) return { say: de ? 'Ich schaue nach, was du verpasst hast.' : 'Checking what you missed.', run: () => Power.missed() };
   if (/^(clip (das|that|it|dies)|clip!?|speicher(e)? (den |einen )?clip|save (a |the )?clip)[.!]*$/i.test(x)) return { say: de ? 'Clip wird gespeichert.' : 'Saving the clip.', run: () => Extras.saveClip() };
   if ((r = m(/(mündliche prüfung|frag mich (mündlich )?ab|prüf(e)? mich mündlich|oral exam|quiz me out loud)(?:\s+(?:über|zu|in|im|about|on)\s+(.+))?/i))) return { say: de ? 'Okay, ich frage dich ab.' : "Okay, let's do an oral exam.", run: () => Power.oralExam((r[4] || '').replace(/[?.!]+$/, '')) };

@@ -2,6 +2,8 @@
 // Scan the QR code with your phone to chat with Kairo and see your screen.
 // This module only serves the page; PC actions go through pc.js like everywhere else.
 const http = require('http');
+const https = require('https');
+const net = require('net');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
@@ -34,7 +36,7 @@ function sameCode(a, b) {
 function readJson(req) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', c => { data += c; if (data.length > 2e6) req.destroy(); });
+    req.on('data', c => { data += c; if (data.length > 1.2e7) req.destroy(); });
     req.on('end', () => { try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(e); } });
   });
 }
@@ -52,7 +54,7 @@ async function start({ port, token }, hooks) {
   await stop();
   const page = fs.readFileSync(path.join(__dirname, '..', 'mobile', 'index.html'));
 
-  server = http.createServer(async (req, res) => {
+  const handler = async (req, res) => {
     if (!fromHomeNetwork(req.socket.remoteAddress)) { res.writeHead(403); return res.end(); }
     const url = new URL(req.url, 'http://x');
     const reply = (code, body, type = 'application/json') => {
@@ -67,7 +69,7 @@ async function start({ port, token }, hooks) {
         icons: [{ src: '/icon.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] }, 'application/manifest+json');
     }
     // public files: app icon, the orb animation, and the quiz-party page for friends
-    const PUBLIC = { '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'],
+    const PUBLIC = { '/cam': ['mobile/cam.html', 'text/html; charset=utf-8'], '/icon.png': ['renderer/assets/icon.png', 'image/png'], '/orb.js': ['renderer/orb.js', 'text/javascript'], '/party': ['mobile/party.html', 'text/html; charset=utf-8'],
       '/fonts/inter.woff2': ['renderer/assets/fonts/inter-latin-wght-normal.woff2', 'font/woff2'], '/fonts/grotesk.woff2': ['renderer/assets/fonts/space-grotesk-latin-wght-normal.woff2', 'font/woff2'] };
     if (PUBLIC[url.pathname]) return reply(200, fs.readFileSync(path.join(__dirname, '..', PUBLIC[url.pathname][0])), PUBLIC[url.pathname][1]);
     // quiz party: friends only need the party code, nothing else of Kairo is reachable with it
@@ -93,6 +95,18 @@ async function start({ port, token }, hooks) {
       if (url.pathname === '/api/screen') {
         const shot = await hooks.screenshot();
         return reply(200, Buffer.from(shot.data, 'base64'), shot.mime);
+      }
+      // phone camera -> Kairo (WebRTC, the video goes straight through the home network)
+      if (url.pathname === '/api/rtc' && req.method === 'POST' && hooks.rtc) {
+        const b = await readJson(req);
+        hooks.notify({ type: 'remote-action', action: 'Handy-Kamera' });
+        const ans = await hooks.rtc({ type: 'offer', sdp: String(b.sdp || '') });
+        return ans ? reply(200, ans) : reply(503, { error: 'Kairo antwortet nicht. Ist Kairo am PC offen?' });
+      }
+      // phone microphone -> what you said goes to Kairo on the PC, the answer comes from the PC speakers
+      if (url.pathname === '/api/listen' && req.method === 'POST' && hooks.listen) {
+        const b = await readJson(req);
+        return reply(200, { text: await hooks.listen(String(b.audio || ''), String(b.mime || 'audio/webm')) });
       }
       if (url.pathname === '/api/tts' && req.method === 'POST') {
         const { text } = await readJson(req);
@@ -135,13 +149,27 @@ async function start({ port, token }, hooks) {
     } catch (e) {
       reply(500, { error: e.message });
     }
+  };
+
+  // one port for both: phones need HTTPS for camera and microphone, everything else keeps working over HTTP
+  // (the first byte of a TLS connection is 0x16) – no second port, so no new firewall rule is needed
+  const plain = http.createServer(handler);
+  let secure = null;
+  try { const c = require('./cert').get(lanAddress().ip); secure = https.createServer({ key: c.key, cert: c.cert }, handler); } catch (e) { console.error('[kairo] https off', e.message); }
+  server = net.createServer(sock => {
+    sock.on('error', () => {});
+    sock.once('data', buf => {
+      sock.pause(); sock.unshift(buf);
+      (buf[0] === 0x16 && secure ? secure : plain).emit('connection', sock);
+      process.nextTick(() => sock.resume());
+    });
   });
 
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '0.0.0.0', resolve); });
 
   const { ip, mac } = lanAddress();
   const link = `http://${ip}:${port}/?t=${token}`;
-  return { link, ip, mac, port, qr: await QRCode.toDataURL(link, { margin: 1, width: 260, color: { dark: '#111214', light: '#ffffff' } }) };
+  return { link, camLink: secure ? `https://${ip}:${port}/cam?t=${token}` : null, ip, mac, port, qr: await QRCode.toDataURL(link, { margin: 1, width: 260, color: { dark: '#111214', light: '#ffffff' } }) };
 }
 
 function stop() {

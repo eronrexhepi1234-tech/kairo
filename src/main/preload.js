@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('kairo', {
     start: () => invoke('remote:start'), stop: () => invoke('remote:stop'), reset: () => invoke('remote:reset'),
     info: () => invoke('remote:info'),
     onRequest: (ch, fn) => on(ch, async (id, ...a) => ipcRenderer.send('renderer:reply:' + id, await fn(...a))),
+    onVoiceIn: fn => on('remote:voiceIn', fn), camLink: mode => invoke('phonecam:link', mode),
     party: { create: q => invoke('party:create', q), next: () => invoke('party:next'), state: () => invoke('party:state'), end: () => invoke('party:end') }, firewall: () => invoke('remote:firewall'), allowFirewall: () => invoke('remote:firewall-allow'), onEvent: fn => on('remote:event', fn), onAutostart: fn => on('remote:autostart', fn)
   },
   openExternal: url => invoke('app:open-external', url),

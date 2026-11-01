@@ -145,7 +145,7 @@ Captions: what is SAID in the clip, in short pieces, with exact absolute times. 
 }
 
 // ---------- generic save ----------
-const DIRS = { tiktok: () => path.join(app.getPath('videos'), 'Kairo TikToks'), thumb: () => path.join(app.getPath('pictures'), 'Kairo Thumbnails') };
+const DIRS = { tiktok: () => path.join(app.getPath('videos'), 'Kairo TikToks'), thumb: () => path.join(app.getPath('pictures'), 'Kairo Thumbnails'), photo: () => path.join(app.getPath('pictures'), 'Kairo') };
 function saveFile({ kind, bytes, name, ext }) {
   const dir = (DIRS[kind] || DIRS.tiktok)();
   fs.mkdirSync(dir, { recursive: true });
