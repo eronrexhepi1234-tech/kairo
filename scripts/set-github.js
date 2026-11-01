@@ -15,4 +15,7 @@ fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + '\n');
 
 const readme = path.join(__dirname, '..', 'README.md');
 fs.writeFileSync(readme, fs.readFileSync(readme, 'utf8').replace(/YOUR_GITHUB_NAME\/kairo/g, `${owner}/${repo}`));
+// the download page (docs/index.html, for GitHub Pages)
+const page = path.join(__dirname, '..', 'docs', 'index.html');
+if (fs.existsSync(page)) fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace(/YOUR_GITHUB_NAME\/kairo/g, `${owner}/${repo}`));
 console.log(`Done: auto-update and links now point to github.com/${owner}/${repo}`);

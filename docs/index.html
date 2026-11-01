@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kairo – dein KI-Assistent für Windows</title>
+<meta name="description" content="Kairo ist ein kostenloser KI-Assistent für Windows: sprechen, 3D-Erde, Jarvis-Modus, Apps und Websites bauen, Recherche, Schule, Roblox und vieles mehr.">
+<link rel="icon" href="icon.png">
+<style>
+  :root { --bg: #08090f; --bg2: #10121b; --line: rgba(255,255,255,.08); --text: #eef1f7; --muted: #9aa3b5; --a: #ff7a45; --b: #8b5cff; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; overflow-x: hidden; }
+  a { color: inherit; }
+  .wrap { width: min(1120px, 100% - 32px); margin: 0 auto; }
+  .glow { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  .glow i { position: absolute; width: 60vw; height: 60vw; border-radius: 50%; filter: blur(90px); opacity: .22; animation: float 20s ease-in-out infinite; }
+  .glow i:nth-child(1) { background: var(--a); top: -25vw; left: -15vw; } .glow i:nth-child(2) { background: var(--b); top: 30vh; right: -25vw; animation-delay: -7s; }
+  @keyframes float { 50% { transform: translate(6vw, 5vh) scale(1.1); } }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+  .logo { display: flex; gap: 10px; align-items: center; font-weight: 800; font-size: 20px; text-decoration: none; }
+  .logo span { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffc3a3, var(--a) 55%, #c4421b); box-shadow: 0 0 24px var(--a); }
+  nav .links { display: flex; gap: 22px; color: var(--muted); font-size: 15px; } nav .links a { text-decoration: none; } nav .links a:hover { color: var(--text); }
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; padding: 50px 0 70px; }
+  .tag { display: inline-flex; gap: 8px; align-items: center; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--muted); font-size: 13px; }
+  .tag b { color: #3ddc97; }
+  h1 { margin: 16px 0 14px; font-size: clamp(38px, 6vw, 64px); line-height: 1.04; letter-spacing: -.02em; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, var(--a), var(--b)); -webkit-background-clip: text; color: transparent; }
+  .lead { color: var(--muted); font-size: 18px; max-width: 520px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 26px; }
+  .dl { display: inline-flex; gap: 10px; align-items: center; padding: 16px 26px; border-radius: 16px; background: linear-gradient(135deg, var(--a), var(--b)); color: #fff; font-weight: 800; font-size: 17px; text-decoration: none; box-shadow: 0 18px 40px -16px var(--a); transition: transform .2s; }
+  .dl:hover { transform: translateY(-3px); } .dl svg { width: 22px; height: 22px; }
+  .small { color: var(--muted); font-size: 13px; }
+  .shot { position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 40px 90px -40px #000, 0 0 80px -40px var(--b); transform: perspective(1400px) rotateY(-8deg) rotateX(3deg); transition: transform .6s; }
+  .shot:hover { transform: none; } .shot img { display: block; width: 100%; }
+  section { padding: 60px 0; }
+  h2 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 8px; letter-spacing: -.01em; } .sub { color: var(--muted); margin: 0 0 30px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .card { padding: 20px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--line); transition: transform .25s, border-color .25s; }
+  .card:hover { transform: translateY(-4px); border-color: rgba(255,122,69,.4); }
+  .card b { display: block; font-size: 17px; margin-bottom: 4px; } .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 12px; background: rgba(255,122,69,.14); color: var(--a); font-weight: 900; }
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .gallery figure { margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--bg2); }
+  .gallery img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; object-position: top; } .gallery figcaption { padding: 10px 14px; font-size: 14px; color: var(--muted); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; counter-reset: s; }
+  .step { position: relative; padding: 22px 20px 20px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--line); }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; top: -14px; left: 20px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--a), var(--b)); font-weight: 800; }
+  .step b { display: block; margin: 6px 0 4px; } .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .warn { margin-top: 18px; padding: 16px 18px; border-radius: 16px; background: rgba(255,210,122,.06); border: 1px solid rgba(255,210,122,.25); color: #e8d6a8; font-size: 14.5px; }
+  .warn b { color: #ffd27a; }
+  details { padding: 16px 18px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--line); margin-bottom: 8px; } summary { cursor: pointer; font-weight: 700; } details p { color: var(--muted); margin: 8px 0 0; }
+  .final { text-align: center; padding: 70px 0 90px; } .final .cta { justify-content: center; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0; color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 20px; } .shot { transform: none; } .grid, .gallery, .steps { grid-template-columns: 1fr; } nav .links { display: none; } }
+</style>
+</head>
+<body>
+<div class="glow"><i></i><i></i></div>
+<div class="wrap">
+  <nav><a class="logo" href="#"><span></span>Kairo</a><div class="links"><a href="#features">Funktionen</a><a href="#bilder">Bilder</a><a href="#installieren">Installieren</a><a href="#fragen">Fragen</a></div></nav>
+
+  <header class="hero">
+    <div>
+      <span class="tag"><b>●</b> Gratis · für Windows 10 und 11</span>
+      <h1>Dein KI-Assistent,<br>der <em>wirklich</em> etwas macht.</h1>
+      <p class="lead">Rede einfach mit Kairo. Es baut Apps und Websites, recherchiert mit Quellen, hilft bei der Schule, fliegt über eine 3D-Erde und verwandelt deinen PC in ein Iron-Man-HUD.</p>
+      <div class="cta">
+        <a class="dl" href="https://github.com/YOUR_GITHUB_NAME/kairo/releases/latest/download/Kairo-Setup.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Kairo herunterladen</a>
+        <span class="small">Windows · ca. 100 MB · kostenlos</span>
+      </div>
+    </div>
+    <div class="shot"><img src="screenshots/jarvis-app.png" alt="Kairo im Jarvis-Modus"></div>
+  </header>
+
+  <section id="features">
+    <h2>Alles in einer App</h2>
+    <p class="sub">Funktioniert mit Gemini (gratis), Claude, ChatGPT oder einer lokalen KI.</p>
+    <div class="grid">
+      <div class="card"><div class="ico">◉</div><b>Freihändig sprechen</b><p>Einfach reden – Kairo antwortet sofort mit natürlicher Stimme und erledigt Sachen am PC.</p></div>
+      <div class="card"><div class="ico">⌁</div><b>Jarvis-Modus</b><p>Die ganze App und dein Desktop werden zum holografischen Iron-Man-HUD.</p></div>
+      <div class="card"><div class="ico">✎</div><b>Apps & Websites bauen</b><p>Skizze zeichnen oder beschreiben – Kairo baut eine echte, funktionierende App.</p></div>
+      <div class="card"><div class="ico">⌕</div><b>Deep Research</b><p>Liest viele Quellen und schreibt einen Bericht mit Zahlen und Quellenangaben.</p></div>
+      <div class="card"><div class="ico">A+</div><b>Schule & Lernen</b><p>Prüfungs-Simulator mit Note, Lernpfade, Sprachlehrer und Schreib-Coach.</p></div>
+      <div class="card"><div class="ico">▦</div><b>Roblox Studio</b><p>Spiel beschreiben, 3D-Vorschau ansehen, mit einem Klick in Roblox Studio bauen.</p></div>
+      <div class="card"><div class="ico">◐</div><b>3D-Erde</b><p>Satellitenbilder, Flüge live, Regenradar, Weltreisen und Dokus.</p></div>
+      <div class="card"><div class="ico">▤</div><b>Profi-Dokumente</b><p>Bewerbung, Lebenslauf und Präsentationen als PDF, Word und PowerPoint.</p></div>
+      <div class="card"><div class="ico">▣</div><b>Handy als Stream Deck</b><p>Grosse leuchtende Knöpfe auf dem Handy steuern deinen PC.</p></div>
+    </div>
+  </section>
+
+  <section id="bilder">
+    <h2>So sieht Kairo aus</h2>
+    <p class="sub">Dunkles, modernes Design mit vielen Animationen.</p>
+    <div class="gallery">
+      <figure><img src="screenshots/pro.png" alt="Kairo Pro Studio" loading="lazy"><figcaption>Kairo Pro Studio</figcaption></figure>
+      <figure><img src="screenshots/earth-layers.png" alt="3D-Erde" loading="lazy"><figcaption>3D-Erde mit Live-Daten</figcaption></figure>
+      <figure><img src="screenshots/builder.png" alt="Kairo Builder" loading="lazy"><figcaption>Apps & Websites bauen</figcaption></figure>
+      <figure><img src="screenshots/roblox.png" alt="Roblox Studio Assistent" loading="lazy"><figcaption>Roblox-Studio-Assistent</figcaption></figure>
+      <figure><img src="screenshots/solar.png" alt="Sonnensystem" loading="lazy"><figcaption>Sonnensystem in 3D</figcaption></figure>
+      <figure><img src="screenshots/deck.png" alt="Stream Deck" loading="lazy"><figcaption>Stream Deck auf dem Handy</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="installieren">
+    <h2>In 2 Minuten startklar</h2>
+    <p class="sub">Keine Programmierkenntnisse nötig.</p>
+    <div class="steps">
+      <div class="step"><b>Herunterladen</b><p>Auf „Kairo herunterladen“ klicken und die Datei <b>Kairo-Setup.exe</b> öffnen.</p></div>
+      <div class="step"><b>Installieren</b><p>Dem Installer folgen. Kairo landet auf dem Desktop und im Startmenü und aktualisiert sich später selbst.</p></div>
+      <div class="step"><b>KI verbinden</b><p>In Kairo unter <b>Einstellungen → KI</b> einen Gemini-Schlüssel einfügen – gratis auf <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>.</p></div>
+    </div>
+    <div class="warn"><b>Windows zeigt „Der Computer wurde durch Windows geschützt“?</b> Das kommt bei neuen, kostenlosen Programmen ohne teures Zertifikat. Klicke auf <b>„Weitere Informationen“</b> und dann auf <b>„Trotzdem ausführen“</b>.</div>
+  </section>
+
+  <section id="fragen">
+    <h2>Fragen</h2>
+    <details><summary>Ist Kairo wirklich gratis?</summary><p>Ja. Kairo selbst ist kostenlos. Mit einem Gemini-Schlüssel von Google kannst du die KI ebenfalls gratis nutzen (mit täglichem Limit).</p></details>
+    <details><summary>Was passiert mit meinen Daten?</summary><p>Einstellungen, Schlüssel und Erinnerungen bleiben verschlüsselt auf deinem PC. Deine Fragen gehen nur an die KI, die du selbst auswählst.</p></details>
+    <details><summary>Läuft Kairo im Hintergrund?</summary><p>Nein. Kairo läuft nur, solange das Fenster oder der kleine Orb offen ist.</p></details>
+    <details><summary>Welche Windows-Version brauche ich?</summary><p>Windows 10 oder 11 (64-Bit). Für die Sprachfunktionen ein Mikrofon.</p></details>
+  </section>
+
+  <div class="final"><h2>Bereit?</h2><p class="sub">Lade Kairo herunter und sag einfach „Hallo“.</p><div class="cta"><a class="dl" href="https://github.com/YOUR_GITHUB_NAME/kairo/releases/latest/download/Kairo-Setup.exe">Kairo herunterladen</a></div></div>
+  <footer><span>Kairo · Open Source (MIT)</span><a href="https://github.com/YOUR_GITHUB_NAME/kairo">Code auf GitHub</a></footer>
+</div>
+</body>
+</html>

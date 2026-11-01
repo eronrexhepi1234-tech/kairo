@@ -85,7 +85,7 @@
       "shortcutName": "Kairo",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "artifactName": "Kairo-Setup-${version}.${ext}"
+      "artifactName": "Kairo-Setup.${ext}"
     },
     "publish": [
       {
